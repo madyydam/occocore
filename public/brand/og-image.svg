@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" fill="none">
+  <defs>
+    <radialGradient id="ogBgGlow1" cx="20%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#4F46E5" stop-opacity="0.35" />
+      <stop offset="100%" stop-color="#090D16" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="ogBgGlow2" cx="80%" cy="70%" r="55%">
+      <stop offset="0%" stop-color="#06B6D4" stop-opacity="0.28" />
+      <stop offset="100%" stop-color="#090D16" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="ogVioletGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#C084FC" />
+      <stop offset="50%" stop-color="#818CF8" />
+      <stop offset="100%" stop-color="#4F46E5" />
+    </linearGradient>
+    <linearGradient id="ogCyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="50%" stop-color="#06B6D4" />
+      <stop offset="100%" stop-color="#2563EB" />
+    </linearGradient>
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="50%" stop-color="#E2E8F0" />
+      <stop offset="100%" stop-color="#94A3B8" />
+    </linearGradient>
+    <filter id="highGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="18" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Deep Obsidian Canvas -->
+  <rect width="1200" height="630" fill="#090D16" />
+  
+  <!-- Subtle ambient glow fields -->
+  <rect width="1200" height="630" fill="url(#ogBgGlow1)" />
+  <rect width="1200" height="630" fill="url(#ogBgGlow2)" />
+
+  <!-- Grid overlay -->
+  <g stroke="rgba(255,255,255,0.03)" stroke-width="1">
+    <line x1="0" y1="105" x2="1200" y2="105" />
+    <line x1="0" y1="210" x2="1200" y2="210" />
+    <line x1="0" y1="315" x2="1200" y2="315" />
+    <line x1="0" y1="420" x2="1200" y2="420" />
+    <line x1="0" y1="525" x2="1200" y2="525" />
+    <line x1="200" y1="0" x2="200" y2="630" />
+    <line x1="400" y1="0" x2="400" y2="630" />
+    <line x1="600" y1="0" x2="600" y2="630" />
+    <line x1="800" y1="0" x2="800" y2="630" />
+    <line x1="1000" y1="0" x2="1000" y2="630" />
+  </g>
+
+  <!-- Brand Badge Top Left -->
+  <g transform="translate(80, 80)">
+    <!-- Glowing Logo Rings -->
+    <rect width="72" height="72" rx="20" fill="#0E1322" stroke="rgba(255,255,255,0.12)" stroke-width="1.5" />
+    <circle cx="28" cy="36" r="14" stroke="url(#ogVioletGrad)" stroke-width="4.5" fill="none" />
+    <circle cx="44" cy="36" r="14" stroke="url(#ogCyanGrad)" stroke-width="4.5" fill="none" />
+    <ellipse cx="36" cy="36" rx="3" ry="8" stroke="#FFFFFF" stroke-width="1.2" fill="none" />
+
+    <text x="92" y="48" font-family="system-ui, sans-serif" font-weight="900" font-size="34" fill="#FFFFFF" letter-spacing="-0.5">
+      OCCO <tspan fill="#38BDF8">CORE</tspan>
+    </text>
+  </g>
+
+  <!-- Coming Soon Pill Top Right -->
+  <g transform="translate(930, 80)">
+    <rect width="190" height="42" rx="21" fill="rgba(79, 70, 229, 0.15)" stroke="rgba(129, 140, 248, 0.4)" stroke-width="1.5" />
+    <circle cx="24" cy="21" r="5" fill="#38BDF8" />
+    <text x="40" y="27" font-family="system-ui, sans-serif" font-weight="700" font-size="14" fill="#E2E8F0" letter-spacing="1.5">
+      COMING SOON
+    </text>
+  </g>
+
+  <!-- Big Hero Title -->
+  <text x="80" y="260" font-family="system-ui, sans-serif" font-weight="900" font-size="62" fill="url(#textGrad)" letter-spacing="-1.5">
+    The Education Operating System
+  </text>
+  <text x="80" y="325" font-family="system-ui, sans-serif" font-weight="600" font-size="28" fill="#94A3B8">
+    Beyond ERP. Multi-Tenant, Offline-First &amp; DPDPA 2023 Compliant.
+  </text>
+
+  <!-- 4 Feature Cards -->
+  <g transform="translate(80, 390)">
+    <!-- Card 1: 580 Features -->
+    <rect width="240" height="150" rx="16" fill="rgba(15, 23, 42, 0.7)" stroke="rgba(255,255,255,0.08)" stroke-width="1" />
+    <text x="24" y="55" font-family="system-ui, sans-serif" font-weight="900" font-size="36" fill="#C084FC">580+</text>
+    <text x="24" y="90" font-family="system-ui, sans-serif" font-weight="700" font-size="16" fill="#FFFFFF">Features Built-In</text>
+    <text x="24" y="115" font-family="system-ui, sans-serif" font-weight="500" font-size="13" fill="#64748B">Across 23 Core Modules</text>
+
+    <!-- Card 2: Offline First -->
+    <g transform="translate(265, 0)">
+      <rect width="240" height="150" rx="16" fill="rgba(15, 23, 42, 0.7)" stroke="rgba(255,255,255,0.08)" stroke-width="1" />
+      <text x="24" y="55" font-family="system-ui, sans-serif" font-weight="900" font-size="36" fill="#38BDF8">Offline-First</text>
+      <text x="24" y="90" font-family="system-ui, sans-serif" font-weight="700" font-size="16" fill="#FFFFFF">IndexedDB Auto-Sync</text>
+      <text x="24" y="115" font-family="system-ui, sans-serif" font-weight="500" font-size="13" fill="#64748B">Works 100% without internet</text>
+    </g>
+
+    <!-- Card 3: 4-in-1 Architecture -->
+    <g transform="translate(530, 0)">
+      <rect width="240" height="150" rx="16" fill="rgba(15, 23, 42, 0.7)" stroke="rgba(255,255,255,0.08)" stroke-width="1" />
+      <text x="24" y="55" font-family="system-ui, sans-serif" font-weight="900" font-size="36" fill="#34D399">4-in-1</text>
+      <text x="24" y="90" font-family="system-ui, sans-serif" font-weight="700" font-size="16" fill="#FFFFFF">Universal Engine</text>
+      <text x="24" y="115" font-family="system-ui, sans-serif" font-weight="500" font-size="13" fill="#64748B">School, College, Univ, Coach</text>
+    </g>
+
+    <!-- Card 4: Legal & UPI -->
+    <g transform="translate(795, 0)">
+      <rect width="245" height="150" rx="16" fill="rgba(15, 23, 42, 0.7)" stroke="rgba(255,255,255,0.08)" stroke-width="1" />
+      <text x="24" y="55" font-family="system-ui, sans-serif" font-weight="900" font-size="36" fill="#F43F5E">100%</text>
+      <text x="24" y="90" font-family="system-ui, sans-serif" font-weight="700" font-size="16" fill="#FFFFFF">India Statutory Shield</text>
+      <text x="24" y="115" font-family="system-ui, sans-serif" font-weight="500" font-size="13" fill="#64748B">DPDPA 2023 + NPCI UPI 0%</text>
+    </g>
+  </g>
+
+  <!-- Bottom subtle line -->
+  <line x1="80" y1="580" x2="1120" y2="580" stroke="rgba(255,255,255,0.08)" stroke-width="1" />
+</svg>

@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" width="180" height="180">
+  <defs>
+    <linearGradient id="appleRing1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c084fc" />
+      <stop offset="50%" stop-color="#818cf8" />
+      <stop offset="100%" stop-color="#4f46e5" />
+    </linearGradient>
+    <linearGradient id="appleRing2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="50%" stop-color="#06b6d4" />
+      <stop offset="100%" stop-color="#2563eb" />
+    </linearGradient>
+    <filter id="appleGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Deep Obsidian rounded background -->
+  <rect width="180" height="180" rx="42" fill="#090D16" />
+  <rect width="176" height="176" x="2" y="2" rx="40" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1.5" />
+  
+  <!-- Subtle ambient neon blur -->
+  <circle cx="68" cy="90" r="44" fill="none" stroke="rgba(192, 132, 252, 0.22)" stroke-width="14" filter="url(#appleGlow)" />
+  <circle cx="112" cy="90" r="44" fill="none" stroke="rgba(56, 189, 248, 0.22)" stroke-width="14" filter="url(#appleGlow)" />
+
+  <!-- Ring 1 (Left Violet) -->
+  <circle cx="68" cy="90" r="36" fill="none" stroke="url(#appleRing1)" stroke-width="10" stroke-linecap="round" />
+
+  <!-- Ring 2 (Right Cyan) -->
+  <circle cx="112" cy="90" r="36" fill="none" stroke="url(#appleRing2)" stroke-width="10" stroke-linecap="round" />
+
+  <!-- Interlock Core Intersection Lens -->
+  <ellipse cx="90" cy="90" rx="8" ry="22" fill="none" stroke="#FFFFFF" stroke-width="3" opacity="0.8" />
+  <circle cx="90" cy="90" r="4" fill="#FFFFFF" />
+</svg>

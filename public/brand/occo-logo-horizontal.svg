@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 120" width="520" height="120" fill="none">
+  <defs>
+    <linearGradient id="logoVioletGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#C084FC" />
+      <stop offset="50%" stop-color="#818CF8" />
+      <stop offset="100%" stop-color="#4F46E5" />
+    </linearGradient>
+    <linearGradient id="logoCyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="50%" stop-color="#06B6D4" />
+      <stop offset="100%" stop-color="#2563EB" />
+    </linearGradient>
+    <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4F46E5" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="#06B6D4" stop-opacity="0.25" />
+    </linearGradient>
+    <filter id="logoGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Logo Mark Container (Left: 0 to 110) -->
+  <g transform="translate(10, 10)">
+    <!-- Deep obsidian badge background -->
+    <rect width="100" height="100" rx="26" fill="#0E1322" stroke="rgba(255,255,255,0.08)" stroke-width="1.5" />
+    
+    <!-- Aura glow -->
+    <circle cx="38" cy="50" r="22" stroke="rgba(192, 132, 252, 0.3)" stroke-width="8" filter="url(#logoGlow)" />
+    <circle cx="62" cy="50" r="22" stroke="rgba(56, 189, 248, 0.3)" stroke-width="8" filter="url(#logoGlow)" />
+    
+    <!-- Rings -->
+    <circle cx="38" cy="50" r="19" stroke="url(#logoVioletGrad)" stroke-width="5.5" fill="none" />
+    <circle cx="62" cy="50" r="19" stroke="url(#logoCyanGrad)" stroke-width="5.5" fill="none" />
+    
+    <!-- Center intersection lens -->
+    <ellipse cx="50" cy="50" rx="4" ry="11" stroke="#FFFFFF" stroke-width="1.8" fill="none" opacity="0.8" />
+    <circle cx="50" cy="50" r="2.5" fill="#38BDF8" />
+  </g>
+
+  <!-- Wordmark "OCCO" -->
+  <text x="135" y="70" font-family="system-ui, -apple-system, 'Plus Jakarta Sans', Inter, sans-serif" font-weight="900" font-size="46" fill="#FFFFFF" letter-spacing="-1">
+    OCCO
+  </text>
+
+  <!-- Pill Badge "CORE" -->
+  <g transform="translate(288, 38)">
+    <rect width="84" height="34" rx="8" fill="url(#badgeGrad)" stroke="rgba(56, 189, 248, 0.4)" stroke-width="1.2" />
+    <text x="42" y="23" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="16" fill="#38BDF8" text-anchor="middle" letter-spacing="2">
+      CORE
+    </text>
+  </g>
+
+  <!-- Subtitle Line -->
+  <text x="137" y="98" font-family="system-ui, -apple-system, sans-serif" font-weight="600" font-size="12" fill="#94A3B8" letter-spacing="3.5">
+    THE EDUCATION OPERATING SYSTEM
+  </text>
+
+  <!-- Subtle divider dot & status -->
+  <circle cx="450" cy="94" r="3" fill="#10B981" />
+  <text x="460" y="98" font-family="system-ui, -apple-system, sans-serif" font-weight="600" font-size="10" fill="#10B981" letter-spacing="1.5">
+    v2.0
+  </text>
+</svg>

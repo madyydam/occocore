@@ -1,0 +1,21 @@
+{
+  "name": "OCCO Core — Education Operating System",
+  "short_name": "OCCO Core",
+  "description": "Multi-tenant, offline-first operating system & ERP for Schools, Colleges, Universities, and Coaching Academies.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090D16",
+  "theme_color": "#4F46E5",
+  "icons": [
+    {
+      "src": "/app/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/app/apple-icon.svg",
+      "sizes": "180x180",
+      "type": "image/svg+xml"
+    }
+  ]
+}

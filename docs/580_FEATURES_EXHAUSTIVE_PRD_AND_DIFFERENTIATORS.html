@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Next-Gen Multi-Tenant Education ERP - 10-Page Master PRD & 580 Feature Catalogue</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 1cm 0.8cm 1cm 0.8cm;
+        }
+
+        :root {
+            --primary: #4f46e5;
+            --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+            --dark-surface: #0f172a;
+            --dark-card: #1e293b;
+            --emerald: #10b981;
+            --emerald-light: #ecfdf5;
+            --amber: #f59e0b;
+            --amber-light: #fffbeb;
+            --rose: #f43f5e;
+            --rose-light: #fff1f2;
+            --sky: #0ea5e9;
+            --sky-light: #f0f9ff;
+            --border: #e2e8f0;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--text-dark);
+            background: #ffffff;
+            line-height: 1.45;
+            font-size: 8.5pt;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .page {
+            width: 100%;
+            min-height: 275mm;
+            padding: 10px 15px;
+            page-break-after: always;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .page:last-child {
+            page-break-after: avoid;
+        }
+
+        /* Top Header Bar on Each Page */
+        .page-header-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #0f172a;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+
+        .doc-title-top {
+            font-family: 'Outfit', sans-serif;
+            font-size: 8pt;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--primary);
+        }
+
+        .page-num-pill {
+            background: #0f172a;
+            color: #ffffff;
+            font-size: 7.5pt;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Page Hero / Section Banner */
+        .page-banner {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 60%, #312e81 100%);
+            color: #ffffff;
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-bottom: 12px;
+        }
+
+        .page-banner-badge {
+            display: inline-block;
+            background: rgba(99, 102, 241, 0.3);
+            border: 1px solid rgba(165, 180, 252, 0.4);
+            color: #c7d2fe;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-size: 7pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+
+        .page-banner-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 14pt;
+            font-weight: 900;
+            line-height: 1.2;
+            letter-spacing: -0.01em;
+            color: #ffffff;
+        }
+
+        .page-banner-desc {
+            font-size: 8pt;
+            color: #cbd5e1;
+            margin-top: 3px;
+        }
+
+        /* Comparison Split Layout (Generic vs Ours) */
+        .comparison-split {
+            display: grid;
+            grid-template-columns: 1fr 1.3fr;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .box-generic {
+            background: #fff5f5;
+            border: 1px solid #fed7d7;
+            border-top: 3px solid #e53e3e;
+            border-radius: 8px;
+            padding: 10px 12px;
+        }
+
+        .box-generic-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 9pt;
+            font-weight: 800;
+            color: #9b2c2c;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 6px;
+        }
+
+        .box-our {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-top: 3px solid #10b981;
+            border-radius: 8px;
+            padding: 10px 12px;
+        }
+
+        .box-our-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 9pt;
+            font-weight: 800;
+            color: #166534;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 6px;
+        }
+
+        .bullet-list {
+            list-style: none;
+            font-size: 7.8pt;
+            line-height: 1.45;
+        }
+
+        .bullet-list li {
+            margin-bottom: 4px;
+            position: relative;
+            padding-left: 12px;
+        }
+
+        .box-generic .bullet-list li::before {
+            content: "✖";
+            position: absolute;
+            left: 0;
+            color: #e53e3e;
+            font-size: 7pt;
+        }
+
+        .box-our .bullet-list li::before {
+            content: "✔";
+            position: absolute;
+            left: 0;
+            color: #10b981;
+            font-size: 7pt;
+            font-weight: bold;
+        }
+
+        /* Feature Table */
+        .feature-table-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 10pt;
+            font-weight: 800;
+            color: var(--dark-surface);
+            margin: 8px 0 5px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        table.feature-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 7.5pt;
+            margin-bottom: 8px;
+        }
+
+        table.feature-table th {
+            background: #0f172a;
+            color: #ffffff;
+            padding: 6px 8px;
+            text-align: left;
+            font-weight: 700;
+            font-size: 7pt;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        table.feature-table td {
+            padding: 5px 8px;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: middle;
+        }
+
+        table.feature-table tr:nth-child(even) td {
+            background: #f8fafc;
+        }
+
+        .badge-p0 {
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+            padding: 1px 5px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 6.5pt;
+        }
+
+        .badge-p1 {
+            background: #f0f9ff;
+            color: #0369a1;
+            border: 1px solid #bae6fd;
+            padding: 1px 5px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 6.5pt;
+        }
+
+        .feat-id {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .feat-key {
+            font-family: 'JetBrains Mono', monospace;
+            color: #64748b;
+            font-size: 6.8pt;
+        }
+
+        /* Page Footer */
+        .page-footer-bar {
+            border-top: 1px solid #e2e8f0;
+            padding-top: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 7pt;
+            color: #94a3b8;
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ==========================================
+     PAGE 1: ARCHITECTURAL PARADIGM & OVERVIEW
+     ========================================== -->
+<div class="page">
+    <div>
+        <div class="page-header-bar">
+            <div class="doc-title-top">Next-Gen Education ERP SaaS &bull; Master PRD &amp; Feature Catalogue</div>
+            <div class="page-num-pill">PAGE 01 / 10</div>
+        </div>
+
+        <div class="page-banner">
+            <div class="page-banner-badge">System Architecture &bull; Executive Blueprint</div>
+            <h1 class="page-banner-title">Architectural Paradigm: Traditional ERPs vs Our Platform</h1>
+            <p class="page-banner-desc">An empirical contrast between legacy monolithic school software and our Next.js 15 multi-tenant, offline-first operating system.</p>
+        </div>
+
+        <div class="comparison-split">
+            <div class="box-generic">
+                <div class="box-generic-title">⚠ How Traditional ERPs Are Built</div>
+                <ul class="bullet-list">
+                    <li><strong>Legacy Tech Stack</strong>: Built on ASP.NET, PHP 5/7, or Java/Oracle from the 2000s; heavy desktop client remnants and slow jQuery spaghetti.</li>
+                    <li><strong>Single-Tenant Monolith</strong>: Each school runs a separate database instance or manual server; adding a new institute takes weeks of manual IT setup.</li>
+                    <li><strong>Zero Offline Capability</strong>: Hard-coupled to live server connections; if school Wi-Fi or broadband drops, classroom operations instantly freeze.</li>
+                    <li><strong>Rigid Hierarchy</strong>: Hardcoded for standard schools only; cannot model universities, semester credit banks, or coaching batches.</li>
+                    <li><strong>Cluttered 90s UI</strong>: Overwhelming forms with 50+ dropdowns, zero mobile optimization, and painful multi-click navigation.</li>
+                </ul>
+            </div>
+
+            <div class="box-our">
+                <div class="box-our-title">✦ What Sets Our Platform Apart (Unfair Advantages)</div>
+                <ul class="bullet-list">
+                    <li><strong>Next.js 15 App Router &amp; React 19</strong>: Blindingly fast server-rendered pages with sub-100ms client transitions and strict TypeScript type-safety.</li>
+                    <li><strong>Shared Database with PostgreSQL RLS</strong>: Instant 200ms tenant provisioning with kernel-level cryptographic tenant isolation via Row-Level Security.</li>
+                    <li><strong>True Offline-First Engine (Dexie.js)</strong>: Classroom attendance &amp; mark entry cache in browser IndexedDB; mutations queue in durable Outbox and auto-sync on reconnect.</li>
+                    <li><strong>Adaptive 4-in-1 Terminology</strong>: Single codebase morphs into a School, College, University, or Coaching Academy ERP without code duplication.</li>
+                    <li><strong>Linear/Notion Consumer Polish</strong>: Universal Command Palette (<code>Ctrl + K</code>), Driver.js Guided Tours, and high-contrast WCAG AA Dark/Light modes.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="feature-table-title">
+            <span>Core Architectural &amp; Platform Governance Features (Module 1 &amp; 2 Sample)</span>
+            <span style="font-size: 7pt; color: #64748b;">All controlled via tenant feature flags</span>
+        </div>
+
+        <table class="feature-table">
+            <thead>
+                <tr>
+                    <th style="width: 8%;">ID</th>
+                    <th style="width: 25%;">Feature Name</th>
+                    <th style="width: 42%;">Technical Function &amp; Capability</th>
+                    <th style="width: 10%;">Priority</th>
+                    <th style="width: 15%;">Feature Flag Key</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="feat-id">F001</td>
+                    <td><strong>Subdomain Auto-Provisioning</strong></td>
+                    <td>Instant subdomain routing (<code>{slug}.edusaas.com</code>) executed via Next.js Middleware.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_subdomain</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F002</td>
+                    <td><strong>Custom Domain CNAME Binding</strong></td>
+                    <td>Host header mapping supporting verified custom domains with live DNS resolution.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_custom_domain</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F003</td>
+                    <td><strong>Automated SSL Issuance</strong></td>
+                    <td>Zero-touch Let's Encrypt / Cloudflare for Platforms automated SSL certificate generation.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_auto_ssl</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F013</td>
+                    <td><strong>PostgreSQL Row-Level Security</strong></td>
+                    <td>Database kernel-level security policies preventing cross-tenant data leakage.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_tenant_rls</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F026</td>
+                    <td><strong>Global Tenant Registry</strong></td>
+                    <td>Super Admin searchable directory of all registered institutes, health, and student counts.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_saas_core</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F029</td>
+                    <td><strong>Per-Tenant Feature Flag Matrix</strong></td>
+                    <td>Interactive UI matrix allowing Super Admin to toggle any of the 580 features per tenant.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_flag_matrix</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F030</td>
+                    <td><strong>Audited Instant Impersonation</strong></td>
+                    <td>1-Click login into any tenant account with cryptographic SHA-256 audit log tracking.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_audit_impersonation</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="page-footer-bar">
+        <div><strong>EduERP Master PRD</strong> &bull; Section: 01 Architecture Paradigm</div>
+        <div>Page 1 of 10 &bull; Confidential &amp; Proprietary</div>
+    </div>
+</div>
+
+<!-- ==========================================
+     PAGE 2: MULTI-TENANCY, ONBOARDING & BRANDING
+     ========================================== -->
+<div class="page">
+    <div>
+        <div class="page-header-bar">
+            <div class="doc-title-top">Next-Gen Education ERP SaaS &bull; Master PRD &amp; Feature Catalogue</div>
+            <div class="page-num-pill">PAGE 02 / 10</div>
+        </div>
+
+        <div class="page-banner">
+            <div class="page-banner-badge">Module 1 &amp; 3 &bull; White-Labeling &amp; Onboarding</div>
+            <h1 class="page-banner-title">Multi-Tenancy, Self-Service Onboarding &amp; Custom Domains</h1>
+            <p class="page-banner-desc">Enabling school, college, and academy owners to launch their own branded portal in under 10 minutes without writing a single line of code.</p>
+        </div>
+
+        <div class="comparison-split">
+            <div class="box-generic">
+                <div class="box-generic-title">⚠ Generic ERP Domain &amp; Onboarding Model</div>
+                <ul class="bullet-list">
+                    <li><strong>4-12 Weeks Implementation</strong>: School must wait for vendor engineering teams to manually deploy code and configure database instances.</li>
+                    <li><strong>Vendor-Locked Domains</strong>: Schools are forced to use ugly vendor links (e.g. <code>vendor.com/school/login.php?id=492</code>).</li>
+                    <li><strong>Exorbitant White-Label Charges</strong>: Vendors charge ₹1 Lakh to ₹2 Lakhs upfront just to put the school's logo on the login page.</li>
+                    <li><strong>Fixed Colors &amp; Fonts</strong>: Generic blue or grey UI that cannot be matched to the school's official brand colors.</li>
+                </ul>
+            </div>
+
+            <div class="box-our">
+                <div class="box-our-title">✦ Our Instant White-Label &amp; Onboarding Engine</div>
+                <ul class="bullet-list">
+                    <li><strong>10-Minute Guided Wizard</strong>: Self-service flow: Name &rarr; Archetype &rarr; Branding &rarr; Domain &rarr; Modules &rarr; 1-Click Launch.</li>
+                    <li><strong>Instant Custom Domain CNAME</strong>: Map <code>portal.dpsdelhi.in</code> with automated DNS verification and instant Let's Encrypt SSL.</li>
+                    <li><strong>Dynamic CSS Token Injection</strong>: Primary/secondary colors, fonts, and dark/light logos injected directly into CSS variables at runtime.</li>
+                    <li><strong>1-Click Demo Data Seeder</strong>: Allows school owners to evaluate the portal with pre-populated sample students and classes in 5 seconds.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="feature-table-title">
+            <span>Onboarding, Domains &amp; White-Labeling Feature Catalogue (Sample)</span>
+            <span style="font-size: 7pt; color: #64748b;">Module 1 &amp; 3 Full Specifications</span>
+        </div>
+
+        <table class="feature-table">
+            <thead>
+                <tr>
+                    <th style="width: 8%;">ID</th>
+                    <th style="width: 25%;">Feature Name</th>
+                    <th style="width: 42%;">Technical Function &amp; Capability</th>
+                    <th style="width: 10%;">Priority</th>
+                    <th style="width: 15%;">Feature Flag Key</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="feat-id">F004</td>
+                    <td><strong>Dynamic Tenant Theme Injection</strong></td>
+                    <td>Server-rendered CSS custom properties (<code>--tenant-primary</code>) injected per tenant host.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_custom_branding</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F007</td>
+                    <td><strong>White-Labeled Login Portal</strong></td>
+                    <td>Dedicated login screen featuring institute logo, motto, badges, and background styling.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_whitelabel_login</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F009</td>
+                    <td><strong>Custom SMTP Sender Identity</strong></td>
+                    <td>Transactional emails dispatched directly through institute's own GSuite/Office365 SMTP.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_custom_smtp</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F010</td>
+                    <td><strong>White-Label SMS Sender Header</strong></td>
+                    <td>Dispatches SMS using the institute's TRAI DLT approved 6-character header (e.g. <code>DPSDEL</code>).</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_sms_sender_id</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F046</td>
+                    <td><strong>10-Minute Guided Onboarding Wizard</strong></td>
+                    <td>6-step interactive onboarding with live preview cards and validation diagnostics.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_onboarding_wizard</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F049</td>
+                    <td><strong>Enabled User Types Selector</strong></td>
+                    <td>Admin toggles whether Student and Parent logins are activated or hidden entirely.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_user_type_toggle</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F052</td>
+                    <td><strong>1-Click Demo Data Seeder</strong></td>
+                    <td>Pre-populates sample classes, teachers, students, and marks for instant trial evaluation.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_demo_seeder</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="page-footer-bar">
+        <div><strong>EduERP Master PRD</strong> &bull; Section: 02 Multi-Tenancy &amp; Onboarding</div>
+        <div>Page 2 of 10 &bull; Confidential &amp; Proprietary</div>
+    </div>
+</div>
+
+<!-- ==========================================
+     PAGE 3: ADAPTIVE TERMINOLOGY & ACADEMIC HIERARCHY
+     ========================================== -->
+<div class="page">
+    <div>
+        <div class="page-header-bar">
+            <div class="doc-title-top">Next-Gen Education ERP SaaS &bull; Master PRD &amp; Feature Catalogue</div>
+            <div class="page-num-pill">PAGE 03 / 10</div>
+        </div>
+
+        <div class="page-banner">
+            <div class="page-banner-badge">Module 4 &bull; Curriculum &amp; Structure</div>
+            <h1 class="page-banner-title">Adaptive Terminology Transformer &amp; NEP 2020 Curriculum</h1>
+            <p class="page-banner-desc">Dynamic organizational hierarchy adapting seamlessly between K-12 Schools, Degree Colleges, Universities, and Coaching Academies.</p>
+        </div>
+
+        <div class="comparison-split">
+            <div class="box-generic">
+                <div class="box-generic-title">⚠ Generic ERP Academic Limitations</div>
+                <ul class="bullet-list">
+                    <li><strong>Rigid K-12 Only Model</strong>: Built only for "Class 10-A". When a college tries to use it, it cannot represent Degrees, Semesters, or Specializations.</li>
+                    <li><strong>No Credit System</strong>: Incapable of weighting courses by credit hours (e.g. 4 credits Theory, 2 credits Practical).</li>
+                    <li><strong>No NEP 2020 Support</strong>: Zero support for Multiple Entry/Exit points, Academic Bank of Credits (ABC), or Major/Minor multidisciplinary streams.</li>
+                    <li><strong>Hardcoded Labels</strong>: Cannot change "Section" to "Batch" or "Class Teacher" to "Mentor" without modifying database source code.</li>
+                </ul>
+            </div>
+
+            <div class="box-our">
+                <div class="box-our-title">✦ Our Adaptive Terminology &amp; NEP Engine</div>
+                <ul class="bullet-list">
+                    <li><strong>Semantic Terminology Hook</strong>: React <code>useTerminology()</code> dynamically renders exact labels based on active tenant archetype.</li>
+                    <li><strong>NEP 2020 Multiple Entry/Exit</strong>: Tracks student credits for Certificate (Yr 1), Diploma (Yr 2), Degree (Yr 3), and Honours (Yr 4).</li>
+                    <li><strong>Academic Bank of Credits (ABC)</strong>: Native storage and export formatting for 12-digit DigiLocker APAAR / ABC IDs.</li>
+                    <li><strong>Major, Minor &amp; Electives</strong>: Flexible course allocation allowing students to pick open electives and skill enhancement courses.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="feature-table-title">
+            <span>Academic Hierarchy &amp; Curriculum Feature Catalogue (Sample)</span>
+            <span style="font-size: 7pt; color: #64748b;">Module 4 Full Specifications</span>
+        </div>
+
+        <table class="feature-table">
+            <thead>
+                <tr>
+                    <th style="width: 8%;">ID</th>
+                    <th style="width: 25%;">Feature Name</th>
+                    <th style="width: 42%;">Technical Function &amp; Capability</th>
+                    <th style="width: 10%;">Priority</th>
+                    <th style="width: 15%;">Feature Flag Key</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="feat-id">F048</td>
+                    <td><strong>Dynamic Terminology Transformer</strong></td>
+                    <td>Dynamically translates UI terms (Class vs Program, Section vs Semester, Teacher vs Mentor).</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_terminology_engine</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F066</td>
+                    <td><strong>Multi-Year Academic Session Manager</strong></td>
+                    <td>Manage active, past, and upcoming academic sessions with 1-click active session switching.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_academic_sessions</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F070</td>
+                    <td><strong>NEP 2020 Major &amp; Minor Tracks</strong></td>
+                    <td>Tags subjects as Major, Minor, Multidisciplinary, or Skill Enhancement per NEP guidelines.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_nep_curriculum</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F072</td>
+                    <td><strong>Credit Hour Weighting System</strong></td>
+                    <td>Assigns academic credits per subject for UGC/AICTE degree audit and GPA calculations.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_credit_system</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F073</td>
+                    <td><strong>Elective Subject Grouping</strong></td>
+                    <td>Allows students to pick elective courses with automated clash-validation rules.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_elective_selection</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F086</td>
+                    <td><strong>Practical Lab Group Batches</strong></td>
+                    <td>Splits a section into Batches (B1, B2, B3) for laboratory sessions and clinical rotations.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_lab_batches</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F088</td>
+                    <td><strong>Academic Session Rollover Wizard</strong></td>
+                    <td>Automated 1-click duplication of academic structure into the upcoming academic year.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_session_rollover</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="page-footer-bar">
+        <div><strong>EduERP Master PRD</strong> &bull; Section: 03 Adaptive Terminology &amp; Academics</div>
+        <div>Page 3 of 10 &bull; Confidential &amp; Proprietary</div>
+    </div>
+</div>
+
+<!-- ==========================================
+     PAGE 4: STUDENT ADMISSIONS & LIFECYCLE
+     ========================================== -->
+<div class="page">
+    <div>
+        <div class="page-header-bar">
+            <div class="doc-title-top">Next-Gen Education ERP SaaS &bull; Master PRD &amp; Feature Catalogue</div>
+            <div class="page-num-pill">PAGE 04 / 10</div>
+        </div>
+
+        <div class="page-banner">
+            <div class="page-banner-badge">Module 5 &bull; Admissions &amp; Directory</div>
+            <h1 class="page-banner-title">Student Admissions, Identity Rules &amp; Lifecycle Management</h1>
+            <p class="page-banner-desc">Complete student journey from online inquiry to 60-field profile, automated identity numbering, bulk CSV import, and Transfer Certificates.</p>
+        </div>
+
+        <div class="comparison-split">
+            <div class="box-generic">
+                <div class="box-generic-title">⚠ Generic ERP Student Management</div>
+                <ul class="bullet-list">
+                    <li><strong>Limited Basic Fields</strong>: Collects only name, father's name, and phone; misses statutory Indian caste categories and blood groups.</li>
+                    <li><strong>No Indian Identity Numbers</strong>: Cannot handle University PRN (Permanent Registration No), APAAR ID, or UDISE Student PEN.</li>
+                    <li><strong>Painful Bulk Import</strong>: Fails silently on CSV errors with zero preview or row-by-row error highlighting.</li>
+                    <li><strong>Manual Transfer Certificates</strong>: Staff type TCs in MS Word manually, leading to duplicate numbers and zero security verification.</li>
+                </ul>
+            </div>
+
+            <div class="box-our">
+                <div class="box-our-title">✦ Our Modern Student Lifecycle Platform</div>
+                <ul class="bullet-list">
+                    <li><strong>60+ Field Profile Vault</strong>: Encrypted storage of personal, medical, emergency, and guardian demographic data.</li>
+                    <li><strong>Automated Identity Numbering</strong>: Customizable auto-increment rules for Admission No, Section Roll No, and University PRN.</li>
+                    <li><strong>Interactive CSV Validation Grid</strong>: PapaParse streaming parser highlights exact row errors with 1-click import rollback.</li>
+                    <li><strong>Government Formatted TC Generator</strong>: Checks fee and library clearance; auto-prints security QR verified Transfer Certificate.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="feature-table-title">
+            <span>Student Admissions &amp; Lifecycle Feature Catalogue (Sample)</span>
+            <span style="font-size: 7pt; color: #64748b;">Module 5 Full Specifications</span>
+        </div>
+
+        <table class="feature-table">
+            <thead>
+                <tr>
+                    <th style="width: 8%;">ID</th>
+                    <th style="width: 25%;">Feature Name</th>
+                    <th style="width: 42%;">Technical Function &amp; Capability</th>
+                    <th style="width: 10%;">Priority</th>
+                    <th style="width: 15%;">Feature Flag Key</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="feat-id">F094</td>
+                    <td><strong>Unique Admission No Generator</strong></td>
+                    <td>Auto-generates customizable scholar numbers (e.g. <code>DPS/2026/0491</code>) with collision locks.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_admission_numbering</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F096</td>
+                    <td><strong>Indian PRN &amp; Enrollment Tracking</strong></td>
+                    <td>16-digit university Permanent Registration Number tracking for lifelong transcripts.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_prn_tracking</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F097</td>
+                    <td><strong>DigiLocker APAAR / ABC ID Field</strong></td>
+                    <td>Stores and validates the 12-digit National Automated Permanent Academic Account Registry ID.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_apaar_id</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F098</td>
+                    <td><strong>Face-Detection Photo Cropper</strong></td>
+                    <td>In-browser canvas tool auto-cropping student portraits to passport photo dimensions.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_photo_cropper</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F100</td>
+                    <td><strong>Sibling Linking Engine</strong></td>
+                    <td>Links brothers and sisters across classes to automatically trigger fee concession rules.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_sibling_linking</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F104</td>
+                    <td><strong>RTE 25% Statutory Quota Flag</strong></td>
+                    <td>Flags Right to Education students with automatic 100% tuition fee billing waivers.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_rte_quota</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F109</td>
+                    <td><strong>Transfer Certificate (TC) Generator</strong></td>
+                    <td>Automated official TC generation with school seal, conduct remarks, and security QR.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_tc_generator</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="page-footer-bar">
+        <div><strong>EduERP Master PRD</strong> &bull; Section: 04 Student Admissions &amp; Lifecycle</div>
+        <div>Page 4 of 10 &bull; Confidential &amp; Proprietary</div>
+    </div>
+</div>
+
+<!-- ==========================================
+     PAGE 5: INDIAN STATUTORY COMPLIANCE & LEGAL
+     ========================================== -->
+<div class="page">
+    <div>
+        <div class="page-header-bar">
+            <div class="doc-title-top">Next-Gen Education ERP SaaS &bull; Master PRD &amp; Feature Catalogue</div>
+            <div class="page-num-pill">PAGE 05 / 10</div>
+        </div>
+
+        <div class="page-banner">
+            <div class="page-banner-badge">Module 6 &bull; Regulatory Compliance &bull; Legal Immunity</div>
+            <h1 class="page-banner-title">Indian Statutory Compliance: RTE, UDISE+, MoE 2024 &amp; DPDPA</h1>
+            <p class="page-banner-desc">Built-in legal protection adhering strictly to the Digital Personal Data Protection Act 2023 and Ministry of Education coaching regulations.</p>
+        </div>
+
+        <div class="comparison-split">
+            <div class="box-generic">
+                <div class="box-generic-title">⚠ Legal Vulnerabilities in Generic ERPs</div>
+                <ul class="bullet-list">
+                    <li><strong>Violates DPDPA 2023</strong>: Embeds commercial third-party trackers (Google Ads, Facebook Pixels) tracking minor children's online behavior.</li>
+                    <li><strong>Coaching Centers at Legal Risk</strong>: Unaware of the 2024 MoE rules; allows enrolling students under 16 and lacks the mandatory pro-rata refund calculator.</li>
+                    <li><strong>No CERT-In Log Retention</strong>: Deletes web access logs after 7-30 days, violating the mandatory 180-day retention directive.</li>
+                    <li><strong>Manual UDISE+ &amp; AISHE</strong>: Clerks spend 3 weeks manually compiling government data spreadsheets, prone to reporting fines.</li>
+                </ul>
+            </div>
+
+            <div class="box-our">
+                <div class="box-our-title">✦ 100% Legal Immunity in Our Architecture</div>
+                <ul class="bullet-list">
+                    <li><strong>DPDPA Section 9 Minor Shield</strong>: Verifiable Parental Consent via OTP; zero commercial tracking; zero advertising directed at children.</li>
+                    <li><strong>MoE 2024 Coaching Legal Engine</strong>: Under-16 admission validation blocker + automated 10-day statutory pro-rata refund calculator.</li>
+                    <li><strong>180-Day Tamper-Proof Audit Logs</strong>: Immutable database logs retained in Indian cloud data centers complying with CERT-In directives.</li>
+                    <li><strong>1-Click Statutory Government Exports</strong>: Direct CSV export matching official SDMIS (UDISE+) and DCF-II (AISHE) specifications.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="feature-table-title">
+            <span>Indian Statutory Compliance Feature Catalogue (Sample)</span>
+            <span style="font-size: 7pt; color: #64748b;">Module 6 Full Specifications</span>
+        </div>
+
+        <table class="feature-table">
+            <thead>
+                <tr>
+                    <th style="width: 8%;">ID</th>
+                    <th style="width: 25%;">Feature Name</th>
+                    <th style="width: 42%;">Technical Function &amp; Capability</th>
+                    <th style="width: 10%;">Priority</th>
+                    <th style="width: 15%;">Feature Flag Key</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="feat-id">F126</td>
+                    <td><strong>UDISE+ School Profile Master</strong></td>
+                    <td>Maintains School UDISE Code, Latitude, Longitude, Rural/Urban and School Category tags.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_udise_master</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F127</td>
+                    <td><strong>UDISE+ SDMIS Export Engine</strong></td>
+                    <td>1-Click export of student records formatted exactly per Ministry SDMIS specifications.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_udise_sdmis_export</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F128</td>
+                    <td><strong>AISHE College DCF-II Export</strong></td>
+                    <td>Higher education institutional data compilation for Ministry of Education reporting.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_aishe_export</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F129</td>
+                    <td><strong>Statutory Social Category Roster</strong></td>
+                    <td>Real-time count of SC, ST, OBC (Creamy/Non-Creamy), EWS, and General quotas.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_statutory_rosters</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F134</td>
+                    <td><strong>CBSE LOC Registration Formatter</strong></td>
+                    <td>Generates Class 10/12 Board exam registration sheets matching CBSE standard LOC format.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_cbse_loc</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F549</td>
+                    <td><strong>DPDPA Minor Consent &amp; Erasure</strong></td>
+                    <td>Verifiable parental consent logging and statutory "Right to be Forgotten" erasure workflow.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_dpdpa_compliance</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F272</td>
+                    <td><strong>Statutory Coaching Refund Calculator</strong></td>
+                    <td>Enforces MoE 2024 mandatory 10-day pro-rata refund calculation for student course withdrawal.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_fee_refund</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="page-footer-bar">
+        <div><strong>EduERP Master PRD</strong> &bull; Section: 05 Indian Statutory Compliance</div>
+        <div>Page 5 of 10 &bull; Confidential &amp; Proprietary</div>
+    </div>
+</div>
+
+<!-- ==========================================
+     PAGE 6: OFFLINE-FIRST ATTENDANCE & ROLL CALL
+     ========================================== -->
+<div class="page">
+    <div>
+        <div class="page-header-bar">
+            <div class="doc-title-top">Next-Gen Education ERP SaaS &bull; Master PRD &amp; Feature Catalogue</div>
+            <div class="page-num-pill">PAGE 06 / 10</div>
+        </div>
+
+        <div class="page-banner">
+            <div class="page-banner-badge">Module 8 &bull; Classroom Operations &bull; Core Innovation</div>
+            <h1 class="page-banner-title">Classroom Roll Call: The True Offline-First Sync Engine</h1>
+            <p class="page-banner-desc">Empowering educators to complete roll call in under 30 seconds with 0ms UI latency, complete offline durability, and automatic background sync.</p>
+        </div>
+
+        <div class="comparison-split">
+            <div class="box-generic">
+                <div class="box-generic-title">⚠ The Internet Problem in Generic ERPs</div>
+                <ul class="bullet-list">
+                    <li><strong>Wi-Fi Dependent Failure</strong>: In Indian schools, classrooms in basements or rural areas have spotty connectivity. Cloud ERPs display loading spinners or connection timed out.</li>
+                    <li><strong>Wasted Teaching Time</strong>: Calling roll takes 15 minutes of lecture time due to slow network round-trips for every student attendance checkbox.</li>
+                    <li><strong>Data Loss on Submit</strong>: If network drops while clicking "Submit", the entire attendance sheet is wiped out, forcing teachers back to paper registers.</li>
+                    <li><strong>Delayed Parent Communication</strong>: Absence notices sent 6 hours late, defeating student safety purposes.</li>
+                </ul>
+            </div>
+
+            <div class="box-our">
+                <div class="box-our-title">✦ Our Dexie.js Offline Outbox Sync Engine</div>
+                <ul class="bullet-list">
+                    <li><strong>Zero-Latency Local Storage</strong>: Students render instantly from browser IndexedDB. "Mark All Present" &rarr; tap 2 absent students &rarr; done in 15 seconds.</li>
+                    <li><strong>Durable Outbox Queue</strong>: Offline records save locally with UUID idempotency keys; UI indicates: <em>"Saved locally (Offline - 1 pending sync)"</em>.</li>
+                    <li><strong>Seamless Auto-Sync</strong>: When device reconnects to Wi-Fi/4G, the background sync engine pushes queued mutations to <code>/api/sync/outbox</code> with 0 data loss.</li>
+                    <li><strong>Instant 15-Minute WhatsApp Alert</strong>: Server sync immediately enqueues automated WhatsApp/DLT SMS notifications to parents of absent students.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="feature-table-title">
+            <span>Attendance &amp; Roll Call Feature Catalogue (Sample)</span>
+            <span style="font-size: 7pt; color: #64748b;">Module 8 Full Specifications</span>
+        </div>
+
+        <table class="feature-table">
+            <thead>
+                <tr>
+                    <th style="width: 8%;">ID</th>
+                    <th style="width: 25%;">Feature Name</th>
+                    <th style="width: 42%;">Technical Function &amp; Capability</th>
+                    <th style="width: 10%;">Priority</th>
+                    <th style="width: 15%;">Feature Flag Key</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="feat-id">F181</td>
+                    <td><strong>Daily Classroom Roll Call</strong></td>
+                    <td>High-speed UI: 1-click "Mark All Present", tap to toggle Absent/Late with 0ms UI response.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_daily_attendance</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F182</td>
+                    <td><strong>True Offline Roll Call Sync</strong></td>
+                    <td>Marks roll call completely offline in IndexedDB; auto-syncs via durable Outbox queue.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_offline_rollcall</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F183</td>
+                    <td><strong>Period / Subject-Wise Attendance</strong></td>
+                    <td>Higher-ed period-by-period roll call for individual college lecture sessions.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_period_attendance</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F184</td>
+                    <td><strong>Real-Time Absent SMS to Parents</strong></td>
+                    <td>Auto-dispatches WhatsApp/SMS to guardian within 15 mins of roll call finalization.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_absent_parent_sms</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F187</td>
+                    <td><strong>75% Mandatory Attendance Rule</strong></td>
+                    <td>Visual warning badges for students falling below the statutory exam debarment line.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_attendance_threshold</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F188</td>
+                    <td><strong>Debarred Student Admit Card Lock</strong></td>
+                    <td>Automatically blocks examination hall ticket printing if attendance is below 75%.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_debarment_block</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F189</td>
+                    <td><strong>Monthly Attendance Muster Register</strong></td>
+                    <td>Classic Indian physical register view with P/A monthly grid and aggregate totals.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_monthly_register</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="page-footer-bar">
+        <div><strong>EduERP Master PRD</strong> &bull; Section: 06 Offline Attendance Engine</div>
+        <div>Page 6 of 10 &bull; Confidential &amp; Proprietary</div>
+    </div>
+</div>
+
+<!-- ==========================================
+     PAGE 7: TIMETABLES & 1-CLICK SUBSTITUTIONS
+     ========================================== -->
+<div class="page">
+    <div>
+        <div class="page-header-bar">
+            <div class="doc-title-top">Next-Gen Education ERP SaaS &bull; Master PRD &amp; Feature Catalogue</div>
+            <div class="page-num-pill">PAGE 07 / 10</div>
+        </div>
+
+        <div class="page-banner">
+            <div class="page-banner-badge">Module 9 &bull; Academic Scheduling &bull; Operations</div>
+            <h1 class="page-banner-title">Master Timetable, Scheduling Matrix &amp; Instant Substitutions</h1>
+            <p class="page-banner-desc">Clash-free weekly drag-and-drop classroom scheduling with room capacity enforcement and automated 1-click substitute teacher allocation.</p>
+        </div>
+
+        <div class="comparison-split">
+            <div class="box-generic">
+                <div class="box-generic-title">⚠ Scheduling Chaos in Generic ERPs</div>
+                <ul class="bullet-list">
+                    <li><strong>No Real-time Clash Detection</strong>: Allows scheduling the same physics teacher to two different classes in the same period without warning.</li>
+                    <li><strong>The "Morning Substitution" Nightmare</strong>: When 3 teachers call in sick at 7:30 AM, the Vice Principal spends 45 minutes manually scanning paper timetables to find proxies.</li>
+                    <li><strong>Lab Block Limitations</strong>: Cannot model continuous 2-hour or 3-hour practical science lab blocks across regular periods.</li>
+                    <li><strong>Unbalanced Workloads</strong>: Senior faculty assigned 32 periods a week while junior faculty have only 14, causing staff dissatisfaction.</li>
+                </ul>
+            </div>
+
+            <div class="box-our">
+                <div class="box-our-title">✦ Our Intelligent Scheduling &amp; Proxy Engine</div>
+                <ul class="bullet-list">
+                    <li><strong>Visual Drag-and-Drop Matrix</strong>: Instant clash detection: flags teacher or room collision before the slot is even saved.</li>
+                    <li><strong>1-Click Substitution Engine</strong>: When a teacher logs leave, system instantly scans schedules and suggests available faculty ranked by subject match.</li>
+                    <li><strong>Instant Proxy WhatsApp Alert</strong>: Assigned substitute receives an immediate notification: <em>"You have proxy duty for Class 10-A, Period 3 in Room 204"</em>.</li>
+                    <li><strong>Weekly Workload Balancer</strong>: Visual dashboard ensuring every full-time teacher has a balanced 24-28 periods per week per CBSE/UGC norms.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="feature-table-title">
+            <span>Timetable &amp; Substitution Feature Catalogue (Sample)</span>
+            <span style="font-size: 7pt; color: #64748b;">Module 9 Full Specifications</span>
+        </div>
+
+        <table class="feature-table">
+            <thead>
+                <tr>
+                    <th style="width: 8%;">ID</th>
+                    <th style="width: 25%;">Feature Name</th>
+                    <th style="width: 42%;">Technical Function &amp; Capability</th>
+                    <th style="width: 10%;">Priority</th>
+                    <th style="width: 15%;">Feature Flag Key</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="feat-id">F216</td>
+                    <td><strong>Master Class Timetable Grid</strong></td>
+                    <td>Weekly visual grid (Mon-Sat, Periods 1-8) with drag-and-drop slot allocation.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_timetable_grid</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F217</td>
+                    <td><strong>Teacher Individual Timetable View</strong></td>
+                    <td>Dedicated schedule view per faculty member showing free periods and duty halls.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_teacher_timetable</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F220</td>
+                    <td><strong>Real-Time Conflict Detection</strong></td>
+                    <td>Validation engine preventing double-booking of teacher, room, or lab equipment.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_timetable_conflict_check</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F221</td>
+                    <td><strong>1-Click Substitution Engine</strong></td>
+                    <td>Scans schedules and recommends free eligible subject teachers during colleague sick leave.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_substitution_engine</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F222</td>
+                    <td><strong>Instant Substitution WhatsApp Alert</strong></td>
+                    <td>Dispatches immediate mobile alert to substitute teacher with period and room details.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_proxy_alert</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F223</td>
+                    <td><strong>Printable Master Timetable PDF</strong></td>
+                    <td>High-resolution A3/A4 master schedule generator for the staffroom noticeboard.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_timetable_print</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F226</td>
+                    <td><strong>Weekly Faculty Workload Balancer</strong></td>
+                    <td>Bar chart ensuring teachers maintain balanced 24-28 periods/week per UGC/CBSE rules.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_workload_balance</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="page-footer-bar">
+        <div><strong>EduERP Master PRD</strong> &bull; Section: 07 Timetables &amp; Substitutions</div>
+        <div>Page 7 of 10 &bull; Confidential &amp; Proprietary</div>
+    </div>
+</div>
+
+<!-- ==========================================
+     PAGE 8: FEES, DYNAMIC UPI QR & INVOICING
+     ========================================== -->
+<div class="page">
+    <div>
+        <div class="page-header-bar">
+            <div class="doc-title-top">Next-Gen Education ERP SaaS &bull; Master PRD &amp; Feature Catalogue</div>
+            <div class="page-num-pill">PAGE 08 / 10</div>
+        </div>
+
+        <div class="page-banner">
+            <div class="page-banner-badge">Module 10 &amp; 11 &bull; Financial Ledger &bull; Invoicing</div>
+            <h1 class="page-banner-title">Fee Structures, Dynamic NPCI UPI QR &amp; POS Receipts</h1>
+            <p class="page-banner-desc">Double-entry student fee ledger, automated concession rules, dynamic 0% commission UPI QR invoices, and fast cashier counter POS printing.</p>
+        </div>
+
+        <div class="comparison-split">
+            <div class="box-generic">
+                <div class="box-generic-title">⚠ Financial Bottlenecks in Generic ERPs</div>
+                <ul class="bullet-list">
+                    <li><strong>High Gateway Commissions</strong>: Schools lose 1.5% to 2% on every fee transaction through standard gateway credit card / netbanking pipes.</li>
+                    <li><strong>Long Cashier Queues</strong>: Cashier takes 3 to 5 minutes per parent on busy fee submission days due to complex form loading.</li>
+                    <li><strong>Manual Concession Math</strong>: Clerks calculate sibling discounts and late fines manually on physical calculators, prone to human error.</li>
+                    <li><strong>Cheque Reconciliation Nightmare</strong>: Unclear tracking of deposited vs bounced cheques, causing ledger discrepancies.</li>
+                </ul>
+            </div>
+
+            <div class="box-our">
+                <div class="box-our-title">✦ Our Zero-Commission Financial Engine</div>
+                <ul class="bullet-list">
+                    <li><strong>Dynamic NPCI UPI QR Code</strong>: Every invoice renders a BharatPe/NPCI UPI QR. Parents scan via GPay/PhonePe; settles directly with <strong>0% MDR</strong>.</li>
+                    <li><strong>30-Second POS Cash Counter</strong>: Search student &rarr; select due terms &rarr; collect cash &rarr; 1-click print branded 80mm thermal receipt.</li>
+                    <li><strong>Automated Sibling &amp; Staff Concessions</strong>: Rules engine automatically applies 25% on 2nd child and 50% on 3rd child tuition fees.</li>
+                    <li><strong>GST Compliant Invoices (SAC 9992)</strong>: Automatic 0% GST exemption for schools vs 18% GST calculation for commercial coaching academies.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="feature-table-title">
+            <span>Fees, Invoicing &amp; Payment Feature Catalogue (Sample)</span>
+            <span style="font-size: 7pt; color: #64748b;">Module 10 &amp; 11 Full Specifications</span>
+        </div>
+
+        <table class="feature-table">
+            <thead>
+                <tr>
+                    <th style="width: 8%;">ID</th>
+                    <th style="width: 25%;">Feature Name</th>
+                    <th style="width: 42%;">Technical Function &amp; Capability</th>
+                    <th style="width: 10%;">Priority</th>
+                    <th style="width: 15%;">Feature Flag Key</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="feat-id">F246</td>
+                    <td><strong>Flexible Fee Head Master</strong></td>
+                    <td>Defines heads: Tuition, Admission, Term, Lab, Library, Transport, and Uniform.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_fee_heads</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F250</td>
+                    <td><strong>Daily / Fixed Late Fine Rules</strong></td>
+                    <td>Computes ₹50/day late fine or 5% flat charge automatically after grace period cutoff.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_late_fines</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F251</td>
+                    <td><strong>Sibling Concession Engine</strong></td>
+                    <td>Auto-applies 20% discount on 2nd sibling and 50% on 3rd sibling tuition fee.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_sibling_concession</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F267</td>
+                    <td><strong>1-Click WhatsApp Defaulter Broadcast</strong></td>
+                    <td>Batch dispatches personalized payment links to parents with unpaid balances over 30 days.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_whatsapp_fee_reminder</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F281</td>
+                    <td><strong>Fast POS Cash Counter Collection</strong></td>
+                    <td>Sub-30 second checkout: search student, select terms, collect, and print receipt.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_pos_fee_counter</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F282</td>
+                    <td><strong>Dynamic NPCI UPI QR on Invoices</strong></td>
+                    <td>Renders dynamic BharatPe/NPCI UPI QR code on student fee bill for zero-commission payment.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_dynamic_upi_qr</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F287</td>
+                    <td><strong>Branded 80mm Thermal Receipt Print</strong></td>
+                    <td>Standard 3-inch thermal printer output with school logo, receipt no, and verification QR.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_thermal_receipt_print</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="page-footer-bar">
+        <div><strong>EduERP Master PRD</strong> &bull; Section: 08 Fees &amp; Payments</div>
+        <div>Page 8 of 10 &bull; Confidential &amp; Proprietary</div>
+    </div>
+</div>
+
+<!-- ==========================================
+     PAGE 9: EXAMINATIONS, GRADING & REPORT CARDS
+     ========================================== -->
+<div class="page">
+    <div>
+        <div class="page-header-bar">
+            <div class="doc-title-top">Next-Gen Education ERP SaaS &bull; Master PRD &amp; Feature Catalogue</div>
+            <div class="page-num-pill">PAGE 09 / 10</div>
+        </div>
+
+        <div class="page-banner">
+            <div class="page-banner-badge">Module 12 &bull; Evaluation &bull; Academic Records</div>
+            <h1 class="page-banner-title">Examinations, CBSE Grading, Broadsheet &amp; Report Cards</h1>
+            <p class="page-banner-desc">Fast batch mark entry with keyboard navigation, CBSE 9-point &amp; UGC SGPA/CGPA engines, A3 tabulation broadsheets, and digital report cards.</p>
+        </div>
+
+        <div class="comparison-split">
+            <div class="box-generic">
+                <div class="box-generic-title">⚠ Grading Frustrations in Generic ERPs</div>
+                <ul class="bullet-list">
+                    <li><strong>Painful Slow Mark Entry</strong>: Teachers must click, type, and click save for every individual student; entering 60 students takes 45 minutes.</li>
+                    <li><strong>Incompatible Grading Rules</strong>: Cannot calculate the CBSE 9-point scale (A1 to E) or University SGPA/CGPA formulas correctly.</li>
+                    <li><strong>No Broadsheet Overview</strong>: School leaders cannot see an A3 master tabulation sheet showing all students, all subjects, totals, and ranks together.</li>
+                    <li><strong>Plain Unattractive Report Cards</strong>: Produces ugly black-and-white printouts without student photos, co-scholastic rubrics, or verification QR codes.</li>
+                </ul>
+            </div>
+
+            <div class="box-our">
+                <div class="box-our-title">✦ Our High-Speed Evaluation Platform</div>
+                <ul class="bullet-list">
+                    <li><strong>Excel-Like Keyboard Mark Entry</strong>: Enter scores using down-arrow or Enter key; auto-validates against max marks with 0ms calculation latency.</li>
+                    <li><strong>Native CBSE &amp; University Engines</strong>: Pre-built algorithms for CBSE 9-point percentiles and UGC 10-point semester credit SGPA/CGPA.</li>
+                    <li><strong>A3 Class Tabulation Broadsheet</strong>: Master overview of all students and subjects; exportable to Excel (.xlsx) for examination board records.</li>
+                    <li><strong>Stunning Digital Report Cards</strong>: Branded PDF generation with student photo, scholastic marks, co-scholastic grades, remarks, and QR code.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="feature-table-title">
+            <span>Examination &amp; Evaluation Feature Catalogue (Sample)</span>
+            <span style="font-size: 7pt; color: #64748b;">Module 12 Full Specifications</span>
+        </div>
+
+        <table class="feature-table">
+            <thead>
+                <tr>
+                    <th style="width: 8%;">ID</th>
+                    <th style="width: 25%;">Feature Name</th>
+                    <th style="width: 42%;">Technical Function &amp; Capability</th>
+                    <th style="width: 10%;">Priority</th>
+                    <th style="width: 15%;">Feature Flag Key</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="feat-id">F316</td>
+                    <td><strong>Exam Term &amp; Assessment Master</strong></td>
+                    <td>Defines Formative (FA), Summative (SA), Mid-Term, Pre-Board, and Final examination terms.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_exam_master</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F318</td>
+                    <td><strong>Fast Batch Mark Entry Table</strong></td>
+                    <td>Excel-like grid: Enter key advances down, auto-tabulating totals, percentages, and grades.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_batch_marks_entry</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F320</td>
+                    <td><strong>CBSE 9-Point Grading Scale (A1-E)</strong></td>
+                    <td>Automatic conversion of subject scores to official CBSE letter grades based on percentiles.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_cbse_grading</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F321</td>
+                    <td><strong>University SGPA &amp; CGPA Engine</strong></td>
+                    <td>Semester Grade Point Average and Cumulative GPA per official UGC 10-point credit scale.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_sgpa_cgpa_engine</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F323</td>
+                    <td><strong>Class Tabulation Sheet (Broadsheet)</strong></td>
+                    <td>Master A3 overview showing all students, all subjects, totals, ranks, and pass/fail status.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_tabulation_sheet</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F324</td>
+                    <td><strong>Branded Report Card PDF Generator</strong></td>
+                    <td>Official report card generator with school crest, student photo, attendance, and QR code.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_report_card_generator</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F329</td>
+                    <td><strong>Exam Hall Ticket / Admit Card Creator</strong></td>
+                    <td>Generates print-ready student admit cards with exam dates, room numbers, and photo barcode.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_hall_ticket_creator</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="page-footer-bar">
+        <div><strong>EduERP Master PRD</strong> &bull; Section: 09 Examinations &amp; Grading</div>
+        <div>Page 9 of 10 &bull; Confidential &amp; Proprietary</div>
+    </div>
+</div>
+
+<!-- ==========================================
+     PAGE 10: OMNICHANNEL, AUXILIARY & PORTALS
+     ========================================== -->
+<div class="page">
+    <div>
+        <div class="page-header-bar">
+            <div class="doc-title-top">Next-Gen Education ERP SaaS &bull; Master PRD &amp; Feature Catalogue</div>
+            <div class="page-num-pill">PAGE 10 / 10</div>
+        </div>
+
+        <div class="page-banner">
+            <div class="page-banner-badge">Modules 13–23 &bull; Operations &bull; Engagement &bull; Portals</div>
+            <h1 class="page-banner-title">Omnichannel Communication, Operations &amp; Portals</h1>
+            <p class="page-banner-desc">WhatsApp Business API broadcasts, Library barcode circulation, Transport fleet GPS, dedicated mobile portals, and Universal Command Palette.</p>
+        </div>
+
+        <div class="comparison-split">
+            <div class="box-generic">
+                <div class="box-generic-title">⚠ Operational Gaps in Generic ERPs</div>
+                <ul class="bullet-list">
+                    <li><strong>Disconnected Third-Party Add-Ons</strong>: School must buy separate software for library barcodes, bus GPS tracking, and WhatsApp messaging.</li>
+                    <li><strong>Teacher Privacy Violation</strong>: Teachers forced to share personal phone numbers on informal WhatsApp groups, receiving late-night calls.</li>
+                    <li><strong>Weak Parent Portal</strong>: Parents cannot easily switch between 2 children studying in different grades without logging out.</li>
+                    <li><strong>Zero Keyboard Acceleration</strong>: Staff waste hours clicking through complex submenus to find simple student records.</li>
+                </ul>
+            </div>
+
+            <div class="box-our">
+                <div class="box-our-title">✦ Our Integrated Operational Ecosystem</div>
+                <ul class="bullet-list">
+                    <li><strong>Unified Communications Hub</strong>: Official WhatsApp Business API + TRAI DLT SMS with pre-approved template verification.</li>
+                    <li><strong>Teacher Privacy Masking &amp; DND</strong>: Parents message teachers through the in-app portal; teacher personal mobile is 100% masked with 6 PM Quiet Hours.</li>
+                    <li><strong>Multi-Child Parent Portal</strong>: Switch between siblings across Class 10 and Class 6 in 1 tap with unified 1-tap fee payment.</li>
+                    <li><strong>Universal Command Palette (Ctrl + K)</strong>: Press <code>Ctrl + K</code> anywhere to jump to any student, invoice, or setting in 2 keystrokes.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="feature-table-title">
+            <span>Operations, Communication &amp; Portal Feature Catalogue (Sample)</span>
+            <span style="font-size: 7pt; color: #64748b;">Modules 13–23 Full Specifications</span>
+        </div>
+
+        <table class="feature-table">
+            <thead>
+                <tr>
+                    <th style="width: 8%;">ID</th>
+                    <th style="width: 25%;">Feature Name</th>
+                    <th style="width: 42%;">Technical Function &amp; Capability</th>
+                    <th style="width: 10%;">Priority</th>
+                    <th style="width: 15%;">Feature Flag Key</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="feat-id">F383</td>
+                    <td><strong>WhatsApp Business API Broadcast</strong></td>
+                    <td>Dispatches official verified template notifications for fee receipts and urgent notices.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_whatsapp_broadcast</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F388</td>
+                    <td><strong>Teacher Phone Privacy Protection</strong></td>
+                    <td>In-app parent-teacher messaging completely masks teacher personal mobile phone numbers.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_teacher_privacy</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F413</td>
+                    <td><strong>10-Second Library Barcode Checkout</strong></td>
+                    <td>Scan student ID barcode &rarr; scan book ISBN barcode &rarr; checkout completed in seconds.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_book_checkout</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F433</td>
+                    <td><strong>Student Bus Route Allocation</strong></td>
+                    <td>Maps student to specific bus stop and auto-calculates distance fee slabs in fee ledger.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_student_bus_allocation</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F452</td>
+                    <td><strong>Hostel Room &amp; Bed Allocation</strong></td>
+                    <td>Visual room/bed allocation matrix (Single, AC, Dormitory) with curfew roll call.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_hostel_room_allocation</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F492</td>
+                    <td><strong>Multi-Child Parent Switcher</strong></td>
+                    <td>Parents with multiple enrolled children switch between student profiles with a single tap.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_multichild_parent</td>
+                </tr>
+                <tr>
+                    <td class="feat-id">F566</td>
+                    <td><strong>Universal Command Palette (Ctrl + K)</strong></td>
+                    <td>Instant spotlight search to jump to any student, class, invoice, or setting in 2 keystrokes.</td>
+                    <td><span class="badge-p0">P0 Core</span></td>
+                    <td class="feat-key">feat_command_palette</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="page-footer-bar">
+        <div><strong>EduERP Master PRD</strong> &bull; Section: 10 Omnichannel &amp; Operations &bull; <strong>Total Features: 580 Features</strong></div>
+        <div>Page 10 of 10 &bull; Confidential &amp; Proprietary &bull; Complete Document</div>
+    </div>
+</div>
+
+</body>
+</html>
