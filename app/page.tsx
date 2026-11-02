@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import {
   School,
@@ -22,6 +22,10 @@ import {
   Sparkles,
   Clock,
   ShieldCheck,
+  Play,
+  Pause,
+  RotateCcw,
+  Lock,
 } from "lucide-react";
 
 export default function Home() {
@@ -57,6 +61,61 @@ export default function Home() {
   // 3D Comparison Big Switch: false = Traditional ERP (Legacy), true = OCCO Core (Modern)
   const [isModernMode, setIsModernMode] = useState<boolean>(true);
 
+  // ═════════════════════════════════════════════════════════════════════════════
+  // 6-SECOND CINEMATIC INTERACTIVE SAAS SHOWCASE TOUR STATE
+  // ═════════════════════════════════════════════════════════════════════════════
+  const [tourTime, setTourTime] = useState<number>(0); // 0 to 6000 ms
+  const [isTourPlaying, setIsTourPlaying] = useState<boolean>(true);
+
+  useEffect(() => {
+    if (!isTourPlaying) return;
+    const interval = setInterval(() => {
+      setTourTime((prev) => (prev + 50) % 6000);
+    }, 50);
+    return () => clearInterval(interval);
+  }, [isTourPlaying]);
+
+  // Derived Beat from tourTime:
+  // Beat 0: 0 - 1200ms -> Entrance & Overview (Camera Wide)
+  // Beat 1: 1200 - 2800ms -> Roll Call Zoom & Mark Attendance
+  // Beat 2: 2800 - 4400ms -> Pan to Automated Fee Ledger
+  // Beat 3: 4400 - 6000ms -> Central Command & Multi-Campus
+  const tourBeat = tourTime < 1200 ? 0 : tourTime < 2800 ? 1 : tourTime < 4400 ? 2 : 3;
+
+  // Dynamic Cursor Coordinates & Action Labels across the 6-second sequence
+  let tourCursorX = 85;
+  let tourCursorY = 85;
+  let tourCursorLabel = "";
+  let tourCursorClicking = false;
+
+  if (tourTime < 1200) {
+    // Phase 0: Gliding into the console from bottom-right towards central module
+    const progress = tourTime / 1200;
+    tourCursorX = 85 - progress * 55;
+    tourCursorY = 85 - progress * 55;
+    tourCursorLabel = "Auto-Focusing Console...";
+  } else if (tourTime < 2800) {
+    // Phase 1: Zoomed in to roll call; hovering sidebar then clicking student status
+    const progress = (tourTime - 1200) / 1600;
+    tourCursorX = 22 + Math.min(progress * 12, 10);
+    tourCursorY = 34 + Math.min(progress * 22, 18);
+    tourCursorClicking = progress > 0.35 && progress < 0.65;
+    tourCursorLabel = tourCursorClicking ? "Marking Present ✓" : "Offline Roll Call Terminal";
+  } else if (tourTime < 4400) {
+    // Phase 2: Panning to right; hovering over fee ledger and clicking lock receipt
+    const progress = (tourTime - 2800) / 1600;
+    tourCursorX = 64 + progress * 14;
+    tourCursorY = 40 + progress * 14;
+    tourCursorClicking = progress > 0.4 && progress < 0.7;
+    tourCursorLabel = tourCursorClicking ? "Receipt Locked & Signed ✓" : "Auto-Fee Ledger Settlement";
+  } else {
+    // Phase 3: Moving to campus dropdown header and overview
+    const progress = (tourTime - 4400) / 1600;
+    tourCursorX = 50 + Math.sin(progress * Math.PI) * 12;
+    tourCursorY = 16 + progress * 10;
+    tourCursorLabel = "Multi-Campus Telemetry Ping";
+  }
+
   // Form State
   const [instituteName, setInstituteName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
@@ -77,7 +136,7 @@ export default function Home() {
       themeColor: "from-blue-600 to-indigo-700",
       accentBg: "bg-blue-50 border-blue-200 text-blue-900",
       description: "Primary, Middle, and Senior Secondary schools with standard academic divisions, CBSE 9-point grading, and statutory RTE 25% quotas.",
-      sampleInstitute: "Delhi Public Global School, Vasant Kunj",
+      sampleInstitute: "Apex International Academy",
       cohortUnit: "Class & Section",
       exampleCohort: "Class 10-A (Room 204)",
       studentId: "Admission No / Roll No",
@@ -312,12 +371,16 @@ export default function Home() {
 
           {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center gap-6 text-xs font-semibold text-slate-600">
-            <a href="#comparison" className="hover:text-blue-700 transition-colors flex items-center gap-1 font-bold text-blue-800">
+            <a href="#comparison" className="hover:text-blue-700 transition-colors flex items-center gap-1 font-bold text-slate-700">
               <Sparkles className="w-3.5 h-3.5 text-blue-600" />
               <span>ERP Comparison</span>
             </a>
             <a href="#capabilities" className="hover:text-blue-700 transition-colors">
               Core Capabilities
+            </a>
+            <a href="#interactive-tour" className="hover:text-blue-700 transition-colors flex items-center gap-1 font-bold text-blue-700">
+              <Play className="w-3.5 h-3.5 text-blue-600 fill-blue-600" />
+              <span>Cinematic Tour</span>
             </a>
             <a href="#archetypes" className="hover:text-blue-700 transition-colors">
               Institutional Archetypes
@@ -353,7 +416,7 @@ export default function Home() {
             <a
               href="#comparison"
               onClick={() => setMobileMenuOpen(false)}
-              className="block py-1 hover:text-blue-700 font-bold text-blue-800"
+              className="block py-1 hover:text-blue-700 font-bold text-slate-700"
             >
               ERP Comparison
             </a>
@@ -363,6 +426,14 @@ export default function Home() {
               className="block py-1 hover:text-blue-700"
             >
               Core Capabilities
+            </a>
+            <a
+              href="#interactive-tour"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block py-1 hover:text-blue-700 font-bold text-blue-700 flex items-center gap-1.5"
+            >
+              <Play className="w-3 h-3 fill-blue-600" />
+              <span>Cinematic Tour</span>
             </a>
             <a
               href="#archetypes"
@@ -471,7 +542,7 @@ export default function Home() {
                     <Image src="/brand/occo-logo.jpg" alt="Logo" width={20} height={20} className="w-full h-full object-cover" />
                   </div>
                   <span className="ml-1 font-mono text-[10px] text-slate-500 font-bold truncate">
-                    portal.dpsdelhi.edu.in • Live Console
+                    portal.apexschool.edu • Live Console
                   </span>
                 </div>
                 <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
@@ -598,7 +669,7 @@ export default function Home() {
                     <div className="p-1.5 rounded bg-white border border-slate-200 flex items-center justify-between text-[11px]">
                       <div>
                         <span className="font-bold text-slate-900 block">Aarav Sharma (Class 10-A)</span>
-                        <span className="text-[9px] text-slate-500">Term 1 Tuition • Receipt #DPS-0491</span>
+                        <span className="text-[9px] text-slate-500">Term 1 Tuition • Receipt #REC-2026-0491</span>
                       </div>
                       <div className="text-right">
                         <span className="font-mono font-bold text-slate-900 block">₹14,500</span>
@@ -666,7 +737,7 @@ export default function Home() {
                 </div>
                 <div>
                   <span className="font-extrabold text-slate-900 text-[11px] block leading-none">Aarav Sharma</span>
-                  <span className="text-[9px] font-mono text-slate-500 block mt-0.5">PRN-2026-DPS-0491</span>
+                  <span className="text-[9px] font-mono text-slate-500 block mt-0.5">PRN-2026-APX-0491</span>
                 </div>
               </div>
             </div>
@@ -689,9 +760,9 @@ export default function Home() {
         </div>
       </section>
 
+
       {/* ═════════════════════════════════════════════════════════════════════════
-          SECTION 2: TRADITIONAL ERPS VS OURS WITH TRUE 3D PHYSICAL SWITCH
-          (Strict Screen-Fit on Desktop, True 3D Borders & Switch)
+          SECTION 2: THE DEFINITIVE CONTRAST & 3D HARDWARE TOGGLE SWITCH
       ═════════════════════════════════════════════════════════════════════════ */}
       <section
         id="comparison"
@@ -715,17 +786,17 @@ export default function Home() {
 
             {/* Right Half Middle (5 cols): TRUE 3D PHYSICAL TOGGLE SWITCH (With 3D Borders & Trench) */}
             <div className="md:col-span-5 flex items-center justify-center md:justify-end">
-              <div className="switch-3d-chassis">
+              <div className="switch-3d-chassis rounded-full">
                 <button
                   type="button"
                   onClick={() => setIsModernMode(!isModernMode)}
                   aria-label="Toggle Traditional Legacy ERP vs OCCO Core Modern Platform"
-                  className={`relative w-26 sm:w-28 h-12 sm:h-13 cursor-pointer focus:outline-none transition-all duration-300 p-1 flex items-center ${
-                    isModernMode ? "switch-3d-trench-active" : "switch-3d-trench"
+                  className={`relative w-28 sm:w-30 h-13 sm:h-14 rounded-full overflow-hidden cursor-pointer focus:outline-none transition-all duration-300 p-1 flex items-center switch-3d-trench ${
+                    isModernMode ? "switch-3d-trench-active" : "switch-3d-trench-inactive"
                   }`}
                 >
                   {/* Track Backlit Indicator Status */}
-                  <div className="absolute inset-0 flex items-center justify-between px-3.5 pointer-events-none select-none">
+                  <div className="absolute inset-0 flex items-center justify-between px-4 pointer-events-none select-none">
                     <span
                       className={`text-[9px] font-black tracking-widest transition-opacity duration-300 ${
                         !isModernMode ? "text-white opacity-100" : "text-slate-400/30 opacity-40"
@@ -744,16 +815,16 @@ export default function Home() {
 
                   {/* 3D Cylindrical Floating Puck (Physical Hardware Feel) */}
                   <div
-                    className={`w-9 sm:w-10 h-9 sm:h-10 switch-3d-puck transform flex items-center justify-center ${
-                      isModernMode ? "translate-x-13 sm:translate-x-15" : "translate-x-0"
+                    className={`w-11 sm:w-12 h-11 sm:h-12 rounded-full switch-3d-puck transform flex items-center justify-center shrink-0 ${
+                      isModernMode ? "translate-x-[60px] sm:translate-x-[64px]" : "translate-x-0"
                     }`}
                   >
                     {isModernMode ? (
-                      <div className="w-3.5 h-3.5 rounded-full bg-emerald-500 shadow-tactile-emerald flex items-center justify-center">
+                      <div className="w-4 h-4 rounded-full bg-emerald-500 shadow-tactile-emerald flex items-center justify-center">
                         <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
                       </div>
                     ) : (
-                      <div className="w-3.5 h-3.5 rounded-full bg-slate-400 shadow-inner flex items-center justify-center">
+                      <div className="w-4 h-4 rounded-full bg-slate-400 shadow-inner flex items-center justify-center">
                         <span className="w-1.5 h-1.5 rounded-full bg-slate-600" />
                       </div>
                     )}
@@ -912,44 +983,46 @@ export default function Home() {
       </section>
 
       {/* ═════════════════════════════════════════════════════════════════════════
-          SECTION 3: 6 CORE CAPABILITIES (Strict Screen-Fit on Desktop)
+          SECTION 3: 6 CORE CAPABILITIES (Zoomed-Out Proportional 3D Cards, Screen-Fitted)
       ═════════════════════════════════════════════════════════════════════════ */}
       <section
         id="capabilities"
-        className="lg:h-screen lg:max-h-screen lg:overflow-hidden flex flex-col justify-center py-6 lg:py-3 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80 bg-[#F8FAFC]"
+        className="min-h-screen lg:h-[calc(100vh-56px)] flex flex-col justify-center py-4 lg:py-2 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80 bg-[#F8FAFC] relative"
       >
-        <div className="max-w-7xl mx-auto w-full space-y-3 lg:space-y-4">
-          <div className="text-center max-w-2xl mx-auto space-y-1">
-            <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">
+        <div className="max-w-5xl mx-auto w-full space-y-3 lg:space-y-3.5">
+          <div className="text-center max-w-xl mx-auto space-y-1">
+            <span className="text-[10px] sm:text-xs font-bold text-blue-700 uppercase tracking-widest block">
               Operational Depth
             </span>
             <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight leading-snug">
               Engineered for Institutional Reality.
             </h2>
-            <p className="text-[11px] sm:text-xs text-slate-600">
+            <p className="text-[11px] sm:text-xs text-slate-600 max-w-lg mx-auto">
               Zero-downtime offline classrooms, automated fee ledgers, and national statutory compliance.
             </p>
           </div>
 
-          {/* 6 Compact Operational Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+          {/* 6 High-Craft 3D Cards with Proper Beveled Borders & Round Corners (Zoomed-out Proportional Compact Fit) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-3.5 lg:gap-4">
             {/* Pillar 1: Student Lifecycle */}
-            <div className="p-3 sm:p-3.5 rounded-xl border border-blue-100 bg-gradient-to-b from-white to-blue-50/30 hover:border-blue-300 hover:shadow-tactile-blue transition-all duration-300 space-y-1.5 group">
-              <div className="flex items-center justify-between">
-                <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold shadow-2xs">
-                  <Users className="w-4 h-4" />
+            <div className="p-3.5 sm:p-4 rounded-2xl border-2 border-b-4 border-blue-200/90 border-b-blue-500 bg-gradient-to-b from-white via-white to-blue-50/50 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group">
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold shadow-tactile-blue group-hover:scale-105 transition-transform">
+                    <Users className="w-4.5 h-4.5" />
+                  </div>
+                  <span className="text-[9px] font-bold text-blue-800 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full shadow-2xs">
+                    32 Modules
+                  </span>
                 </div>
-                <span className="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded-full">
-                  32 Modules
-                </span>
+                <h3 className="font-black text-slate-900 text-sm sm:text-[15px] tracking-tight mt-2.5 mb-1">
+                  Student Lifecycle & ID Registry
+                </h3>
+                <p className="text-[11px] sm:text-xs text-slate-600 leading-relaxed font-normal">
+                  Unique PRN auto-generation, 12-digit Indian national ID verification, digital document vault, and instant Transfer Certificate generator.
+                </p>
               </div>
-              <h3 className="font-extrabold text-slate-900 text-xs sm:text-sm">
-                Student Lifecycle & ID Registry
-              </h3>
-              <p className="text-[10px] sm:text-[11px] text-slate-600 leading-tight">
-                Unique PRN auto-generation, 12-digit Indian national ID verification, digital document vault, and Transfer Certificate generator.
-              </p>
-              <div className="p-1 rounded bg-white border border-slate-200 text-[9px] flex items-center justify-between text-slate-600 font-mono">
+              <div className="mt-2.5 p-1.5 sm:p-2 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs text-[9px] sm:text-[10px] flex items-center justify-between text-slate-700 font-mono font-semibold">
                 <span className="text-blue-700 font-bold">Enquiry</span>
                 <span>→</span>
                 <span className="text-indigo-700 font-bold">Document Vault</span>
@@ -959,22 +1032,24 @@ export default function Home() {
             </div>
 
             {/* Pillar 2: Automated Fee Billing */}
-            <div className="p-3 sm:p-3.5 rounded-xl border border-emerald-100 bg-gradient-to-b from-white to-emerald-50/30 hover:border-emerald-300 hover:shadow-tactile-emerald transition-all duration-300 space-y-1.5 group">
-              <div className="flex items-center justify-between">
-                <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold shadow-2xs">
-                  <CreditCard className="w-4 h-4" />
+            <div className="p-3.5 sm:p-4 rounded-2xl border-2 border-b-4 border-emerald-200/90 border-b-emerald-500 bg-gradient-to-b from-white via-white to-emerald-50/50 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group">
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold shadow-tactile-emerald group-hover:scale-105 transition-transform">
+                    <CreditCard className="w-4.5 h-4.5" />
+                  </div>
+                  <span className="text-[9px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full shadow-2xs">
+                    Automated Fees
+                  </span>
                 </div>
-                <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded-full">
-                  Automated Fees
-                </span>
+                <h3 className="font-black text-slate-900 text-sm sm:text-[15px] tracking-tight mt-2.5 mb-1">
+                  Automated Fee Invoicing & Ledgers
+                </h3>
+                <p className="text-[11px] sm:text-xs text-slate-600 leading-relaxed font-normal">
+                  Multi-installment scheduling, automated ledger generation, statutory RTE fee waivers, thermal receipts, and pro-rata refund calculations.
+                </p>
               </div>
-              <h3 className="font-extrabold text-slate-900 text-xs sm:text-sm">
-                Automated Fee Invoicing & Ledgers
-              </h3>
-              <p className="text-[10px] sm:text-[11px] text-slate-600 leading-tight">
-                Multi-installment scheduling, automated ledger generation, statutory RTE fee waivers, thermal receipts, and pro-rata refund calculations.
-              </p>
-              <div className="p-1 rounded bg-white border border-slate-200 text-[9px] flex items-center justify-between text-slate-600 font-mono">
+              <div className="mt-2.5 p-1.5 sm:p-2 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs text-[9px] sm:text-[10px] flex items-center justify-between text-slate-700 font-mono font-semibold">
                 <span>Tuition Fee</span>
                 <span className="text-amber-700 font-bold">-25% Waiver</span>
                 <span className="text-emerald-700 font-bold">= Receipt Locked ✓</span>
@@ -982,45 +1057,49 @@ export default function Home() {
             </div>
 
             {/* Pillar 3: Offline-First Attendance */}
-            <div className="p-3 sm:p-3.5 rounded-xl border border-indigo-100 bg-gradient-to-b from-white to-indigo-50/30 hover:border-indigo-300 hover:shadow-tactile-indigo transition-all duration-300 space-y-1.5 group">
-              <div className="flex items-center justify-between">
-                <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold shadow-2xs">
-                  <Wifi className="w-4 h-4" />
+            <div className="p-3.5 sm:p-4 rounded-2xl border-2 border-b-4 border-indigo-200/90 border-b-indigo-500 bg-gradient-to-b from-white via-white to-indigo-50/50 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group">
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold shadow-tactile-indigo group-hover:scale-105 transition-transform">
+                    <Wifi className="w-4.5 h-4.5" />
+                  </div>
+                  <span className="text-[9px] font-bold text-indigo-800 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full shadow-2xs">
+                    Zero Classroom Lag
+                  </span>
                 </div>
-                <span className="text-[9px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.2 rounded-full">
-                  Zero Classroom Lag
-                </span>
+                <h3 className="font-black text-slate-900 text-sm sm:text-[15px] tracking-tight mt-2.5 mb-1">
+                  Zero-Interruption Offline Roll Call
+                </h3>
+                <p className="text-[11px] sm:text-xs text-slate-600 leading-relaxed font-normal">
+                  Mark roll calls and exam scores on any device with zero internet. Mutations queue securely and sync the moment Wi-Fi reconnects.
+                </p>
               </div>
-              <h3 className="font-extrabold text-slate-900 text-xs sm:text-sm">
-                Zero-Interruption Offline Roll Call
-              </h3>
-              <p className="text-[10px] sm:text-[11px] text-slate-600 leading-tight">
-                Mark roll calls and exam scores on any device with zero internet. Mutations queue securely and sync the moment Wi-Fi reconnects.
-              </p>
-              <div className="p-1 rounded bg-white border border-slate-200 text-[9px] flex items-center justify-between text-slate-600 font-mono">
+              <div className="mt-2.5 p-1.5 sm:p-2 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs text-[9px] sm:text-[10px] flex items-center justify-between text-slate-700 font-mono font-semibold">
                 <span className="text-emerald-700 font-bold">● Offline Mode</span>
-                <span>42 Stored</span>
+                <span>42 Stored Locally</span>
                 <span className="text-blue-700 font-bold">Auto-Synced ✓</span>
               </div>
             </div>
 
             {/* Pillar 4: NEP 2020 Credit Engine */}
-            <div className="p-3 sm:p-3.5 rounded-xl border border-purple-100 bg-gradient-to-b from-white to-purple-50/30 hover:border-purple-300 hover:shadow-tactile-indigo transition-all duration-300 space-y-1.5 group">
-              <div className="flex items-center justify-between">
-                <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center font-bold shadow-2xs">
-                  <GraduationCap className="w-4 h-4" />
+            <div className="p-3.5 sm:p-4 rounded-2xl border-2 border-b-4 border-purple-200/90 border-b-purple-500 bg-gradient-to-b from-white via-white to-purple-50/50 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group">
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="w-9 h-9 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold shadow-tactile-indigo group-hover:scale-105 transition-transform">
+                    <GraduationCap className="w-4.5 h-4.5" />
+                  </div>
+                  <span className="text-[9px] font-bold text-purple-800 bg-purple-50 border border-purple-200 px-2.5 py-0.5 rounded-full shadow-2xs">
+                    NEP 2020 CBCS
+                  </span>
                 </div>
-                <span className="text-[9px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.2 rounded-full">
-                  NEP 2020 CBCS
-                </span>
+                <h3 className="font-black text-slate-900 text-sm sm:text-[15px] tracking-tight mt-2.5 mb-1">
+                  Outcome-Based Credit Banking
+                </h3>
+                <p className="text-[11px] sm:text-xs text-slate-600 leading-relaxed font-normal">
+                  Choice Based Credit System (CBCS), multi-disciplinary course allocation, automatic SGPA/CGPA calculations, and tamper-proof marksheet seals.
+                </p>
               </div>
-              <h3 className="font-extrabold text-slate-900 text-xs sm:text-sm">
-                Outcome-Based Credit Banking
-              </h3>
-              <p className="text-[10px] sm:text-[11px] text-slate-600 leading-tight">
-                Choice Based Credit System (CBCS), multi-disciplinary course allocation, automatic SGPA/CGPA calculations, and tamper-proof marksheet seals.
-              </p>
-              <div className="p-1 rounded bg-white border border-slate-200 text-[9px] flex items-center justify-between text-slate-600 font-mono">
+              <div className="mt-2.5 p-1.5 sm:p-2 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs text-[9px] sm:text-[10px] flex items-center justify-between text-slate-700 font-mono font-semibold">
                 <span>160 Credits</span>
                 <span className="text-purple-700 font-bold">SGPA 9.4</span>
                 <span className="text-emerald-700 font-bold">Digital Seal ✓</span>
@@ -1028,22 +1107,24 @@ export default function Home() {
             </div>
 
             {/* Pillar 5: Statutory Compliance Shield */}
-            <div className="p-3 sm:p-3.5 rounded-xl border border-amber-100 bg-gradient-to-b from-white to-amber-50/30 hover:border-amber-300 hover:shadow-tactile-amber transition-all duration-300 space-y-1.5 group">
-              <div className="flex items-center justify-between">
-                <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center font-bold shadow-2xs">
-                  <Scale className="w-4 h-4" />
+            <div className="p-3.5 sm:p-4 rounded-2xl border-2 border-b-4 border-amber-200/90 border-b-amber-500 bg-gradient-to-b from-white via-white to-amber-50/50 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group">
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold shadow-tactile-amber group-hover:scale-105 transition-transform">
+                    <Scale className="w-4.5 h-4.5" />
+                  </div>
+                  <span className="text-[9px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full shadow-2xs">
+                    100% Legal
+                  </span>
                 </div>
-                <span className="text-[9px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded-full">
-                  100% Legal
-                </span>
+                <h3 className="font-black text-slate-900 text-sm sm:text-[15px] tracking-tight mt-2.5 mb-1">
+                  Indian Statutory Compliance Shield
+                </h3>
+                <p className="text-[11px] sm:text-xs text-slate-600 leading-relaxed font-normal">
+                  Automated legal guards: DPDPA 2023 minor student privacy, RTE 25% fee waivers, Ministry Coaching under-16 age gates, and immutable logs.
+                </p>
               </div>
-              <h3 className="font-extrabold text-slate-900 text-xs sm:text-sm">
-                Indian Statutory Compliance Shield
-              </h3>
-              <p className="text-[10px] sm:text-[11px] text-slate-600 leading-tight">
-                Automated legal guards: DPDPA 2023 minor student privacy, RTE 25% fee waivers, Ministry Coaching under-16 age gates, and immutable logs.
-              </p>
-              <div className="p-1 rounded bg-white border border-slate-200 text-[9px] flex items-center justify-between text-slate-600 font-mono">
+              <div className="mt-2.5 p-1.5 sm:p-2 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs text-[9px] sm:text-[10px] flex items-center justify-between text-slate-700 font-mono font-semibold">
                 <span className="text-emerald-700 font-bold">DPDPA 2023</span>
                 <span className="text-blue-700 font-bold">RTE 25%</span>
                 <span className="text-amber-700 font-bold">MoE Verified ✓</span>
@@ -1051,23 +1132,25 @@ export default function Home() {
             </div>
 
             {/* Pillar 6: Multi-Campus Custom Domains */}
-            <div className="p-3 sm:p-3.5 rounded-xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 hover:border-slate-400 transition-all duration-300 space-y-1.5 group">
-              <div className="flex items-center justify-between">
-                <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center font-bold shadow-2xs">
-                  <Building className="w-4 h-4" />
+            <div className="p-3.5 sm:p-4 rounded-2xl border-2 border-b-4 border-slate-300/90 border-b-slate-600 bg-gradient-to-b from-white via-white to-slate-100/60 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group">
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-800 flex items-center justify-center font-bold shadow-2xs group-hover:scale-105 transition-transform">
+                    <Building className="w-4.5 h-4.5" />
+                  </div>
+                  <span className="text-[9px] font-bold text-slate-800 bg-slate-100 border border-slate-300 px-2.5 py-0.5 rounded-full shadow-2xs">
+                    White-Label
+                  </span>
                 </div>
-                <span className="text-[9px] font-bold text-slate-700 bg-slate-100 border border-slate-200 px-1.5 py-0.2 rounded-full">
-                  White-Label
-                </span>
+                <h3 className="font-black text-slate-900 text-sm sm:text-[15px] tracking-tight mt-2.5 mb-1">
+                  Enterprise Multi-Campus Portals
+                </h3>
+                <p className="text-[11px] sm:text-xs text-slate-600 leading-relaxed font-normal">
+                  Host each school, college, or regional campus on its own branded web domain (e.g., portal.school.edu) with strict data isolation.
+                </p>
               </div>
-              <h3 className="font-extrabold text-slate-900 text-xs sm:text-sm">
-                Enterprise Multi-Campus Portals
-              </h3>
-              <p className="text-[10px] sm:text-[11px] text-slate-600 leading-tight">
-                Host each school, college, or regional campus on its own branded web domain (e.g., portal.yourschool.edu) with strict data isolation.
-              </p>
-              <div className="p-1 rounded bg-white border border-slate-200 text-[9px] flex items-center justify-between text-slate-600 font-mono">
-                <span>portal.dps.edu</span>
+              <div className="mt-2.5 p-1.5 sm:p-2 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs text-[9px] sm:text-[10px] flex items-center justify-between text-slate-700 font-mono font-semibold">
+                <span>portal.school.edu</span>
                 <span>•</span>
                 <span>apexuniv.ac.in</span>
                 <span className="text-emerald-700 font-bold">SSL Active ✓</span>
@@ -1078,7 +1161,447 @@ export default function Home() {
       </section>
 
       {/* ═════════════════════════════════════════════════════════════════════════
-          SECTION 4: INSTITUTIONAL ARCHETYPES (Strict Screen-Fit on Desktop)
+          SECTION 4: 6-SECOND CINEMATIC INTERACTIVE SAAS PRODUCT SHOWCASE
+          Choreographed Camera Movements, Interactive Gliding Cursor & Zooming UI
+      ═════════════════════════════════════════════════════════════════════════ */}
+      <section
+        id="interactive-tour"
+        className="min-h-screen lg:h-[calc(100vh-56px)] flex flex-col justify-center py-4 lg:py-2 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80 bg-gradient-to-b from-white via-slate-50/60 to-white relative overflow-hidden"
+      >
+        <div className="max-w-6xl mx-auto w-full space-y-2.5 lg:space-y-3">
+          {/* Header & 6-Second Choreography Control Deck */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-slate-200/80">
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-blue-200 bg-blue-50/90 text-blue-800 text-[10px] font-extrabold uppercase tracking-wide">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping" />
+                6-Second Autonomous Product Experience
+              </div>
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight leading-snug mt-0.5">
+                The Living Platform in Motion.
+              </h2>
+              <p className="text-[11px] sm:text-xs text-slate-600">
+                Watch the cursor glide forward, smoothly camera-zoom into active operations, and cycle through offline roll call, automated ledgers, and multi-campus sync.
+              </p>
+            </div>
+
+            {/* Cinematic Scrubber & Stage Controls */}
+            <div className="flex items-center gap-2 shrink-0 bg-white p-1.5 rounded-xl border border-slate-200 shadow-2xs">
+              {/* Play / Pause Toggle */}
+              <button
+                type="button"
+                onClick={() => setIsTourPlaying(!isTourPlaying)}
+                aria-label={isTourPlaying ? "Pause Cinematic Tour" : "Play Cinematic Tour"}
+                className="p-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-all cursor-pointer"
+              >
+                {isTourPlaying ? (
+                  <Pause className="w-3.5 h-3.5 text-blue-600 fill-blue-600" />
+                ) : (
+                  <Play className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600" />
+                )}
+              </button>
+
+              {/* Replay Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setTourTime(0);
+                  setIsTourPlaying(true);
+                }}
+                aria-label="Replay Cinematic Tour from Start"
+                className="p-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-all cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-slate-600" />
+              </button>
+
+              {/* Live Seconds Counter */}
+              <div className="px-2 py-1 rounded-md bg-slate-100 font-mono text-[11px] font-bold text-slate-700">
+                {(tourTime / 1000).toFixed(1)}s / 6.0s
+              </div>
+            </div>
+          </div>
+
+          {/* Interactive Phase Ticks / Progress Line */}
+          <div className="space-y-1">
+            <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden relative">
+              <div
+                className="h-full bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-600 transition-all duration-75"
+                style={{ width: `${(tourTime / 6000) * 100}%` }}
+              />
+            </div>
+
+            {/* 4 Interactive Phase Scrubbers */}
+            <div className="grid grid-cols-4 gap-1 sm:gap-2 text-[10px]">
+              <button
+                type="button"
+                onClick={() => {
+                  setTourTime(100);
+                  setIsTourPlaying(true);
+                }}
+                className={`px-2 py-1 rounded-lg border text-left transition-all cursor-pointer ${
+                  tourBeat === 0
+                    ? "bg-blue-50 border-blue-300 text-blue-900 font-bold shadow-2xs"
+                    : "bg-white/80 border-slate-200 text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                <span className="block font-mono text-[9px] text-slate-400">0.0s - 1.2s</span>
+                <span className="truncate block font-extrabold">01. Overview</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setTourTime(1400);
+                  setIsTourPlaying(true);
+                }}
+                className={`px-2 py-1 rounded-lg border text-left transition-all cursor-pointer ${
+                  tourBeat === 1
+                    ? "bg-emerald-50 border-emerald-300 text-emerald-900 font-bold shadow-2xs"
+                    : "bg-white/80 border-slate-200 text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                <span className="block font-mono text-[9px] text-slate-400">1.2s - 2.8s</span>
+                <span className="truncate block font-extrabold">02. Roll Call Zoom</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setTourTime(3000);
+                  setIsTourPlaying(true);
+                }}
+                className={`px-2 py-1 rounded-lg border text-left transition-all cursor-pointer ${
+                  tourBeat === 2
+                    ? "bg-purple-50 border-purple-300 text-purple-900 font-bold shadow-2xs"
+                    : "bg-white/80 border-slate-200 text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                <span className="block font-mono text-[9px] text-slate-400">2.8s - 4.4s</span>
+                <span className="truncate block font-extrabold">03. Smart Ledgers</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setTourTime(4600);
+                  setIsTourPlaying(true);
+                }}
+                className={`px-2 py-1 rounded-lg border text-left transition-all cursor-pointer ${
+                  tourBeat === 3
+                    ? "bg-indigo-50 border-indigo-300 text-indigo-900 font-bold shadow-2xs"
+                    : "bg-white/80 border-slate-200 text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                <span className="block font-mono text-[9px] text-slate-400">4.4s - 6.0s</span>
+                <span className="truncate block font-extrabold">04. Multi-Campus</span>
+              </button>
+            </div>
+          </div>
+
+          {/* ═══════════════════════════════════════════════════════════════════
+              THE CINEMATIC 3D STAGE & CHOREOGRAPHED BROWSER CONSOLE
+          ═══════════════════════════════════════════════════════════════════ */}
+          <div className="relative rounded-2xl border-2 border-slate-200/90 bg-slate-900/5 shadow-2xl p-1.5 sm:p-2 overflow-hidden">
+            {/* Ambient Backlight Aura */}
+            <div
+              className={`absolute inset-0 rounded-2xl blur-3xl transition-all duration-700 -z-10 ${
+                tourBeat === 0
+                  ? "bg-blue-400/10"
+                  : tourBeat === 1
+                  ? "bg-emerald-500/15"
+                  : tourBeat === 2
+                  ? "bg-purple-500/15"
+                  : "bg-indigo-500/15"
+              }`}
+            />
+
+            {/* Dynamic Moving Arrow (SVG Pointer with Tactical Pulse) */}
+            <div
+              className="absolute z-50 pointer-events-none transition-all duration-100 ease-out flex items-center gap-1.5"
+              style={{
+                left: `${tourCursorX}%`,
+                top: `${tourCursorY}%`,
+                transform: `translate(-2px, -2px) scale(${tourCursorClicking ? 0.85 : 1})`,
+                transition: "left 75ms linear, top 75ms linear, transform 150ms ease",
+              }}
+            >
+              {/* Arrow SVG */}
+              <div className="relative">
+                <svg
+                  className="w-5 h-5 text-blue-700 filter drop-shadow-md"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  stroke="white"
+                  strokeWidth="1.5"
+                >
+                  <path d="M4 0l16 12.279-6.951 1.17 4.325 8.817-3.596 1.734-4.35-8.879-5.428 5.428z" />
+                </svg>
+                {tourCursorClicking && (
+                  <span className="absolute -inset-2 rounded-full border-2 border-emerald-500 animate-ping pointer-events-none" />
+                )}
+              </div>
+
+              {/* Cursor Context Badge */}
+              {tourCursorLabel && (
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-slate-900 text-white shadow-md border border-white/20 whitespace-nowrap animate-in fade-in duration-150">
+                  {tourCursorLabel}
+                </span>
+              )}
+            </div>
+
+            {/* Camera Viewport (Scales and Pans Dynamically via CSS Transforms) */}
+            <div
+              className="rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden transition-transform duration-700 ease-out"
+              style={{
+                transform:
+                  tourBeat === 0
+                    ? "scale(0.96) translate3d(0, 0, 0)"
+                    : tourBeat === 1
+                    ? "scale(1.15) translate3d(8%, -4%, 0)"
+                    : tourBeat === 2
+                    ? "scale(1.15) translate3d(-10%, -6%, 0)"
+                    : "scale(1.08) translate3d(0%, 5%, 0)",
+                transformOrigin:
+                  tourBeat === 0
+                    ? "center center"
+                    : tourBeat === 1
+                    ? "25% 40%"
+                    : tourBeat === 2
+                    ? "75% 45%"
+                    : "50% 20%",
+              }}
+            >
+              {/* Browser Chrome Header */}
+              <div className="px-3 py-1.5 border-b border-slate-200 bg-slate-50/90 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                  </div>
+                  <div className="w-4.5 h-4.5 rounded overflow-hidden bg-[#090D16] border border-slate-200 ml-1 shrink-0">
+                    <Image src="/brand/occo-logo.jpg" alt="Logo" width={18} height={18} className="w-full h-full object-cover" />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 py-0.5 px-3 rounded-md bg-white border border-slate-200 text-[10px] font-mono text-slate-600 shadow-2xs">
+                  <Lock className="w-3 h-3 text-emerald-600" />
+                  <span className="text-slate-400">https://</span>
+                  <span className="font-bold text-slate-800">portal.school.edu</span>
+                  <span className="text-blue-600 font-semibold">/live-console</span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Offline Sync Active
+                  </span>
+                </div>
+              </div>
+
+              {/* Master Dashboard Inside Viewport */}
+              <div className="p-3 sm:p-4 grid grid-cols-12 gap-3 text-xs bg-[#F8FAFC]">
+                {/* Left Mini Sidebar (Modules highlighted on Beat 1) */}
+                <div className="col-span-3 bg-white p-2.5 rounded-xl border border-slate-200/90 space-y-2 shadow-2xs">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">
+                    Modules
+                  </div>
+                  <div className="space-y-1">
+                    <div
+                      className={`p-1.5 rounded-lg flex items-center justify-between transition-all ${
+                        tourBeat === 1
+                          ? "bg-blue-50 border border-blue-200 text-blue-900 font-bold shadow-2xs ring-1 ring-blue-500"
+                          : "hover:bg-slate-50 text-slate-700"
+                      }`}
+                    >
+                      <span className="flex items-center gap-1.5 text-[11px]">
+                        <Users className="w-3.5 h-3.5 text-blue-600" />
+                        Roll Call
+                      </span>
+                      {tourBeat === 1 && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping" />
+                      )}
+                    </div>
+
+                    <div
+                      className={`p-1.5 rounded-lg flex items-center justify-between transition-all ${
+                        tourBeat === 2
+                          ? "bg-emerald-50 border border-emerald-200 text-emerald-900 font-bold shadow-2xs ring-1 ring-emerald-500"
+                          : "hover:bg-slate-50 text-slate-700"
+                      }`}
+                    >
+                      <span className="flex items-center gap-1.5 text-[11px]">
+                        <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
+                        Fee Ledgers
+                      </span>
+                      {tourBeat === 2 && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-ping" />
+                      )}
+                    </div>
+
+                    <div
+                      className={`p-1.5 rounded-lg flex items-center justify-between transition-all ${
+                        tourBeat === 3
+                          ? "bg-indigo-50 border border-indigo-200 text-indigo-900 font-bold shadow-2xs ring-1 ring-indigo-500"
+                          : "hover:bg-slate-50 text-slate-700"
+                      }`}
+                    >
+                      <span className="flex items-center gap-1.5 text-[11px]">
+                        <Building className="w-3.5 h-3.5 text-indigo-600" />
+                        Multi-Campus
+                      </span>
+                      {tourBeat === 3 && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-ping" />
+                      )}
+                    </div>
+
+                    <div className="p-1.5 rounded-lg flex items-center justify-between hover:bg-slate-50 text-slate-700">
+                      <span className="flex items-center gap-1.5 text-[11px]">
+                        <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
+                        DPDPA Shield
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Interactive Operational Deck (9 cols) */}
+                <div className="col-span-9 space-y-2.5">
+                  {/* Top Campus Selector Strip (Highlighted on Beat 3) */}
+                  <div
+                    className={`p-2 rounded-xl border bg-white flex items-center justify-between gap-2 transition-all duration-300 ${
+                      tourBeat === 3
+                        ? "border-indigo-400 shadow-md ring-2 ring-indigo-500/20"
+                        : "border-slate-200"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Active Campus:</span>
+                      <span className="font-extrabold text-slate-900 text-xs flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-md">
+                        <Building className="w-3 h-3 text-indigo-600" />
+                        Apex Main Campus
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-[10px] font-mono">
+                      <span className={`px-2 py-0.5 rounded transition-all ${tourBeat === 3 ? "bg-emerald-100 text-emerald-800 font-bold" : "text-slate-500"}`}>
+                        ● Xavier
+                      </span>
+                      <span className={`px-2 py-0.5 rounded transition-all ${tourBeat === 3 ? "bg-blue-100 text-blue-800 font-bold" : "text-slate-500"}`}>
+                        ● Imperial
+                      </span>
+                      <span className={`px-2 py-0.5 rounded transition-all ${tourBeat === 3 ? "bg-purple-100 text-purple-800 font-bold" : "text-slate-500"}`}>
+                        ● Pinnacle
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Operational Cards Grid (Roll Call vs Fee Ledger) */}
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {/* Module A: Live Attendance Deck (Pushes into focus on Beat 1) */}
+                    <div
+                      className={`p-3 rounded-xl border-2 transition-all duration-500 bg-white ${
+                        tourBeat === 1
+                          ? "border-emerald-400 shadow-lg ring-2 ring-emerald-500/20 scale-[1.02]"
+                          : "border-slate-200"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                        <div>
+                          <span className="font-black text-slate-900 text-xs block">
+                            Room 204 • Roll Call
+                          </span>
+                          <span className="text-[9px] text-slate-400 font-mono">
+                            Class 10-A • Offline Terminal
+                          </span>
+                        </div>
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800">
+                          {tourBeat >= 1 ? "43 / 43 Present" : "42 / 43 Present"}
+                        </span>
+                      </div>
+
+                      {/* Student Status List */}
+                      <div className="mt-2 space-y-1 text-[11px]">
+                        <div className="flex items-center justify-between p-1 rounded bg-slate-50 border border-slate-100">
+                          <span className="font-bold text-slate-900">Aarav Sharma</span>
+                          <span
+                            className={`px-1.5 py-0.2 rounded text-[9px] font-extrabold transition-all duration-300 ${
+                              tourBeat >= 1
+                                ? "bg-emerald-600 text-white shadow-2xs"
+                                : "bg-amber-100 text-amber-800"
+                            }`}
+                          >
+                            {tourBeat >= 1 ? "Present ✓" : "Pending..."}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between p-1 rounded bg-slate-50 border border-slate-100">
+                          <span className="font-bold text-slate-900">Diya Patel</span>
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800">
+                            Present ✓
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-2 pt-1 border-t border-slate-100 flex items-center justify-between text-[9px] font-mono text-slate-500">
+                        <span>Local Cache: Active</span>
+                        <span className="font-bold text-emerald-700">0ms Latency</span>
+                      </div>
+                    </div>
+
+                    {/* Module B: Automated Fee Ledger (Pushes into focus on Beat 2) */}
+                    <div
+                      className={`p-3 rounded-xl border-2 transition-all duration-500 bg-white ${
+                        tourBeat === 2
+                          ? "border-blue-400 shadow-lg ring-2 ring-blue-500/20 scale-[1.02]"
+                          : "border-slate-200"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                        <div>
+                          <span className="font-black text-slate-900 text-xs block">
+                            Term 1 Fee Invoicing
+                          </span>
+                          <span className="text-[9px] text-slate-400 font-mono">
+                            SAC 9992 Standard
+                          </span>
+                        </div>
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800">
+                          Auto-Calculated
+                        </span>
+                      </div>
+
+                      <div className="mt-2 space-y-1 text-[10px]">
+                        <div className="flex justify-between text-slate-600">
+                          <span>Tuition Fee:</span>
+                          <span className="font-mono font-bold text-slate-900">₹14,500</span>
+                        </div>
+
+                        <div className={`flex justify-between transition-all duration-300 p-0.5 rounded ${tourBeat >= 2 ? "bg-amber-50 text-amber-900 font-bold" : "text-slate-600"}`}>
+                          <span>RTE Act 25% Concession:</span>
+                          <span className="font-mono text-amber-700">-₹3,625</span>
+                        </div>
+
+                        <div className="flex justify-between border-t border-slate-100 pt-1 font-bold text-slate-900">
+                          <span>Net Settlement:</span>
+                          <span className="font-mono text-emerald-700">₹10,875</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-2 pt-1 border-t border-slate-100 flex items-center justify-between text-[9px]">
+                        <span className={`px-2 py-0.5 rounded font-extrabold transition-all duration-300 ${tourBeat >= 2 ? "bg-emerald-600 text-white shadow-2xs" : "bg-slate-100 text-slate-600"}`}>
+                          {tourBeat >= 2 ? "Receipt Locked & Thermal Dispatched ✓" : "Pending Sign"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═════════════════════════════════════════════════════════════════════════
+          SECTION 5: INSTITUTIONAL ARCHETYPES (Strict Screen-Fit on Desktop)
       ═════════════════════════════════════════════════════════════════════════ */}
       <section
         id="archetypes"
@@ -1408,7 +1931,6 @@ export default function Home() {
                       required
                       value={instituteName}
                       onChange={(e) => setInstituteName(e.target.value)}
-                      placeholder="e.g. Delhi Public School"
                       className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 bg-white text-xs"
                     />
                   </div>
@@ -1440,7 +1962,6 @@ export default function Home() {
                       required
                       value={contactEmail}
                       onChange={(e) => setContactEmail(e.target.value)}
-                      placeholder="principal@school.edu.in"
                       className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 bg-white text-xs"
                     />
                   </div>
@@ -1453,7 +1974,6 @@ export default function Home() {
                       type="tel"
                       value={contactPhone}
                       onChange={(e) => setContactPhone(e.target.value)}
-                      placeholder="+91 98765 43210"
                       className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 bg-white text-xs"
                     />
                   </div>
