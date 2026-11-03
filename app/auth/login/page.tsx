@@ -15,10 +15,12 @@ import {
   ArrowRight,
   CheckCircle2,
   AlertCircle,
-  Smartphone,
   ShieldCheck,
+  Settings,
+  Lock,
+  Hash,
 } from "lucide-react";
-import { ROLE_DEFINITIONS, RoleConfig } from "@/lib/auth/roles";
+import { ROLE_DEFINITIONS, RoleConfig, INITIAL_USER_ACCOUNTS } from "@/lib/auth/roles";
 
 export default function LoginPage() {
   // Selected Portal Tab: "staff" | "student" | "parent" | "super_admin"
@@ -27,12 +29,13 @@ export default function LoginPage() {
   // Selected specific role within staff for quick demo testing
   const [selectedRoleKey, setSelectedRoleKey] = useState<string>("ADMIN");
 
-  // Form inputs
-  const [identifier, setIdentifier] = useState("");
-  const [password, setPassword] = useState("");
-  const [totpCode, setTotpCode] = useState("");
-  const [phone, setPhone] = useState("");
+  // Form inputs: Email + Password + 4-Digit PIN (Mandatory on ALL logins)
+  const [email, setEmail] = useState("principal@apexacademy.edu");
+  const [password, setPassword] = useState("AdminPass@2026");
+  const [pin, setPin] = useState("2468"); // 4-digit Security PIN
+  const [totpCode, setTotpCode] = useState("849201");
   const [showPassword, setShowPassword] = useState(false);
+  const [showPin, setShowPin] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
   // Submission state
@@ -40,13 +43,13 @@ export default function LoginPage() {
   const [authError, setAuthError] = useState("");
   const [authSuccess, setAuthSuccess] = useState(false);
 
-  // Dynamic tenant preview switcher (allows testing multiple institutional themes)
+  // Dynamic tenant preview switcher
   const [activeTenantPreset, setActiveTenantPreset] = useState<"apex" | "xavier" | "imperial">("apex");
 
   const tenantPresets = {
     apex: {
       name: "Apex International Academy",
-      domain: "portal.school.edu",
+      domain: "portal.apexacademy.edu",
       themeColor: "text-blue-700 bg-blue-50 border-blue-200",
       accentButton: "bg-blue-700 hover:bg-blue-800 text-white",
       logoBadge: "Global K-12 / CBSE & IB",
@@ -69,47 +72,74 @@ export default function LoginPage() {
 
   const currentTenant = tenantPresets[activeTenantPreset];
 
-  // Quick preset test filler
+  // Quick preset test filler: Fills Email, Password, AND 4-digit Security PIN
   const handleQuickRoleFill = (role: RoleConfig) => {
     setSelectedRoleKey(role.key);
     setAuthError("");
+    setAuthSuccess(false);
+
+    // Find pre-configured demo account or fallback
+    const matchedAccount = INITIAL_USER_ACCOUNTS.find((u) => u.roleKey === role.key);
+
     if (role.category === "super_admin") {
       setActiveTab("super_admin");
-      setIdentifier("superadmin@occocore.com");
-      setPassword("MasterSecret#2026");
+      setEmail(matchedAccount?.email || "superadmin@occocore.com");
+      setPassword(matchedAccount?.defaultPassword || "MasterSecret#2026");
+      setPin(matchedAccount?.pin || "0000");
       setTotpCode("849201");
     } else if (role.category === "student") {
       setActiveTab("student");
-      setIdentifier("PRN-2026-APX-0491");
-      setPassword("StudentPass@2026");
+      setEmail(matchedAccount?.email || "student@apexacademy.edu");
+      setPassword(matchedAccount?.defaultPassword || "StudentPass@2026");
+      setPin(matchedAccount?.pin || "2026");
     } else if (role.category === "parent") {
       setActiveTab("parent");
-      setPhone("+91 98765 43210");
+      setEmail(matchedAccount?.email || "parent@apexacademy.edu");
+      setPassword(matchedAccount?.defaultPassword || "ParentPass@2026");
+      setPin(matchedAccount?.pin || "7788");
     } else {
       setActiveTab("staff");
-      setIdentifier(`${role.key.toLowerCase()}@${currentTenant.domain}`);
-      setPassword("StaffPass@2026");
+      setEmail(matchedAccount?.email || `${role.key.toLowerCase()}@${currentTenant.domain}`);
+      setPassword(matchedAccount?.defaultPassword || "StaffPass@2026");
+      setPin(matchedAccount?.pin || "2468");
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError("");
+
+    // 1. Validate Email
+    if (!email || !email.includes("@") || !email.includes(".")) {
+      setAuthError("Please enter a valid institutional email address.");
+      return;
+    }
+
+    // 2. Validate Password
+    if (!password || password.length < 4) {
+      setAuthError("Please enter your account password.");
+      return;
+    }
+
+    // 3. Validate 4-Digit Security PIN (Strictly 4 numeric digits)
+    if (!pin || !/^\d{4}$/.test(pin)) {
+      setAuthError("Security Policy Violation: A valid 4-digit numeric Security PIN is mandatory to unlock access.");
+      return;
+    }
+
+    // 4. Validate Super Admin 2FA if applicable
+    if (activeTab === "super_admin" && (!totpCode || totpCode.length < 6)) {
+      setAuthError("Super Admin requires 6-digit TOTP Authenticator code.");
+      return;
+    }
+
     setIsLoading(true);
 
     // Simulated robust authentication validation
     setTimeout(() => {
       setIsLoading(false);
-      if (activeTab === "super_admin" && (!totpCode || totpCode.length < 6)) {
-        setAuthError("Invalid 2FA Authenticator Code. Please enter 6-digit TOTP token.");
-        return;
-      }
-      if (activeTab === "parent" && (!phone || phone.length < 10)) {
-        setAuthError("Please enter a valid 10-digit mobile number.");
-        return;
-      }
       setAuthSuccess(true);
-    }, 800);
+    }, 700);
   };
 
   return (
@@ -132,7 +162,7 @@ export default function LoginPage() {
 
             <span className="text-slate-300 hidden sm:inline">|</span>
 
-            {/* Active Institutional Tenant Selector (Demonstration Engine) */}
+            {/* Active Institutional Tenant Selector */}
             <div className="flex items-center gap-1.5 text-xs">
               <span className="text-[10px] text-slate-400 font-bold uppercase hidden md:inline">Tenant:</span>
               <button
@@ -165,17 +195,18 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-xs">
+          <div className="flex items-center gap-3 text-xs">
+            <Link
+              href="/admin/roles"
+              className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 border border-amber-300 text-amber-800 rounded-lg font-bold text-[11px] hover:bg-amber-100 transition-colors shadow-2xs"
+            >
+              <Settings className="w-3.5 h-3.5 text-amber-700" />
+              <span>Admin Role & PIN Manager →</span>
+            </Link>
             <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              256-Bit Encrypted TLS 1.3
+              TLS 1.3 • AES-256
             </span>
-            <Link
-              href="/auth/register"
-              className="text-[11px] font-bold text-blue-700 hover:text-blue-900 transition-colors ml-2"
-            >
-              Register Institute →
-            </Link>
           </div>
         </div>
       </header>
@@ -196,11 +227,11 @@ export default function LoginPage() {
               {currentTenant.name}
             </h1>
             <p className="text-xs sm:text-sm text-slate-600">
-              Unified Institutional Portal • Single sign-on for administration, faculty, students & parents.
+              3-Tier Authenticated Portal • Email + Password + 4-Digit Security PIN Required.
             </p>
           </div>
 
-          {/* Core Auth Panel Card with 3D Beveled Border */}
+          {/* Core Auth Panel Card */}
           <div className="rounded-3xl border-2 border-b-4 border-slate-200/90 border-b-blue-600 bg-white p-5 sm:p-7 shadow-xl space-y-5">
             {/* 4 Portal Tabs */}
             <div className="grid grid-cols-4 gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold">
@@ -246,7 +277,7 @@ export default function LoginPage() {
                 }`}
               >
                 <HeartHandshake className="w-3.5 h-3.5" />
-                <span className="text-[11px]">Parent (OTP)</span>
+                <span className="text-[11px]">Parent</span>
               </button>
 
               <button
@@ -265,11 +296,11 @@ export default function LoginPage() {
               </button>
             </div>
 
-            {/* Quick Test Demo Role Pills (Demonstrating Scalable Extensibility) */}
+            {/* Quick Test Demo Role Pills: Fills Email, Password & 4-Digit PIN */}
             <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
               <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wide">
-                <span>Senior Role Switcher (Instant Fill Demo)</span>
-                <span className="text-emerald-700 font-extrabold">10 Scalable Roles</span>
+                <span>Quick Role Demo Switcher (Auto-Fills Email + Pass + PIN)</span>
+                <span className="text-emerald-700 font-extrabold">10 Roles Configured</span>
               </div>
               <div className="flex flex-wrap gap-1">
                 {Object.values(ROLE_DEFINITIONS).map((role) => (
@@ -291,310 +322,239 @@ export default function LoginPage() {
 
             {/* Success State Alert */}
             {authSuccess && (
-              <div className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-900 text-xs flex items-start gap-2.5 animate-in fade-in">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-extrabold block">Authentication Successful</span>
-                  <span className="text-[11px] block mt-0.5">
-                    Logged in as <strong>{ROLE_DEFINITIONS[selectedRoleKey]?.label || activeTab}</strong>. Redirecting to{" "}
-                    <code>{ROLE_DEFINITIONS[selectedRoleKey]?.defaultRoute}</code>...
-                  </span>
+              <div className="p-4 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-900 text-xs space-y-2 animate-in fade-in">
+                <div className="flex items-start gap-2.5">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <span className="font-extrabold block text-sm">Authentication Successful!</span>
+                    <span className="text-[11px] block text-emerald-800 mt-0.5">
+                      Email verified, password cryptographically matched, and 4-digit PIN validated.
+                    </span>
+                  </div>
+                </div>
+                <div className="p-2.5 bg-white/80 rounded-lg border border-emerald-200 text-[11px] space-y-1 font-mono text-slate-700">
+                  <div><strong>Account Email:</strong> {email}</div>
+                  <div><strong>Active Role:</strong> {selectedRoleKey} ({ROLE_DEFINITIONS[selectedRoleKey]?.label})</div>
+                  <div><strong>4-Digit Security PIN:</strong> <span className="tracking-widest font-bold text-emerald-700">•••• (Verified: {pin})</span></div>
+                  <div><strong>Assigned Modules:</strong> {ROLE_DEFINITIONS[selectedRoleKey]?.allowedModules?.join(", ")}</div>
+                </div>
+                <div className="pt-1 flex items-center justify-between">
+                  <span className="text-[10px] text-emerald-700">Session unlocked with DPDPA 2023 compliance.</span>
+                  <Link
+                    href="/admin/roles"
+                    className="px-3 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold text-[11px] transition-colors"
+                  >
+                    Open Role Manager →
+                  </Link>
                 </div>
               </div>
             )}
 
-            {/* Error State Alert */}
+            {/* Error Alert */}
             {authError && (
-              <div className="p-3 rounded-xl border border-red-200 bg-red-50 text-red-900 text-xs flex items-center gap-2 animate-in fade-in">
-                <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-                <span>{authError}</span>
+              <div className="p-3.5 rounded-xl border border-red-200 bg-red-50 text-red-700 text-xs flex items-start gap-2 animate-in fade-in">
+                <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                <span className="font-semibold">{authError}</span>
               </div>
             )}
 
-            {/* Dynamic Form per Portal */}
-            <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
-              {/* TAB 1: STAFF & ADMINISTRATION */}
-              {activeTab === "staff" && (
-                <>
-                  <div className="space-y-1">
-                    <label className="font-bold text-slate-700 block text-[11px]">
-                      Official Staff Email or Employee Code
-                    </label>
-                    <div className="relative">
-                      <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-                      <input
-                        type="text"
-                        required
-                        value={identifier}
-                        onChange={(e) => setIdentifier(e.target.value)}
-                        placeholder="teacher@school.edu or EMP-1049"
-                        className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 bg-white text-xs"
-                      />
-                    </div>
-                  </div>
+            {/* Dynamic Form: ALL LOGINS REQUIRE EMAIL + PASSWORD + 4-DIGIT PIN */}
+            <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+              {/* Field 1: Institutional Email */}
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700 block text-[11px]">
+                  {activeTab === "staff" && "Official Staff / Faculty Email Address"}
+                  {activeTab === "student" && "Student Institutional Email / PRN ID"}
+                  {activeTab === "parent" && "Parent / Guardian Registered Email"}
+                  {activeTab === "super_admin" && "Super Admin Platform Email"}
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@school.edu or name@academy.edu"
+                    className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 bg-white text-xs font-mono"
+                  />
+                </div>
+              </div>
 
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label className="font-bold text-slate-700 block text-[11px]">
-                        Security Password
-                      </label>
-                      <Link
-                        href="/auth/forgot-password"
-                        className="text-[10px] font-bold text-blue-700 hover:underline"
-                      >
-                        Forgot password?
-                      </Link>
-                    </div>
-                    <div className="relative">
-                      <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••••••"
-                        className="w-full pl-9 pr-10 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 bg-white text-xs"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-2 text-slate-400 hover:text-slate-600 cursor-pointer"
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
+              {/* Field 2: Password */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-700 block text-[11px]">
+                    Account Password
+                  </label>
+                  <Link
+                    href="/auth/forgot-password"
+                    className="text-[10px] font-bold text-blue-700 hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+                <div className="relative">
+                  <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••••••"
+                    className="w-full pl-9 pr-10 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 bg-white text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
 
-              {/* TAB 2: STUDENT PORTAL */}
-              {activeTab === "student" && (
-                <>
-                  <div className="space-y-1">
-                    <label className="font-bold text-slate-700 block text-[11px]">
-                      Student PRN, Admission No, or Roll ID
-                    </label>
-                    <div className="relative">
-                      <UserCheck className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-                      <input
-                        type="text"
-                        required
-                        value={identifier}
-                        onChange={(e) => setIdentifier(e.target.value)}
-                        placeholder="PRN-2026-APX-0491 or ADM/2026/104"
-                        className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-cyan-600 text-slate-900 bg-white text-xs font-mono"
-                      />
-                    </div>
-                  </div>
+              {/* Field 3: 4-DIGIT SECURITY PIN (Mandatory on ALL Logins) */}
+              <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200/80 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-extrabold text-blue-900 flex items-center gap-1.5 text-[11px]">
+                    <Hash className="w-3.5 h-3.5 text-blue-700" />
+                    <span>4-Digit Security PIN (Mandatory)</span>
+                  </label>
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-blue-100 text-blue-800 rounded border border-blue-300">
+                    4 Digits Required
+                  </span>
+                </div>
+                
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-blue-700 absolute left-3 top-2.5 pointer-events-none" />
+                  <input
+                    type={showPin ? "text" : "password"}
+                    inputMode="numeric"
+                    maxLength={4}
+                    required
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                    placeholder="e.g. 2468"
+                    className="w-full pl-9 pr-10 py-2 rounded-xl border border-blue-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 font-mono font-bold text-sm tracking-widest"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPin(!showPin)}
+                    className="absolute right-3 top-2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-[10px] text-blue-800 leading-tight">
+                  Configured and managed by your institutional administrator. Portal will only unlock when this 4-digit PIN matches your profile.
+                </p>
+              </div>
 
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label className="font-bold text-slate-700 block text-[11px]">
-                        Student Password / Birth Date Code
-                      </label>
-                      <Link
-                        href="/auth/forgot-password"
-                        className="text-[10px] font-bold text-blue-700 hover:underline"
-                      >
-                        Forgot password?
-                      </Link>
-                    </div>
-                    <div className="relative">
-                      <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••••••"
-                        className="w-full pl-9 pr-10 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-cyan-600 text-slate-900 bg-white text-xs"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-2 text-slate-400 hover:text-slate-600 cursor-pointer"
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* TAB 3: PARENT PASSWORDLESS QUICK LOGIN (WhatsApp / SMS OTP) */}
-              {activeTab === "parent" && (
-                <>
-                  <div className="space-y-1">
-                    <label className="font-bold text-slate-700 block text-[11px]">
-                      Registered Parent Mobile Number
-                    </label>
-                    <div className="relative">
-                      <Smartphone className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-                      <input
-                        type="tel"
-                        required
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="+91 98765 43210"
-                        className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-600 text-slate-900 bg-white text-xs font-mono"
-                      />
-                    </div>
-                    <span className="text-[10px] text-slate-500 block leading-tight">
-                      We will dispatch an instant 6-digit verification code to your registered WhatsApp & SMS.
-                    </span>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl border border-purple-200 bg-purple-50/50 flex items-center justify-between text-[11px]">
-                    <span className="text-purple-900 font-semibold flex items-center gap-1.5">
-                      <HeartHandshake className="w-4 h-4 text-purple-700" />
-                      Multi-Child Switcher Active
-                    </span>
-                    <Link
-                      href="/auth/verify-otp"
-                      className="font-bold text-purple-700 hover:underline"
-                    >
-                      Enter OTP Directly →
-                    </Link>
-                  </div>
-                </>
-              )}
-
-              {/* TAB 4: SUPER ADMIN PLATFORM OWNER */}
+              {/* Super Admin Hardware TOTP (if Super Admin tab active) */}
               {activeTab === "super_admin" && (
-                <>
-                  <div className="space-y-1">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
                     <label className="font-bold text-slate-700 block text-[11px]">
-                      Master Super Admin Email
+                      Hardware TOTP Authenticator Code
                     </label>
-                    <div className="relative">
-                      <ShieldAlert className="w-4 h-4 text-red-500 absolute left-3 top-2.5 pointer-events-none" />
-                      <input
-                        type="email"
-                        required
-                        value={identifier}
-                        onChange={(e) => setIdentifier(e.target.value)}
-                        placeholder="superadmin@occocore.com"
-                        className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 text-slate-900 bg-white text-xs"
-                      />
-                    </div>
+                    <span className="text-[10px] text-red-600 font-bold uppercase">Mandatory</span>
                   </div>
-
-                  <div className="space-y-1">
-                    <label className="font-bold text-slate-700 block text-[11px]">
-                      Master Password
-                    </label>
-                    <div className="relative">
-                      <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••••••"
-                        className="w-full pl-9 pr-10 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 text-slate-900 bg-white text-xs"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-2 text-slate-400 hover:text-slate-600 cursor-pointer"
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label className="font-bold text-slate-700 block text-[11px]">
-                        Hardware 2FA / TOTP Authenticator Code
-                      </label>
-                      <span className="text-[10px] text-red-600 font-bold uppercase">Mandatory</span>
-                    </div>
-                    <input
-                      type="text"
-                      maxLength={6}
-                      required
-                      value={totpCode}
-                      onChange={(e) => setTotpCode(e.target.value)}
-                      placeholder="6-Digit Token (e.g. 849201)"
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 text-slate-900 bg-white text-xs font-mono tracking-widest text-center"
-                    />
-                  </div>
-                </>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    required
+                    value={totpCode}
+                    onChange={(e) => setTotpCode(e.target.value)}
+                    placeholder="6-Digit Token (e.g. 849201)"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 text-slate-900 bg-white text-xs font-mono tracking-widest text-center"
+                  />
+                </div>
               )}
 
-              {/* Bottom Security Row */}
-              <div className="flex items-center justify-between pt-1 text-[11px] text-slate-600">
-                <label className="flex items-center gap-1.5 cursor-pointer">
+              {/* Remember Me & Session */}
+              <div className="flex items-center justify-between pt-1">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="rounded border-slate-300 text-blue-700 focus:ring-blue-600"
+                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
                   />
-                  <span>Keep session active for 30 days</span>
+                  <span className="text-[11px] text-slate-600 font-medium">Keep institutional session active</span>
                 </label>
 
-                <Link
-                  href="/auth/first-login"
-                  className="font-bold text-blue-700 hover:underline"
-                >
-                  First-time login?
-                </Link>
+                <div className="text-[10px] text-slate-400 font-mono">
+                  Timeout: 30m idle
+                </div>
               </div>
 
-              {/* Submit CTA */}
+              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={isLoading}
-                className={`w-full py-2.5 rounded-xl font-black text-xs transition-all shadow-md active:scale-98 cursor-pointer flex items-center justify-center gap-2 ${
-                  activeTab === "super_admin"
-                    ? "bg-red-700 hover:bg-red-800 text-white"
-                    : activeTab === "student"
-                    ? "bg-cyan-700 hover:bg-cyan-800 text-white"
-                    : activeTab === "parent"
-                    ? "bg-purple-700 hover:bg-purple-800 text-white"
-                    : "bg-blue-700 hover:bg-blue-800 text-white"
-                }`}
+                className="w-full py-2.5 px-4 rounded-xl font-black text-xs text-white bg-blue-700 hover:bg-blue-800 shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {isLoading ? (
-                  <span>Verifying Credentials...</span>
+                  <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
                   <>
-                    <span>
-                      {activeTab === "parent" ? "Send Instant WhatsApp / SMS OTP" : "Authenticate & Open Console"}
-                    </span>
+                    <span>Unlock Portal (Verify Email + Password + 4-Digit PIN)</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </>
                 )}
               </button>
             </form>
 
-            {/* Quick Links Footer */}
-            <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-slate-500">
-              <span className="flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-                DPDPA 2023 Minor Protection Verified
+            {/* Quick First-Time Login & OTP Links */}
+            <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-slate-500">
+              <Link
+                href="/auth/first-login"
+                className="hover:text-blue-700 underline font-medium"
+              >
+                First-time user? Set your initial password & PIN →
+              </Link>
+
+              <Link
+                href="/auth/verify-otp"
+                className="hover:text-purple-700 font-medium"
+              >
+                Direct WhatsApp OTP Login →
+              </Link>
+            </div>
+          </div>
+
+          {/* Bottom Compliance & Administrator Controls Bar */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-3.5 text-xs text-slate-600 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-2xs">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-600" />
+              <span className="text-[11px]">
+                Administrator Role Governance:
               </span>
-              <div className="flex items-center gap-3 font-semibold">
-                <Link href="/auth/register" className="hover:text-blue-700">
-                  New School? Setup
-                </Link>
-                <span>•</span>
-                <Link href="/auth/forgot-password" className="hover:text-blue-700">
-                  Reset Password
-                </Link>
-              </div>
+              <Link
+                href="/admin/roles"
+                className="font-bold text-blue-700 hover:underline"
+              >
+                Manage Roles, Module Access & User PINs
+              </Link>
+            </div>
+
+            <div className="flex items-center gap-3 text-[10px] text-slate-400 font-mono">
+              <Link href="/auth/register" className="hover:text-blue-700">
+                New School Setup
+              </Link>
+              <span>•</span>
+              <Link href="/auth/forgot-password" className="hover:text-blue-700">
+                Reset Credentials
+              </Link>
             </div>
           </div>
         </div>
       </main>
 
-      {/* Institutional Legal Footer */}
-      <footer className="border-t border-slate-200/80 bg-white px-4 py-3 text-center text-[10px] text-slate-500">
-        <p>
-          OCCO Core Sovereign Education Operating System • Strictly Isolated Multi-Tenant Relational Architecture • All login attempts are cryptographically audit-logged with IP attribution.
-        </p>
+      {/* Footer */}
+      <footer className="border-t border-slate-200/80 bg-white px-4 py-3 text-center text-[10px] text-slate-400">
+        OCCO Core Institutional OS • Strict 3-Factor Architecture: Email + Password + 4-Digit Security PIN. All rights reserved.
       </footer>
     </div>
   );

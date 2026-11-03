@@ -29,6 +29,61 @@ This document specifies the communication protocols, Next.js Server Action signa
 
 ## 2. Core Endpoint Specifications
 
+### 2.0 3-Tier Authentication & PIN Management
+- **`POST /api/auth/login`**
+  - *Payload*:
+    ```json
+    {
+      "email": "teacher@apexacademy.edu",
+      "password": "StaffPassword#2026",
+      "pin": "2468",
+      "totp_code": "849201"
+    }
+    ```
+  - *Validation*:
+    - `email`: Valid RFC 5322 institutional email address.
+    - `password`: Minimum 4 characters, verified against Argon2id hash.
+    - `pin`: Strictly 4 numeric digits (`/^\d{4}$/`). Must match active user PIN.
+    - `totp_code`: Required if role is `SUPER_ADMIN` (6 numeric digits).
+  - *Response*:
+    ```json
+    {
+      "success": true,
+      "data": {
+        "session_token": "jwt_token_string",
+        "user": {
+          "id": "usr-03",
+          "name": "Vikram Rathore",
+          "email": "teacher@apexacademy.edu",
+          "role": "TEACHER",
+          "allowed_modules": ["academics", "attendance", "exams", "communication"]
+        }
+      }
+    }
+    ```
+
+- **`POST /api/admin/roles/pin-management`**
+  - *Payload*:
+    ```json
+    {
+      "user_id": "usr-03",
+      "new_password": "NewStaffPass#2026",
+      "new_pin": "9876",
+      "status": "ACTIVE",
+      "must_change_pin_on_login": false
+    }
+    ```
+  - *Response*: `{ "success": true, "message": "User password and 4-digit PIN updated successfully." }`
+
+- **`PATCH /api/admin/roles/:roleKey/modules`**
+  - *Payload*:
+    ```json
+    {
+      "allowed_modules": ["academics", "timetable", "attendance", "exams", "communication"]
+    }
+    ```
+  - *Response*: `{ "success": true, "data": { "role": "TEACHER", "updated_modules": [...] } }`
+
 ### 2.1 Multi-Tenancy & Onboarding
 - **`POST /api/tenant/onboarding`**
   - *Payload*:

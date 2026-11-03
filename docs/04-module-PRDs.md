@@ -31,6 +31,22 @@ Enable school, college, university, and coaching academy owners to register, con
 - **SSL Propagation Delay**: Custom domain setup informs user: *"DNS changes may take up to 30 minutes. Your subdomain `xyz.edusaas.com` is active immediately."*
 - **Database Isolation**: All queries executed under `WHERE tenant_id = current_tenant_id` via Postgres RLS.
 
+### 1.5 Mandatory 3-Tier Authentication & PIN Governance Specification
+1. **Universal 3-Tier Login Pipeline**:
+   - Every portal login (Staff, Student, Parent, Super Admin) requires three validated factors:
+     1. **Email Identifier**: Institutional email address.
+     2. **Password**: Salted Argon2id credential.
+     3. **4-Digit Security PIN**: Mandatory numeric PIN.
+   - Access to any dashboard is strictly rejected unless all three credentials match.
+2. **Administrator Role, Module & PIN Management (`/admin/roles`)**:
+   - The Institute Admin possesses full authority to:
+     - View all configured and custom roles.
+     - Toggle authorization per module (Admissions, Academics, Timetable, Attendance, Fees, Exams, Transport, Hostel, Library, Communication, Reports).
+     - Register new dynamic custom roles at runtime.
+     - Reset any user's password and update their 4-digit Security PIN.
+     - Flag accounts with `mustChangePinOnLogin` to force first-time setup upon login.
+
+
 ---
 
 ## PRD 2: Academic Hierarchy & Terminology Transformer

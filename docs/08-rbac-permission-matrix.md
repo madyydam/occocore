@@ -120,9 +120,56 @@ registerCustomRole({
 
 | Screen | Route | Security Model & Features |
 | :--- | :--- | :--- |
-| **Unified Portal Login** | `/auth/login` | Multi-portal switcher (Staff, Student, Parent, Super Admin), dynamic tenant branding, 10-role demo pills, 2FA TOTP input for Super Admin. |
+| **Unified Portal Login** | `/auth/login` | 3-Tier Multi-Portal Login: Email + Password + 4-Digit PIN strictly enforced across Staff, Student, Parent & Super Admin. 10-role instant test filler. |
+| **Admin Role & PIN Manager** | `/admin/roles` | Admin controls: toggle module access per role, create custom roles, manage user passwords, set/reset 4-digit PINs, enforce force-reset flags. |
 | **Parent OTP Vault** | `/auth/verify-otp` | 6-box segmented auto-advance OTP, WhatsApp & SMS dual dispatch, 45s countdown timer, multi-ward student selector upon verification. |
 | **Self-Service Recovery** | `/auth/forgot-password` | Work email or mobile challenge, 15-min expiring token, live zxcvbn entropy meter, device session revocation. |
-| **First-Time Activation** | `/auth/first-login` | Forces change of temporary admin-issued password, mandatory DPDPA 2023 data processing & IT Honor Code consent vault. |
+| **First-Time Activation** | `/auth/first-login` | Mandatory change of temporary password + initial 4-digit PIN setup + DPDPA 2023 statutory data processing consent vault. |
 | **Institutional Onboarding** | `/auth/register` | 6-step self-service wizard: Identity -> Domain/CNAME -> Master Admin -> Modular Features -> Academic Year -> PostgreSQL Isolated Schema Provisioning. |
+
+---
+
+## 6. Mandatory 3-Tier Authentication & 4-Digit PIN Architecture
+
+To satisfy enterprise banking-grade security and prevent unauthorized classroom or kiosk access, the platform enforces a **3-Tier Verification Pipeline** across all roles:
+
+1. **Tier 1 (Identity)**: Verified Institutional Email (`user@school.edu` or PRN ID for students).
+2. **Tier 2 (Primary Secret)**: Enterprise-complexity Password (salted & hashed via Argon2id).
+3. **Tier 3 (Institutional Device PIN)**: Mandatory **4-Digit Security PIN** (configured by the Institute Admin or initialized during first login).
+   - *Strict Rule*: The portal session **will not open** unless all three credentials (Email + Password + 4-Digit PIN) match the active profile.
+   - *Brute-Force Protection*: 3 consecutive failed PIN attempts trigger automatic account lock (`status: "LOCKED"`), requiring Administrator PIN reset.
+
+```
+[ User Ingress ]
+       │
+       ▼
+ ┌──────────────────────────────────────────────┐
+ │  Email + Password + 4-Digit Security PIN     │
+ └──────────────────────┬───────────────────────┘
+                        │
+                        ▼
+ ┌──────────────────────────────────────────────┐
+ │       Next.js 16 Edge Auth Guard             │
+ ├──────────────────────────────────────────────┤
+ │ 1. Validate email format & tenant domain     │
+ │ 2. Verify Argon2id password hash             │
+ │ 3. Verify tenant HMAC-salted 4-digit PIN     │
+ └──────────────────────┬───────────────────────┘
+                        │
+       ┌────────────────┴────────────────┐
+       ▼                                 ▼
+ [ All 3 Valid ]                 [ Any Check Fails ]
+       │                                 │
+       ▼                                 ▼
+ JWT Session Issued &             Access Rejected
+ Portal Dashboard Opens           (Attempts Decremented)
+```
+
+## 7. Administrator Role, Module Access & PIN Governance Console
+
+The Administrator Console (`/admin/roles`) grants the Head of Institution complete governance over:
+- **Module Authorization Matrix**: Toggling active permissions for Admissions, Academics, Timetable, Attendance, Fees, Exams, Transport, Hostel, Library, Communication, and Reports.
+- **Dynamic Role Creation**: On-the-fly registration of custom roles without engineering support.
+- **User Credential Vault**: Directly resetting any user's password, updating their mandatory 4-digit PIN, and toggling `"mustChangePinOnLogin"`.
+
 

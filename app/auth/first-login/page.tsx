@@ -15,12 +15,17 @@ import {
   UserCheck,
   ArrowRight,
   ShieldCheck,
+  Hash,
 } from "lucide-react";
 
 export default function FirstLoginPage() {
   const [currentTempPassword, setCurrentTempPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  
+  // Mandatory 4-Digit Security PIN setup
+  const [newPin, setNewPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
 
   const [showTempPassword, setShowTempPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -51,18 +56,26 @@ export default function FirstLoginPage() {
   ].filter(Boolean).length;
 
   const passwordsMatch = newPassword.length > 0 && newPassword === confirmPassword;
+  const pinsMatch = newPin.length === 4 && /^\d{4}$/.test(newPin) && newPin === confirmPin;
   const allConsentsGiven = consentDpdpa && consentAup && consentBiometric;
+  
   const canSubmit =
     currentTempPassword.length >= 4 &&
     criteriaCount >= 4 &&
     passwordsMatch &&
+    pinsMatch &&
     allConsentsGiven;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!pinsMatch) {
+      setErrorMsg("Please configure a valid 4-digit numeric Security PIN and confirm it.");
+      return;
+    }
+
     if (!canSubmit) {
-      setErrorMsg("Please complete all password criteria and required statutory acknowledgments.");
+      setErrorMsg("Please complete all password criteria, 4-digit PIN setup, and required statutory acknowledgments.");
       return;
     }
 
@@ -72,7 +85,7 @@ export default function FirstLoginPage() {
     setTimeout(() => {
       setIsLoading(false);
       setIsSuccess(true);
-    }, 1100);
+    }, 1000);
   };
 
   return (
@@ -112,10 +125,10 @@ export default function FirstLoginPage() {
                   </div>
                   <div>
                     <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-                      Activate Your Institutional Profile
+                      Activate Profile & Setup 4-Digit Security PIN
                     </h1>
                     <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                      Your administrator provisioned your account with a temporary password. To access the portal, you must replace it with a secure personal password and consent to institutional data processing.
+                      Your administrator provisioned your account with a temporary password. Under institutional policy, you must set a permanent password, create your personal <strong>4-digit Security PIN</strong>, and acknowledge statutory compliance.
                     </p>
                   </div>
                 </div>
@@ -230,6 +243,60 @@ export default function FirstLoginPage() {
                     </div>
                   </div>
 
+                  {/* Step 3: MANDATORY 4-DIGIT SECURITY PIN SETUP */}
+                  <div className="p-4 bg-blue-50/70 rounded-xl border border-blue-200 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-blue-900 flex items-center space-x-1.5">
+                        <Hash className="w-4 h-4 text-blue-700" />
+                        <span>Configure Your Personal 4-Digit Security PIN</span>
+                      </label>
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-blue-100 text-blue-800 rounded">
+                        Strictly 4 Digits
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-blue-800 leading-snug">
+                      This 4-digit PIN is required alongside your email and password on every login. Memorize this securely.
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                          Choose 4-Digit PIN
+                        </label>
+                        <input
+                          type="password"
+                          inputMode="numeric"
+                          maxLength={4}
+                          value={newPin}
+                          onChange={(e) => setNewPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                          placeholder="••••"
+                          className="w-full px-3 py-2 text-center font-mono font-bold text-base bg-white border border-blue-300 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 tracking-widest"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                          Confirm 4-Digit PIN
+                        </label>
+                        <input
+                          type="password"
+                          inputMode="numeric"
+                          maxLength={4}
+                          value={confirmPin}
+                          onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                          placeholder="••••"
+                          className="w-full px-3 py-2 text-center font-mono font-bold text-base bg-white border border-blue-300 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 tracking-widest"
+                          required
+                        />
+                      </div>
+                    </div>
+                    {confirmPin && (
+                      <p className={`text-[11px] font-medium ${pinsMatch ? "text-emerald-700" : "text-red-600"}`}>
+                        {pinsMatch ? "✓ 4-digit PIN confirmed & matches" : "✗ PINs do not match or is not 4 digits"}
+                      </p>
+                    )}
+                  </div>
+
                   {/* Statutory Legal Consents (DPDPA 2023) */}
                   <div className="pt-2 border-t border-slate-100 space-y-3">
                     <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center space-x-2">
@@ -289,7 +356,7 @@ export default function FirstLoginPage() {
                       ) : (
                         <>
                           <UserCheck className="w-4 h-4" />
-                          <span>Activate Profile & Enter Portal</span>
+                          <span>Save Password & 4-Digit PIN → Unlock Account</span>
                         </>
                       )}
                     </button>
@@ -303,14 +370,15 @@ export default function FirstLoginPage() {
                   <CheckCircle2 className="w-9 h-9 text-emerald-600" />
                 </div>
                 <h2 className="text-2xl font-bold text-slate-900">
-                  Account Activated Successfully!
+                  Profile Activated & PIN Saved!
                 </h2>
                 <p className="text-sm text-slate-600 mt-2 leading-relaxed">
-                  Your credentials have been securely registered and your DPDPA compliance consent has been recorded in the institution&apos;s statutory compliance audit trail.
+                  Your credentials and 4-digit Security PIN have been securely encrypted and stored. You can now log into your portal using Email, Password, and your 4-digit PIN.
                 </p>
 
                 <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-200 text-left text-xs space-y-1.5 font-mono text-slate-600">
                   <div><strong>Account Status:</strong> ACTIVE (Verified)</div>
+                  <div><strong>4-Digit Security PIN:</strong> Configured (••••)</div>
                   <div><strong>DPDPA Timestamp:</strong> {new Date().toISOString()}</div>
                   <div><strong>Session Cryptography:</strong> TLS 1.3 / AES-256 GCM</div>
                 </div>
@@ -320,7 +388,7 @@ export default function FirstLoginPage() {
                     href="/auth/login"
                     className="w-full inline-flex items-center justify-center space-x-2 py-3.5 px-4 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl text-sm transition-all shadow-sm"
                   >
-                    <span>Proceed to Sign In</span>
+                    <span>Proceed to Sign In (Email + Password + PIN)</span>
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>

@@ -29,7 +29,7 @@ As an education platform handling minor children's personal data, the ERP implem
 | **A04: Insecure Design** | Strict rate-limiting on login/sync endpoints (Upstash Redis token bucket). Single active session option. |
 | **A05: Security Misconfiguration** | Strict Content Security Policy (CSP), HSTS, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`. |
 | **A06: Vulnerable Components** | Automated Dependabot audits; locked pnpm dependency trees; zero deprecated dependencies. |
-| **A07: Identification & Auth Failures** | Multi-Factor Authentication (TOTP) for Super Admin and Principals. Brute-force lockout after 5 attempts. |
+| **A07: Identification & Auth Failures** | Mandatory 3-Tier Authentication (Email + Password + 4-Digit PIN) on all logins. TOTP 2FA for Super Admin. Brute-force lockout after 3 PIN failures. |
 | **A08: Software & Data Integrity** | Cryptographic webhook signature verification (HMAC-SHA256). Idempotent outbox sync keys. |
 | **A09: Logging & Monitoring** | Tamper-proof audit logs recording User ID, Action, Entity, IP address, and before/after JSON diffs. |
 | **A10: Server-Side Request Forgery** | Restrict server-side fetch requests to verified payment and SMS gateway whitelist domains only. |
@@ -70,3 +70,23 @@ export async function recordAuditLog(params: {
   });
 }
 ```
+
+---
+
+## 4. Institutional 4-Digit Security PIN & Role Governance Specification
+
+### 4.1 Mandatory 3-Tier Login Policy
+To safeguard institutional PII and protect students under DPDPA 2023, every user (Staff, Student, Parent, Super Admin) must authenticate with:
+1. **Registered Institutional Email**
+2. **Account Password**
+3. **Mandatory 4-Digit Security PIN**
+
+The portal dashboard is strictly inaccessible without verifying the 4-digit numeric PIN.
+
+### 4.2 Administrator Credential Management Authority (`/admin/roles`)
+The Institute Administrator retains complete authority over the user access perimeter:
+- **Role Permissions & Module Access**: Grant or revoke access to any of the 11 system modules (Admissions, Academics, Timetable, Attendance, Fees, Exams, Transport, Hostel, Library, Communication, Reports) on a per-role basis.
+- **Dynamic Role Creation**: Register new custom roles (e.g. Lab Incharge, Dean of Research) that inherit modular permissions immediately.
+- **PIN & Password Administration**: Administrators can set or reset passwords and 4-digit PINs for any user in the directory, or enforce a mandatory reset on next login (`mustChangePinOnLogin`).
+- **Account Lockout Controls**: Automatic locking after 3 consecutive failed PIN attempts to eliminate brute-force attack vectors.
+
