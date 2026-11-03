@@ -20,7 +20,7 @@ Enable school, college, university, and coaching academy owners to register, con
    - If host is `{tenant}.edusaas.com` or custom domain `portal.stmarys.edu.in` -> resolves `tenant_id` from Redis cache/Postgres, injects headers `x-tenant-id`, `x-tenant-slug`, and rewrites to tenant app routes.
 2. **Onboarding Wizard Steps (6 Steps)**:
    - *Step 1: Institute Identity*: Name, Affiliation Code, Institute Archetype (School / College / University / Academy), Logo upload, Primary brand color picker.
-   - *Step 2: Domain Setup*: Subdomain reservation (`dpsdelhi.edusaas.com`) + optional custom domain CNAME setup instructions with instant DNS `check-cname` button.
+   - *Step 2: Domain Setup*: Subdomain reservation (`apexacademy.edusaas.com`) + optional custom domain CNAME setup instructions with instant DNS `check-cname` button.
    - *Step 3: User Types & Roles*: Admin toggles checkboxes: "Enable Student Portal", "Enable Parent Portal", "Enable Accountant Role".
    - *Step 4: Module Selection*: Admin toggles active modules: Transport, Hostel, Library, LMS, Examinations.
    - *Step 5: Academic Year & Structure*: Start month (e.g. April for Indian schools, August for colleges), Grade/Degree levels, Section division presets.

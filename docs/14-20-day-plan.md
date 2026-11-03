@@ -45,7 +45,7 @@ This document defines the day-by-day production engineering roadmap. Each day is
 - **Files Touched**: `middleware.ts`, `lib/auth.ts`, `app/api/auth/[...nextauth]/route.ts`, `app/(auth)/login/page.tsx`.
 - **Tests Required**: Host parsing unit tests, credential login unit tests, cross-tenant login rejection test.
 - **Definition of Done**: Accessing `school1.localhost:3000/login` loads School 1 branding; credentials log in user into correct tenant context.
-- **Demo Steps**: Visit `dps.localhost:3000/login` -> click "Super Admin" pill -> verify successful redirection to dashboard with active session.
+- **Demo Steps**: Visit `apex.localhost:3000/login` -> click "Super Admin" pill -> verify successful redirection to dashboard with active session.
 
 ---
 
@@ -75,7 +75,7 @@ This document defines the day-by-day production engineering roadmap. Each day is
 - **Files Touched**: `app/(super-admin)/*`, `components/super-admin/*`, `lib/impersonation.ts`.
 - **Tests Required**: Impersonation security token test, tenant suspension test, feature flag toggle test.
 - **Definition of Done**: Super Admin can provision new institutes, toggle feature flags, and impersonate tenant admins.
-- **Demo Steps**: Open `localhost:3000/super-admin` -> find "Delhi Public School" -> click "Impersonate" -> verify seamless login into DPS portal with banner "Impersonating DPS".
+- **Demo Steps**: Open `localhost:3000/super-admin` -> find "Apex International Academy" -> click "Impersonate" -> verify seamless login into Apex portal with banner "Impersonating Apex".
 
 ---
 

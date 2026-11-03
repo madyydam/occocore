@@ -92,3 +92,37 @@ export async function requirePermission(permission: string) {
   return session.user;
 }
 ```
+
+---
+
+## 4. Scalable Dynamic Role Registry & Custom Role Engine (`lib/auth/roles.ts`)
+
+To ensure long-term architectural scalability without hardcoding roles in UI forms, all roles are centralized in `lib/auth/roles.ts`. Any new custom role (e.g. *Hostel Warden*, *Admission Counselor*, *Trustee Auditor*) can be plugged in dynamically:
+
+```typescript
+import { ROLE_DEFINITIONS, registerCustomRole } from '@/lib/auth/roles';
+
+// Example: Dynamically registering a new custom role at runtime
+registerCustomRole({
+  key: "ADMISSION_COUNSELOR",
+  label: "Admissions Counselor",
+  category: "staff",
+  description: "Handles prospect leads, campus tours, inquiry conversion and application review.",
+  authStrategy: "password",
+  badgeColor: "bg-teal-50 text-teal-700 border-teal-200",
+  defaultRoute: "/staff/admissions",
+  iconName: "UserCheck",
+  permissions: ["admissions:view", "admissions:create", "admissions:edit"],
+});
+```
+
+### 5. Implemented Enterprise Authentication Screens
+
+| Screen | Route | Security Model & Features |
+| :--- | :--- | :--- |
+| **Unified Portal Login** | `/auth/login` | Multi-portal switcher (Staff, Student, Parent, Super Admin), dynamic tenant branding, 10-role demo pills, 2FA TOTP input for Super Admin. |
+| **Parent OTP Vault** | `/auth/verify-otp` | 6-box segmented auto-advance OTP, WhatsApp & SMS dual dispatch, 45s countdown timer, multi-ward student selector upon verification. |
+| **Self-Service Recovery** | `/auth/forgot-password` | Work email or mobile challenge, 15-min expiring token, live zxcvbn entropy meter, device session revocation. |
+| **First-Time Activation** | `/auth/first-login` | Forces change of temporary admin-issued password, mandatory DPDPA 2023 data processing & IT Honor Code consent vault. |
+| **Institutional Onboarding** | `/auth/register` | 6-step self-service wizard: Identity -> Domain/CNAME -> Master Admin -> Modular Features -> Academic Year -> PostgreSQL Isolated Schema Provisioning. |
+

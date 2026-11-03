@@ -76,7 +76,7 @@ To be the world’s most intuitive, comprehensive, and resilient Education Opera
 - **Role**: Father / Mother / Legal Guardian.
 - **Goals**: Peace of mind regarding child's safety, academic progress, and easy online fee payments.
 - **Key Workflows**:
-  - Receiving real-time WhatsApp alert at 9:15 AM: *"Your ward Aarav Sharma is marked Present today at DPS."*
+  - Receiving real-time WhatsApp alert at 9:15 AM: *"Your ward Aarav Sharma is marked Present today at Apex Academy."*
   - Instant 1-Click UPI fee payment directly from the WhatsApp reminder link or portal without remembering complex logins.
   - Direct messaging or meeting booking with class teacher.
 

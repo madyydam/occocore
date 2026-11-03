@@ -100,10 +100,10 @@ export async function POST(req: NextRequest) {
 - **Receipt Template**:
   ```text
   ================================================
-              DELHI PUBLIC SCHOOL
+              APEX INTERNATIONAL ACADEMY
          Affiliation No: CBSE/AFF/2026/01
   ================================================
-  Receipt No: DPS/RCP/2026/0491    Date: 27-Oct-2026
+  Receipt No: AIA/RCP/2026/0491    Date: 27-Oct-2026
   Student:    Aarav Sharma         Adm No: 10491
   Class:      Class 10-A           Roll No: 14
   ------------------------------------------------

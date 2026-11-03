@@ -34,8 +34,8 @@ This document specifies the communication protocols, Next.js Server Action signa
   - *Payload*:
     ```json
     {
-      "name": "Delhi Public School",
-      "slug": "dpsdelhi",
+      "name": "Apex International Academy",
+      "slug": "apexacademy",
       "type": "K12_SCHOOL",
       "primary_color": "#1E3A8A",
       "font_family": "Plus Jakarta Sans",
@@ -44,10 +44,10 @@ This document specifies the communication protocols, Next.js Server Action signa
       "academic_year": { "title": "2026-2027", "start_month": 4 }
     }
     ```
-  - *Response*: `{ "success": true, "data": { "tenant_id": "uuid", "portal_url": "https://dpsdelhi.edusaas.com" } }`
+  - *Response*: `{ "success": true, "data": { "tenant_id": "uuid", "portal_url": "https://apexacademy.edusaas.com" } }`
 
 - **`POST /api/tenant/domain/verify`**
-  - *Payload*: `{ "domain": "portal.dpsdelhi.in" }`
+  - *Payload*: `{ "domain": "portal.apexacademy.edu" }`
   - *Response*: `{ "success": true, "data": { "is_verified": true, "ssl_status": "ACTIVE" } }`
 
 ---
@@ -105,8 +105,8 @@ This document specifies the communication protocols, Next.js Server Action signa
     {
       "success": true,
       "data": {
-        "receipt_no": "DPS/RCP/2026/0491",
-        "receipt_pdf_url": "https://s3.edusaas.com/dps/rcp_0491.pdf",
+        "receipt_no": "AIA/RCP/2026/0491",
+        "receipt_pdf_url": "https://s3.edusaas.com/apex/rcp_0491.pdf",
         "balance_remaining": 0.00
       }
     }

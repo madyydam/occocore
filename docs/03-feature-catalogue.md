@@ -134,7 +134,7 @@ Tagging Legend:
 | F091 | Online Admission Inquiry Form | Embeddable public lead capture form on school website. | P0 | Public, Admin | `feat_online_inquiry` |
 | F092 | Lead Conversion & Follow-up CRM | Track prospective applicant status (Inquiry, Campus Visit, Admitted). | P1 | Admin, Staff | `feat_admission_crm` |
 | F093 | Comprehensive Student Profile | 60+ fields: Personal, Demographic, Emergency, Medical, Previous School. | P0 | Admin, Staff | `feat_student_profile` |
-| F094 | Unique Admission / Scholar Number | Customizable auto-increment format (e.g. `DPS/2026/0014`). | P0 | Admin | `feat_admission_numbering` |
+| F094 | Unique Admission / Scholar Number | Customizable auto-increment format (e.g. `AIA/2026/0014`). | P0 | Admin | `feat_admission_numbering` |
 | F095 | Student Permanent Roll Number | Section-specific roll numbering (alphabetical or admission-order). | P0 | Admin, Faculty | `feat_roll_numbering` |
 | F096 | Indian PRN & University Enrollment | Permanent Registration Number issued for lifelong higher-ed tracking. | P0 | Admin | `feat_prn_tracking` |
 | F097 | DigiLocker ABC / APAAR ID Field | 12-digit national student identity registry storage. | P0 | Admin, Student | `feat_apaar_id` |
@@ -372,7 +372,7 @@ Tagging Legend:
 | F287 | Branded Thermal POS Receipt Print | 3-inch (80mm) thermal printer format with school logo and receipt no. | P0 | Accounts | `feat_thermal_receipt_print` |
 | F288 | Standard A4 / A5 PDF Receipt | Elegant formal receipt with student details, fee breakdown, and signature. | P0 | All | `feat_pdf_receipt` |
 | F289 | QR Code Verification on Receipts | Scan QR code on physical receipt to verify authenticity on portal. | P0 | Public, All | `feat_receipt_qr_verification` |
-| F290 | Sequential Auto-Receipt Numbering | Unique tenant fiscal numbering (e.g. `DPS/RCP/2026/0491`). | P0 | Accounts | `feat_receipt_numbering` |
+| F290 | Sequential Auto-Receipt Numbering | Unique tenant fiscal numbering (e.g. `AIA/RCP/2026/0491`). | P0 | Accounts | `feat_receipt_numbering` |
 | F291 | Instant WhatsApp Receipt PDF Link | Send download link directly to parent WhatsApp immediately upon pay. | P0 | System | `feat_receipt_whatsapp_link` |
 | F292 | Instant SMS Payment Confirmation | TRAI-compliant SMS notification: *"Received ₹15,000 for Aarav. Rec: 0491"*. | P0 | System | `feat_receipt_sms` |
 | F293 | Split Payment Tender Recording | Pay ₹5,000 in Cash and ₹10,000 via Google Pay UPI in a single receipt. | P0 | Accounts | `feat_split_payment_tender` |

@@ -38,7 +38,7 @@ Quick Actions:
 
 Recently Visited:
   👤 Aarav Sharma (Class 10-A, Roll: 14)
-  📄 Invoice #DPS/INV/2026/0491 (Unpaid)
+  📄 Invoice #AIA/INV/2026/0491 (Unpaid)
   📅 Time Table - Class 9-B
 
 Jump to Section:

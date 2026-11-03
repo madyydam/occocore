@@ -37,7 +37,7 @@
    - Teachers in basement classrooms or areas with poor mobile networks can mark roll call and enter exam marks without internet.
    - The UI responds in **0ms** (instant). As soon as the device reconnects to Wi-Fi/4G, the background Outbox queue auto-syncs data with the server.
 2. **Instant White-Label Domain Engine**:
-   - School owners can connect their own domain (e.g., `portal.dpsdelhi.in`) or use a subdomain (`dps.edusaas.com`).
+   - School owners can connect their own domain (e.g., `portal.apexacademy.edu`) or use a subdomain (`apex.edusaas.com`).
    - The system automatically provisions SSL certificates and injects the school’s exact brand colors, logo, and fonts.
 3. **Adaptive Terminology Transformer (4-in-1)**:
    - One school sees: *Class -> Section -> Class Teacher*.

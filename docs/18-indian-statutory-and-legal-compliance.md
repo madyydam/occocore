@@ -110,7 +110,7 @@ For tenants registered as Coaching Academies, Test Prep Institutes, or Tuition C
 
 Every SMS dispatched from the platform must comply with the Telecom Regulatory Authority of India (TRAI) Distributed Ledger Technology (DLT) mandate:
 1. **Principal Entity Registration**: Institute must be registered as a Business Entity on telecom portals (Jio, Airtel, Vil, BSNL) with a unique **PE ID**.
-2. **Header / Sender ID**: 6-character alpha sender ID (e.g. `DPSRKP`, `APEXAC`).
+2. **Header / Sender ID**: 6-character alpha sender ID (e.g. `APEXAC`, `OXFORD`).
 3. **Template ID Verification**: Every automated transactional SMS (OTP, Attendance Alert, Fee Receipt) must match an exact registered **DLT Template ID**. Variable values are sanitized to prevent telecom gateway rejections.
 4. **Commercial Timing Restrictions**: Promotional bulk circulars can legally only be transmitted between 9:00 AM and 9:00 PM IST. Urgent transactional emergency alerts (e.g. school closure, student absence) are routed through the 24x7 Service Implicit route.
 

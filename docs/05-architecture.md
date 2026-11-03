@@ -70,7 +70,7 @@ Multi-tenancy is completely dynamic and host-driven. The system resolves tenants
    - Injects `x-is-super-admin: "true"`.
    - Rewrites internally to `/(super-admin)/*` route group.
 2. **Tenant Subdomain**:
-   - Host matches `{slug}.edusaas.com` (e.g. `dpsdelhi.edusaas.com`).
+   - Host matches `{slug}.edusaas.com` (e.g. `apexacademy.edusaas.com`).
    - Looks up tenant in fast in-memory / Redis cache (`tenant:slug:{slug}`).
    - Injects `x-tenant-id`, `x-tenant-slug`, `x-tenant-type`.
    - Rewrites internally to `/(tenant)/[tenant]/*` route group.

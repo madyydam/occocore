@@ -16,18 +16,18 @@ sequenceDiagram
     participant Cache as Redis Tenant Cache
     participant App as Next.js Server Components / UI
 
-    User->>DNS: Request portal.dpsdelhi.in
+    User->>DNS: Request portal.apexacademy.edu
     DNS->>Edge: Route to Platform CNAME (cname.edusaas.com)
     Edge->>MW: Ingress HTTP request with Host header
-    MW->>Cache: GET tenant:domain:portal.dpsdelhi.in
+    MW->>Cache: GET tenant:domain:portal.apexacademy.edu
     alt Cache Hit
-        Cache-->>MW: Return { tenantId: "uuid", slug: "dpsdelhi", theme: {...} }
+        Cache-->>MW: Return { tenantId: "uuid", slug: "apexacademy", theme: {...} }
     else Cache Miss
-        MW->>DB: Query tenants WHERE custom_domain = 'portal.dpsdelhi.in'
+        MW->>DB: Query tenants WHERE custom_domain = 'portal.apexacademy.edu'
         DB-->>MW: Return Tenant Record
-        MW->>Cache: SETEX tenant:domain:portal.dpsdelhi.in 3600
+        MW->>Cache: SETEX tenant:domain:portal.apexacademy.edu 3600
     end
-    MW->>App: Rewrite internal URL -> /(tenant)/dpsdelhi/* with x-tenant-id header
+    MW->>App: Rewrite internal URL -> /(tenant)/apexacademy/* with x-tenant-id header
     App->>User: Deliver custom-branded HTML with institute logo, colors & fonts
 ```
 
@@ -99,10 +99,10 @@ Every tenant can customize their communication templates using dynamic interpola
 
 | Variable | Description | Example Output |
 | :--- | :--- | :--- |
-| `{{institute_name}}` | Full legal name of school/college | Delhi Public School, R.K. Puram |
+| `{{institute_name}}` | Full legal name of school/college | Apex International Academy |
 | `{{student_name}}` | Full name of student | Aarav Sharma |
-| `{{admission_no}}` | Student ID or PRN | DPS/2026/0491 |
+| `{{admission_no}}` | Student ID or PRN | AIA/2026/0491 |
 | `{{due_amount}}` | Pending invoice balance | ₹15,000 |
 | `{{due_date}}` | Due date in local format | 10th November 2026 |
-| `{{payment_url}}` | Direct 1-click payment link | `https://dps.edusaas.com/pay/inv_0491` |
-| `{{portal_url}}` | Tenant custom portal URL | `https://portal.dpsdelhi.in` |
+| `{{payment_url}}` | Direct 1-click payment link | `https://apex.edusaas.com/pay/inv_0491` |
+| `{{portal_url}}` | Tenant custom portal URL | `https://portal.apexacademy.edu` |
