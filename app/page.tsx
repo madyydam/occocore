@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   School,
   Building2,
@@ -391,13 +392,19 @@ export default function Home() {
           </nav>
 
           {/* Action CTAs */}
-          <div className="hidden sm:flex items-center gap-3">
-            <a
-              href="#demo"
-              className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-blue-700 to-indigo-600 hover:from-blue-800 hover:to-indigo-700 text-white shadow-tactile-blue transition-all active:scale-95"
+          <div className="hidden sm:flex items-center gap-2">
+            <Link
+              href="/auth/login"
+              className="text-xs font-bold text-slate-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
             >
-              Request Walkthrough
-            </a>
+              Sign In
+            </Link>
+            <Link
+              href="/onboarding"
+              className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-blue-700 hover:bg-blue-800 text-white shadow-tactile-blue transition-all active:scale-95 flex items-center gap-1.5"
+            >
+              <span>Start Using →</span>
+            </Link>
           </div>
 
           {/* Mobile Menu Trigger */}
@@ -449,14 +456,21 @@ export default function Home() {
             >
               Statutory Shield
             </a>
-            <div className="pt-1.5 border-t border-slate-100">
-              <a
-                href="#demo"
+            <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
+              <Link
+                href="/onboarding"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block text-center py-2 rounded-lg bg-blue-700 text-white font-bold"
               >
-                Request Walkthrough
-              </a>
+                Start Using →
+              </Link>
+              <Link
+                href="/auth/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block text-center py-1.5 rounded-lg border border-slate-200 text-slate-700 font-bold"
+              >
+                Sign In to Portal
+              </Link>
             </div>
           </div>
         )}
@@ -489,22 +503,15 @@ export default function Home() {
               Replaces slow, fragmented software with a high-craft platform: automated multi-head fee ledgers, uninterrupted offline roll calls, and automated compliance with national education mandates.
             </p>
 
-            {/* Interactive CTAs */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2.5 pt-1">
-              <a
-                href="#comparison"
-                className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 rounded-xl text-xs font-bold bg-blue-700 hover:bg-blue-800 text-white shadow-tactile-blue transition-all active:scale-95 cursor-pointer text-center"
+            {/* Primary Single CTA Button */}
+            <div className="pt-1 flex items-center">
+              <Link
+                href="/onboarding"
+                className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-blue-700 hover:bg-blue-800 text-white shadow-tactile-blue transition-all active:scale-95 cursor-pointer group"
               >
-                <span>Compare vs Traditional ERPs</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </a>
-
-              <a
-                href="#capabilities"
-                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 sm:py-2 rounded-xl text-xs font-bold border border-slate-300/80 bg-white text-slate-700 hover:bg-slate-50 transition-all shadow-2xs hover:border-slate-400 text-center"
-              >
-                <span>Explore Capabilities</span>
-              </a>
+                <span>Start Using</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
             </div>
 
             {/* Key Metric Highlights with Feature Focus */}
@@ -1754,6 +1761,27 @@ export default function Home() {
                 </div>
               ))}
             </div>
+
+            {/* Direct Archetype-Specific Onboarding CTA */}
+            <div className="pt-2.5 flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-slate-200">
+              <span className="text-[11px] text-slate-600 font-medium text-center sm:text-left">
+                Configure your {activePreset.title}: custom subdomain, master PIN & academic session in 10 minutes.
+              </span>
+              <Link
+                href={`/onboarding?type=${
+                  selectedArchetype === "school"
+                    ? "K12_SCHOOL"
+                    : selectedArchetype === "college"
+                    ? "DEGREE_COLLEGE"
+                    : selectedArchetype === "university"
+                    ? "UNIVERSITY"
+                    : "COACHING_ACADEMY"
+                }`}
+                className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold bg-blue-700 hover:bg-blue-800 text-white shadow-tactile-blue transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer shrink-0"
+              >
+                <span>Start Using For Your {activePreset.title} →</span>
+              </Link>
+            </div>
           </div>
         </div>
       </section>
@@ -1985,6 +2013,16 @@ export default function Home() {
                 >
                   Confirm Architecture Walkthrough
                 </button>
+
+                <div className="pt-2 text-center border-t border-slate-100">
+                  <span className="text-slate-500 text-[11px]">Prefer self-service instant setup? </span>
+                  <Link
+                    href="/onboarding"
+                    className="text-blue-700 hover:text-blue-800 font-bold text-[11px] hover:underline inline-flex items-center gap-1"
+                  >
+                    <span>Start 10-Minute Onboarding →</span>
+                  </Link>
+                </div>
               </form>
             )}
           </div>

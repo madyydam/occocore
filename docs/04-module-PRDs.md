@@ -106,31 +106,45 @@ Manage student journey from initial inquiry/lead to admission, document vault st
 
 ---
 
-## PRD 4: Offline-First Attendance & Roll Call Engine
+## PRD 4: Attendance Module v2 (Single Source of Truth & Statutory Engine)
 
 ### 4.1 Objective & Scope
-Enable faculty to complete classroom roll call in under 30 seconds with 0ms UI latency, complete offline durability in poor-connectivity areas, and automated parent notifications upon synchronization.
+Serve as the single source of truth for presence across every time horizon (day, week, month, term, academic year), every capture mode (manual, biometric, RFID, QR), and every downstream decision (parent alerts, leave, condonation, exam eligibility, board reports).
 
-### 4.2 Offline Architecture (Dexie.js + Outbox)
-1. **Client Storage**:
-   - `db.students`: Local cache of students in teacher's assigned classes.
-   - `db.attendance_records`: Local attendance logs.
-   - `db.sync_outbox`: Durable FIFO queue of pending mutations.
-2. **Roll Call UX Flow**:
-   - Teacher opens page. Student list renders instantly from IndexedDB.
-   - Button: "Mark All Present" sets all to `PRESENT`.
-   - Teacher taps absent students -> switches to `ABSENT` (red pill).
-   - Click "Save Attendance":
-     - Local IndexedDB updates immediately.
-     - Outbox record created: `{ id: UUID, type: 'RECORD_ATTENDANCE', payload: {...}, created_at: ISO }`.
-     - Sonner toast: *"Attendance saved locally (Offline)"*.
-3. **Synchronization Event**:
-   - Window fires `online` event or teacher clicks "Sync Now".
-   - Sync Manager sends pending outbox records to `/api/sync/attendance`.
-   - Server commits to Postgres inside an atomic transaction.
-   - Background job enqueues parent WhatsApp/SMS notifications for absent students.
-   - Server returns `{ success: true, synced_ids: [...] }`.
-   - Client marks records `sync_status = 'SYNCED'` and cleans outbox.
+### 4.2 Key System Components
+1. **Attendance Code Engine**:
+   - Replaced simple P/A/L with an 11-code rule engine:
+     - `P`: Present (1.0 weight)
+     - `L`: Late before register close (1.0 weight, flagged)
+     - `LC`: Late after register close (0.0 weight, absent, alert trigger)
+     - `HD`: Half Day (0.5 weight)
+     - `OD`: On Duty / Sports / Competition (1.0 weight with circular/letter)
+     - `EL`: Excused Leave (0.0 weight in denominator)
+     - `ML`: Medical Leave (0.0 weight with mandatory doctor certificate)
+     - `A`: Unexplained Absent (0.0 weight, automated DLT SMS/WhatsApp trigger)
+     - `SU`: Suspended (0.0 weight, disciplinary tracking)
+     - `H`: Institutional Holiday (excluded from possible days)
+     - `NE`: Not Enrolled / Transferred (excluded from possible days)
+2. **Persistent Global Control Bar**:
+   - Multi-tenant selectors: Campus/Branch · Academic Year · Term/Semester · Class/Section · Roll Call Date · Session/Period.
+   - Every metric explicitly labels denominator and scope (e.g., *1 Apr to 3 Nov 2026 · 142 Possible Working Days*).
+3. **Registers & Monthly Muster Grid**:
+   - **Classic Monthly Register (Grid 1-30/31)**: Sticky student column, dynamic date columns with shaded Sundays and holidays, audit click trail per cell, totals for P, A, L, and %.
+   - **Week View (Student × Mon-Sat)**, **Day View (All Classes Matrix)**, **Term & Year Trend**.
+   - **Student 360 Profile Dossier**: Complete 12-month trend, day-of-week drop-off analysis, class comparison, 75% recovery targets, and guardian communications.
+4. **Statutory Defaulter & Condonation Workflow**:
+   - **Zero Silent Auto-Barring**: Exam holds and admit-card barring require explicit human/principal review and sign-off.
+   - **Attendance Shortfall Bands**: Safe (≥90%), Watch (75-89%), Warning (65-74%), Critical (<65%).
+   - **Recovery Calculator**: Computes exact number of future working days student must attend to cross 75% before board cut-off date (e.g., 1 January 2027).
+   - **Condonation Case Builder**: Document checklist (hospital discharge, fitness certificate, parent affidavit), multi-tier approval chain, and CBSE/Board proforma export.
+5. **Devices & Hardware Sync**:
+   - Fleet telemetry for 4 hardware terminals (RFID Turnstiles, Fingerprint Scanners, Facial Pods) with IP, battery, and heartbeat.
+   - Idempotent queue with 0 dropped punches.
+   - **Unmatched Punches Inbox** with 1-click reassignment.
+   - Conflict rule: Manual teacher roll call overrides biometric punch; both preserved in audit log.
+6. **Parent Alerts Log & DLT Compliance**:
+   - Govt DLT-registered SMS (`DLT-TE-2026-ATT-01`) & WhatsApp Business Cloud API telemetry.
+   - Real-time status tracking (`Delivered`, `Read`, `Failed`) with one-tap parent reason capture.
 
 ---
 
@@ -252,3 +266,31 @@ Allow the platform owner (Super Admin) to monitor all client institutes, govern 
 - **Global Tenant Directory**: Searchable overview of all registered institutes with active student headcounts and subscription renewal dates.
 - **Audited Impersonation**: Super Admin can click "Log in as Institute Admin" to troubleshoot customer issues. Generates an immutable, cryptographically signed audit log entry recording exact Super Admin identity, reason, timestamp, and actions taken.
 - **Metered Headcount Billing**: System automatically tallies active student enrollments on the 1st of every month to compute monthly SaaS invoices.
+
+### 10.3 Owner & Institute Admin Portal Architecture (`/admin`)
+The Owner / Admin Portal implements a high-craft, dual-navigation administrative experience designed for institutional directors and executive heads:
+
+1. **Navigation Hierarchy**:
+   - **Left Dark Sidebar (`#091D17`)**: Dedicated exclusively to Core Main Modules:
+     - 📊 Dashboard (`/admin`)
+     - 🎓 Admissions & Enrollments
+     - 📚 Academics & Curriculum
+     - 📋 Attendance & Roll Call
+     - 💳 Fee Ledgers & Invoicing
+     - 🏆 Examinations & Grading
+     - 💬 Omnichannel Communication
+     - 🛡️ Security, Roles & 4-Digit PINs (`/admin/roles`)
+     - ⚙️ Settings
+     - Persistent Super Admin profile badge with instant logout capability.
+   - **Top Header Bar**:
+     - **Dynamic Sub-Module Pills**: Sub-components dynamically change based on the active main module (e.g., when on Dashboard: `Overview`, `Admissions Feed`, `Collections`, `Live Roll Call`, `Statutory Shield`; when on Admissions: `All Inquiries`, `Entrance Merit`, `Document Vault`, `RTE 25% Quotas`).
+     - **Live Archetype Model Switcher**: School / College / University / Coaching Academy switcher allowing live demonstration of dynamic terminology morphing across the entire UI.
+     - **Super Admin Profile Pill & Dedicated "Log out" Button**.
+
+2. **Component & Card Systems**:
+   - **KPI Metric Cards**: 4 rounded-3xl pure white cards featuring distinct color-coded icon pods (Emerald, Teal, Indigo, Amber) paired with high-contrast bold metric counters and terminology-adapted subtitles.
+   - **2-Column Operational Split**:
+     - **Recent Activity Column**: Filterable activity stream with live status pills (`Pending`, `Confirmed`, `Collected`, `Rejected`), multi-category pills (`All`, `Admissions`, `Fees`, `Roll Call`), and instant row actions (Inspect modal, Approve, Reject, Archive).
+     - **Quick Actions Column**: Tactical rounded dark-pill buttons (`#153E35`) for rapid execution: Manage Admissions, Dynamic UPI QR Collection Counter, Roll Call, and 4-Digit PIN Governance.
+     - **Live Operational Gateways**: Real-time status indicators for offline Dexie sync, Razorpay/Cashfree gateway latency, and DPDPA 2023 Statutory Consent seal.
+   - **Table & Inquiries View**: Integrated data table with live debounced search, status filter dropdowns, sorting, and inline audit modals.

@@ -121,6 +121,7 @@ registerCustomRole({
 | Screen | Route | Security Model & Features |
 | :--- | :--- | :--- |
 | **Unified Portal Login** | `/auth/login` | 3-Tier Multi-Portal Login: Email + Password + 4-Digit PIN strictly enforced across Staff, Student, Parent & Super Admin. 10-role instant test filler. |
+| **Owner / Admin Dashboard** | `/admin` | Executive dashboard with dual navigation: dark left sidebar for core modules, top header for dynamic sub-modules & archetype selector, KPI cards, recent activity, and dynamic UPI QR collection counter. |
 | **Admin Role & PIN Manager** | `/admin/roles` | Admin controls: toggle module access per role, create custom roles, manage user passwords, set/reset 4-digit PINs, enforce force-reset flags. |
 | **Parent OTP Vault** | `/auth/verify-otp` | 6-box segmented auto-advance OTP, WhatsApp & SMS dual dispatch, 45s countdown timer, multi-ward student selector upon verification. |
 | **Self-Service Recovery** | `/auth/forgot-password` | Work email or mobile challenge, 15-min expiring token, live zxcvbn entropy meter, device session revocation. |

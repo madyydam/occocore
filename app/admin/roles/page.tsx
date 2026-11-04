@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
 import {
   Shield,
   Hash,
@@ -12,8 +11,6 @@ import {
   Eye,
   EyeOff,
   Lock,
-  ArrowLeft,
-  ShieldCheck,
   X,
   Save,
 } from "lucide-react";
@@ -25,10 +22,16 @@ import {
   ManagedUserAccount,
   registerCustomRole,
 } from "@/lib/auth/roles";
+import { useAdmin } from "@/lib/admin/adminContext";
 
 export default function AdminRolesPage() {
-  // Active Tab: "roles_matrix" | "user_pins" | "security_policies"
-  const [activeTab, setActiveTab] = useState<"roles_matrix" | "user_pins" | "security_policies">("roles_matrix");
+  const { activeSubTab, setActiveSubTab } = useAdmin();
+
+  // Active Tab synchronized with Top Header sub-module pills
+  const activeTab: "roles_matrix" | "user_pins" | "security_policies" =
+    activeSubTab === "user_pins" || activeSubTab === "security_policies"
+      ? activeSubTab
+      : "roles_matrix";
 
   // Local state for all roles (starts from ROLE_DEFINITIONS)
   const [roles, setRoles] = useState<Record<string, RoleConfig>>({ ...ROLE_DEFINITIONS });
@@ -182,116 +185,80 @@ export default function AdminRolesPage() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-between text-slate-800 font-sans selection:bg-blue-100 selection:text-blue-900">
-      {/* Top Admin Header */}
-      <header className="w-full bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-xs sticky top-0 z-20">
-        <div className="flex items-center space-x-3">
-          <Link href="/" className="flex items-center space-x-3 group">
-            <div className="h-9 w-9 bg-blue-700 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-xs group-hover:bg-blue-800 transition-colors">
-              O
-            </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <span className="font-bold text-slate-900 text-lg tracking-tight">OCCO Core</span>
-                <span className="px-2 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 rounded-md">
-                  Administrator Console
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500">Apex International Academy • Access & PIN Governance</p>
-            </div>
-          </Link>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          <div className="hidden md:flex items-center space-x-2 text-xs text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-            <span>3-Tier Auth Mandate: Email + Password + 4-Digit PIN Active</span>
-          </div>
-          <Link
-            href="/auth/login"
-            className="text-xs font-semibold text-blue-700 hover:text-blue-800 flex items-center space-x-1 px-3 py-1.5 rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Go to Portal Login</span>
-          </Link>
-        </div>
-      </header>
-
+    <div className="space-y-6 animate-in fade-in duration-200">
       {/* Toast Banner */}
       {toastMessage && (
-        <div className="fixed top-20 right-6 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-lg border border-slate-700 text-xs flex items-center space-x-2 animate-in slide-in-from-top">
+        <div className="fixed top-20 right-6 z-50 bg-[#091D17] text-white px-4 py-2.5 rounded-2xl shadow-xl border border-emerald-500/30 text-xs flex items-center space-x-2 animate-in slide-in-from-top">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-        {/* Page Title & Navigation Tabs */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center space-x-2">
-              <Shield className="w-6 h-6 text-blue-700" />
-              <span>Role Permissions, Module Access & 4-Digit PIN Governance</span>
-            </h1>
-            <p className="text-xs text-slate-500 mt-1">
-              Configure system roles, granular module permissions, and manage user passwords and 4-digit PINs.
-            </p>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <button
-              type="button"
-              onClick={() => setIsNewRoleModalOpen(true)}
-              className="py-2 px-3.5 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl text-xs flex items-center space-x-1.5 shadow-xs transition-all cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Create Custom Role</span>
-            </button>
-          </div>
+      {/* Page Title & Navigation Tabs */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center space-x-2 font-serif">
+            <Shield className="w-6 h-6 text-emerald-800" />
+            <span>Role Permissions, Module Access & 4-Digit PIN Governance</span>
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Configure system roles, granular module permissions, and manage user passwords and 4-digit PINs.
+          </p>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="flex p-1 bg-slate-200/80 rounded-xl max-w-xl">
+        <div className="flex items-center space-x-2">
           <button
             type="button"
-            onClick={() => setActiveTab("roles_matrix")}
-            className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center space-x-1.5 ${
-              activeTab === "roles_matrix"
-                ? "bg-white text-blue-700 shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
+            onClick={() => setIsNewRoleModalOpen(true)}
+            className="py-2.5 px-4 bg-[#153E35] hover:bg-[#1A4C41] text-white font-bold rounded-xl text-xs flex items-center space-x-1.5 shadow-xs transition-all cursor-pointer"
           >
-            <Layers className="w-3.5 h-3.5" />
-            <span>Role & Module Access Matrix</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("user_pins")}
-            className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center space-x-1.5 ${
-              activeTab === "user_pins"
-                ? "bg-white text-blue-700 shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <Hash className="w-3.5 h-3.5" />
-            <span>Users, Passwords & 4-Digit PINs</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("security_policies")}
-            className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center space-x-1.5 ${
-              activeTab === "security_policies"
-                ? "bg-white text-blue-700 shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <Lock className="w-3.5 h-3.5" />
-            <span>Security Policies</span>
+            <Plus className="w-4 h-4" />
+            <span>Create Custom Role</span>
           </button>
         </div>
+      </div>
+
+      {/* Tab Switcher */}
+      <div className="flex p-1 bg-slate-200/80 rounded-2xl max-w-xl">
+        <button
+          type="button"
+          onClick={() => setActiveSubTab("roles_matrix")}
+          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
+            activeTab === "roles_matrix"
+              ? "bg-white text-emerald-900 shadow-xs"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <Layers className="w-3.5 h-3.5" />
+          <span>Role & Module Access Matrix</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveSubTab("user_pins")}
+          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
+            activeTab === "user_pins"
+              ? "bg-white text-emerald-900 shadow-xs"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <Hash className="w-3.5 h-3.5" />
+          <span>Users & 4-Digit PINs</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveSubTab("security_policies")}
+          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
+            activeTab === "security_policies"
+              ? "bg-white text-emerald-900 shadow-xs"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <Lock className="w-3.5 h-3.5" />
+          <span>Security Policies</span>
+        </button>
+      </div>
 
         {/* TAB 1: ROLE & MODULE ACCESS MATRIX */}
         {activeTab === "roles_matrix" && (
@@ -832,7 +799,7 @@ export default function AdminRolesPage() {
                   </button>
                   <button
                     type="submit"
-                    className="py-2 px-4 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl text-xs flex items-center space-x-1.5 shadow-sm"
+                    className="py-2.5 px-4 bg-[#153E35] hover:bg-[#1A4C41] text-white font-bold rounded-xl text-xs flex items-center space-x-1.5 shadow-sm"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Register Role in Registry</span>
@@ -842,12 +809,6 @@ export default function AdminRolesPage() {
             </div>
           </div>
         )}
-      </main>
-
-      {/* Footer */}
-      <footer className="w-full py-4 text-center text-xs text-slate-400 border-t border-slate-200 bg-white">
-        © 2026 OCCO Core Systems Inc. Enterprise Grade Multi-Tenant Academic OS. Role & PIN Governance Console.
-      </footer>
     </div>
   );
 }
