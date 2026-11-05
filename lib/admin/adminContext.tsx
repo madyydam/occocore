@@ -1,8 +1,9 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { InstitutionalArchetype } from "@/lib/terminology";
 import { getThemeFromColor, BrandThemePalette } from "./themeUtils";
+import { getTenantConfig, updateTenantBranding } from "@/lib/actions/tenantActions";
 
 export type AdminMainModule =
   | "dashboard"
@@ -227,6 +228,9 @@ interface AdminContextType {
   removeModule: (mod: AdminMainModule) => void;
   toggleModule: (mod: AdminMainModule) => void;
   resetModules: () => void;
+  // Demo Mode
+  isDemoMode: boolean;
+  setIsDemoMode: (demo: boolean) => void;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
@@ -234,6 +238,32 @@ const AdminContext = createContext<AdminContextType | undefined>(undefined);
 export function AdminProvider({ children }: { children: ReactNode }) {
   const [activeModule, setActiveModuleState] = useState<AdminMainModule>("dashboard");
   const [activeSubTab, setActiveSubTab] = useState<string>("overview");
+
+  const [isDemoMode, setIsDemoModeState] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get("mode") === "demo" || urlParams.get("demo") === "true") {
+          return true;
+        }
+        return localStorage.getItem("occo_demo_mode") === "true";
+      } catch {
+        // ignore
+      }
+    }
+    return false;
+  });
+
+  const setIsDemoMode = (demo: boolean) => {
+    setIsDemoModeState(demo);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("occo_demo_mode", demo ? "true" : "false");
+      } catch {
+        // ignore
+      }
+    }
+  };
 
   const [currentArchetype, setCurrentArchetypeState] = useState<InstitutionalArchetype>(() => {
     if (typeof window !== "undefined") {
@@ -289,8 +319,30 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     return DEFAULT_ENABLED_MODULES;
   });
 
+  // Fetch real persistent configuration from PostgreSQL on mount if not in demo mode
+  useEffect(() => {
+    if (isDemoMode) return;
+    let isMounted = true;
+    getTenantConfig()
+      .then((cfg) => {
+        if (!isMounted || !cfg) return;
+        if (cfg.name) setInstitutionNameState(cfg.name);
+        if (cfg.primaryColor) setBrandColorState(cfg.primaryColor);
+        if (cfg.type) setCurrentArchetypeState(cfg.type as InstitutionalArchetype);
+        if (Array.isArray(cfg.enabledModules) && cfg.enabledModules.length > 0) {
+          setEnabledModules(cfg.enabledModules as AdminMainModule[]);
+        }
+      })
+      .catch((err) => {
+        console.warn("Could not sync tenant config with PostgreSQL:", err);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [isDemoMode]);
+
   const adminName = "Super Admin";
-  const adminRole = "Institution Owner / Super Admin";
+  const adminRole = isDemoMode ? "Guest Evaluator (Demo Sandbox)" : "Institution Owner / Super Admin";
 
   const setBrandColor = (color: string) => {
     setBrandColorState(color);
@@ -298,6 +350,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("occo_theme_color", color);
     } catch {
       // ignore
+    }
+    if (!isDemoMode) {
+      updateTenantBranding({ primaryColor: color }).catch(console.error);
     }
   };
 
@@ -308,6 +363,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     } catch {
       // ignore
     }
+    if (!isDemoMode) {
+      updateTenantBranding({ name }).catch(console.error);
+    }
   };
 
   const setCurrentArchetype = (arch: InstitutionalArchetype) => {
@@ -317,6 +375,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     } catch {
       // ignore
     }
+    if (!isDemoMode) {
+      updateTenantBranding({ type: arch }).catch(console.error);
+    }
   };
 
   const persistModules = (mods: AdminMainModule[]) => {
@@ -325,6 +386,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("occo_enabled_modules", JSON.stringify(mods));
     } catch {
       // ignore
+    }
+    if (!isDemoMode) {
+      updateTenantBranding({ enabledModules: mods }).catch(console.error);
     }
   };
 
@@ -388,6 +452,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         removeModule,
         toggleModule,
         resetModules,
+        isDemoMode,
+        setIsDemoMode,
       }}
     >
       {children}

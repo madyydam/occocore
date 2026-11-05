@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { ARCHETYPES, InstitutionalArchetype } from "@/lib/terminology";
 import { SYSTEM_MODULES } from "@/lib/auth/roles";
+import { saveOnboardingToDatabase } from "@/lib/actions/onboardingActions";
 
 interface OnboardingFormState {
   // Step 1: Institutional Identity
@@ -89,6 +90,7 @@ const BRAND_COLOR_PRESETS = [
 function OnboardingWizardContent() {
   const searchParams = useSearchParams();
   const initialType = (searchParams.get("type") as InstitutionalArchetype) || "K12_SCHOOL";
+  const isDemo = searchParams.get("mode") === "demo" || searchParams.get("demo") === "true";
 
   const [currentStep, setCurrentStep] = useState<number>(1);
   const totalSteps = 6;
@@ -290,16 +292,31 @@ function OnboardingWizardContent() {
   };
 
   // Cloud Provisioning Simulator
-  const handleLaunchProvisioning = () => {
+  const handleLaunchProvisioning = async () => {
     setIsProvisioning(true);
     setProvisionProgress(10);
     setTerminalLogs(["[0.1s] Initiating zero-trust multi-tenant cloud worker..."]);
+
+    // If real mode, persist to PostgreSQL
+    if (!isDemo) {
+      saveOnboardingToDatabase(formData)
+        .then((res) => {
+          if (res.success) {
+            console.log("Successfully created tenant in PostgreSQL:", res);
+          } else {
+            console.error("Database save failed:", res.error);
+          }
+        })
+        .catch(console.error);
+    }
 
     setTimeout(() => {
       setProvisionProgress(30);
       setTerminalLogs((prev) => [
         ...prev,
-        `[0.8s] Allocating isolated PostgreSQL schema: "tenant_${formData.subdomain}"...`,
+        isDemo
+          ? "[0.8s] Initializing interactive in-memory demo sandbox..."
+          : `[0.8s] Allocating isolated PostgreSQL schema: "tenant_${formData.subdomain || "demo"}"...`,
         "[1.1s] Applying Prisma ORM migrations & relational table constraints...",
       ]);
     }, 900);
@@ -308,7 +325,7 @@ function OnboardingWizardContent() {
       setProvisionProgress(55);
       setTerminalLogs((prev) => [
         ...prev,
-        `[1.8s] Setting up 3-tier credentials: Master Admin "${formData.adminEmail}" with 4-Digit PIN...`,
+        `[1.8s] Setting up 3-tier credentials: Master Admin "${formData.adminEmail || "demo@occocore.com"}" with 4-Digit PIN...`,
         `[2.1s] Initializing ${formData.selectedModules.length} selected enterprise modules...`,
       ]);
     }, 1800);
@@ -317,10 +334,10 @@ function OnboardingWizardContent() {
       setProvisionProgress(80);
       setTerminalLogs((prev) => [
         ...prev,
-        formData.seedDemoData
+        formData.seedDemoData || isDemo
           ? "[2.7s] Seeding 45 student profiles, 10 faculty timetables & fee rosters..."
           : "[2.7s] Creating blank clean master ledgers and DPDPA consent vault...",
-        `[3.1s] Binding SSL certificate to https://${formData.subdomain}.occocore.com...`,
+        `[3.1s] Binding SSL certificate to https://${formData.subdomain || "demo"}.occocore.com...`,
       ]);
     }, 2800);
 
@@ -328,7 +345,9 @@ function OnboardingWizardContent() {
       setProvisionProgress(100);
       setTerminalLogs((prev) => [
         ...prev,
-        "[3.8s] ✓ Tenant provisioning 100% COMPLETE. Cloud health: OPTIMAL.",
+        isDemo
+          ? "[3.8s] ✓ Demo Sandbox ready. Zero authentication required."
+          : "[3.8s] ✓ Tenant provisioning 100% COMPLETE. Cloud health: OPTIMAL.",
       ]);
       setTimeout(() => {
         setIsProvisioning(false);
@@ -372,6 +391,24 @@ function OnboardingWizardContent() {
           </Link>
         </div>
       </header>
+
+      {/* Demo Sandbox Alert Strip */}
+      {isDemo && (
+        <div className="bg-amber-500 text-amber-950 px-6 py-2.5 text-xs font-bold flex items-center justify-between border-b border-amber-600 shadow-xs">
+          <div className="flex items-center space-x-2">
+            <Sparkles className="w-4 h-4 text-amber-950 shrink-0" />
+            <span>
+              <strong>Interactive Demo Sandbox Active:</strong> You can click Next through all 6 steps without entering details to preview the entire ERP with pre-loaded mock data.
+            </span>
+          </div>
+          <Link
+            href="/onboarding"
+            className="text-[11px] underline font-extrabold hover:text-white shrink-0 ml-4"
+          >
+            Switch to Real Production Mode →
+          </Link>
+        </div>
+      )}
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
@@ -543,7 +580,7 @@ function OnboardingWizardContent() {
                 <button
                   type="button"
                   onClick={() => setCurrentStep(2)}
-                  disabled={!formData.institutionName.trim()}
+                  disabled={!isDemo && !formData.institutionName.trim()}
                   className="py-2.5 px-6 bg-blue-700 hover:bg-blue-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs transition-all shadow-tactile-blue flex items-center space-x-2 cursor-pointer"
                 >
                   <span>Proceed to Branding & Theme</span>
@@ -1325,7 +1362,7 @@ function OnboardingWizardContent() {
                 <button
                   type="button"
                   onClick={() => setCurrentStep(4)}
-                  disabled={!formData.subdomain.trim()}
+                  disabled={!isDemo && !formData.subdomain.trim()}
                   className="py-2.5 px-6 bg-blue-700 hover:bg-blue-800 disabled:bg-slate-300 text-white font-bold rounded-xl text-xs transition-all shadow-tactile-blue flex items-center space-x-2 cursor-pointer"
                 >
                   <span>Proceed to Master Admin Setup</span>
@@ -1506,11 +1543,12 @@ function OnboardingWizardContent() {
                   type="button"
                   onClick={() => setCurrentStep(5)}
                   disabled={
-                    !formData.adminFullName ||
-                    !formData.adminEmail ||
-                    !formData.adminPassword ||
-                    formData.adminPin.length !== 4 ||
-                    formData.adminPin !== formData.adminPinConfirm
+                    !isDemo &&
+                    (!formData.adminFullName ||
+                      !formData.adminEmail ||
+                      !formData.adminPassword ||
+                      formData.adminPin.length !== 4 ||
+                      formData.adminPin !== formData.adminPinConfirm)
                   }
                   className="py-2.5 px-6 bg-blue-700 hover:bg-blue-800 disabled:bg-slate-300 text-white font-bold rounded-xl text-xs transition-all shadow-tactile-blue flex items-center space-x-2 cursor-pointer"
                 >
@@ -1584,7 +1622,7 @@ function OnboardingWizardContent() {
                 <button
                   type="button"
                   onClick={() => setCurrentStep(6)}
-                  disabled={formData.selectedModules.length === 0}
+                  disabled={!isDemo && formData.selectedModules.length === 0}
                   className="py-2.5 px-6 bg-blue-700 hover:bg-blue-800 disabled:bg-slate-300 text-white font-bold rounded-xl text-xs transition-all shadow-tactile-blue flex items-center space-x-2 cursor-pointer"
                 >
                   <span>Proceed to Academic Session</span>
@@ -1794,18 +1832,18 @@ function OnboardingWizardContent() {
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                 <Link
-                  href="/admin/roles"
+                  href={isDemo ? "/admin?mode=demo" : "/admin"}
                   className="w-full sm:w-auto px-6 py-3 bg-blue-700 hover:bg-blue-800 text-white font-bold rounded-xl text-xs transition-all shadow-tactile-blue flex items-center justify-center space-x-2"
                 >
-                  <span>Open Administrator Console</span>
+                  <span>{isDemo ? "Enter Demo Administrator Console" : "Open Administrator Console"}</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
 
                 <Link
-                  href={`/auth/login?role=ADMIN&tenant=${formData.subdomain}`}
+                  href={isDemo ? "/auth/login?role=ADMIN&mode=demo" : `/auth/login?role=ADMIN&tenant=${formData.subdomain || "apexacademy"}`}
                   className="w-full sm:w-auto px-5 py-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all"
                 >
-                  Sign In to Tenant Portal
+                  {isDemo ? "Explore Demo Login Screen" : "Sign In to Tenant Portal"}
                 </Link>
               </div>
             </div>

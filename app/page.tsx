@@ -2014,17 +2014,51 @@ export default function Home() {
                   Confirm Architecture Walkthrough
                 </button>
 
-                <div className="pt-2 text-center border-t border-slate-100">
-                  <span className="text-slate-500 text-[11px]">Prefer self-service instant setup? </span>
+                <div className="pt-2 text-center border-t border-slate-100 flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <span className="text-slate-500 text-[11px]">Ready for permanent setup? </span>
                   <Link
                     href="/onboarding"
                     className="text-blue-700 hover:text-blue-800 font-bold text-[11px] hover:underline inline-flex items-center gap-1"
                   >
-                    <span>Start 10-Minute Onboarding →</span>
+                    <span>Start Using (Real Database Mode) →</span>
                   </Link>
                 </div>
               </form>
             )}
+
+            {/* INSTANT INTERACTIVE DEMO SANDBOX CTA CARD */}
+            <div className="mt-5 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-50 via-amber-100/70 to-yellow-50 border-2 border-amber-300 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 text-left">
+              <div className="space-y-1">
+                <div className="flex items-center space-x-2">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500 text-amber-950">
+                    ⚡ Instant 1-Click Demo Sandbox
+                  </span>
+                  <span className="text-[11px] font-bold text-amber-900 hidden sm:inline">• Zero Auth Required</span>
+                </div>
+                <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight">
+                  Want to explore the entire ERP without filling forms?
+                </h3>
+                <p className="text-[11px] sm:text-xs text-slate-600 max-w-xl">
+                  Click the demo button to skip entering any details, bypass all login/PIN barriers, and preview the entire onboarding flow and ERP dashboard with pre-loaded mock data. If you use <strong>&quot;Start Using&quot;</strong>, your real database will be used.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto shrink-0">
+                <Link
+                  href="/onboarding?mode=demo"
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-amber-950 font-black text-xs shadow-xs transition-all flex items-center justify-center space-x-2 text-center cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-950" />
+                  <span>Launch Instant Demo Mode →</span>
+                </Link>
+                <Link
+                  href="/admin?mode=demo"
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 active:scale-95 text-slate-800 font-bold text-xs transition-all flex items-center justify-center space-x-1.5 text-center cursor-pointer"
+                >
+                  <span>Skip to Dashboard</span>
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
 

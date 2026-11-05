@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { getAttendanceRosterAction, saveAttendanceRecordsAction } from "@/lib/actions/attendanceActions";
 import {
   CheckCircle2,
   Send,
@@ -321,7 +322,7 @@ interface AttendanceViewProps {
 }
 
 export default function AttendanceView({ archetype }: AttendanceViewProps) {
-  const { activeSubTab, theme } = useAdmin();
+  const { activeSubTab, theme, isDemoMode } = useAdmin();
   const archetypeConfig = ARCHETYPES[archetype] || ARCHETYPES.K12_SCHOOL;
   const terms = archetypeConfig.terms;
 
@@ -375,6 +376,37 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(""), 3500);
   };
+
+  // Sync with PostgreSQL attendance records if not in demo mode
+  useEffect(() => {
+    if (isDemoMode) return;
+    let isMounted = true;
+    getAttendanceRosterAction(selectedDate, selectedSession)
+      .then((res) => {
+        if (!isMounted || !res.success || !res.roster || res.roster.length === 0) return;
+        setRoster((prev) =>
+          res.roster.map((dbStudent) => {
+            const existing = prev.find((p) => p.studentId === dbStudent.admissionNo || p.id === dbStudent.id);
+            return {
+              ...(existing || prev[0] || {}),
+              id: dbStudent.id,
+              rollNo: dbStudent.rollNo,
+              studentId: dbStudent.admissionNo,
+              name: dbStudent.name,
+              todayCode: (dbStudent.currentMark as AttendanceCode) || "P",
+              todaySource: (dbStudent.source as "Manual Teacher" | "Biometric" | "RFID Turnstile" | "Unmarked") || "Manual Teacher",
+              timeLogged: dbStudent.markedAt || "08:15 AM",
+              reasonNote: dbStudent.reason || undefined,
+            };
+          })
+        );
+      })
+      .catch((err) => console.error("Error loading roster from DB:", err));
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedDate, selectedSession, isDemoMode]);
 
   // ══════════════════════════════════════════════════════════════════════════
   // CALCULATIONS FOLLOWING METRIC DICTIONARY (PRD SECTION 7.2)
@@ -439,6 +471,17 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
       })
     );
 
+    // Save to PostgreSQL if not in demo mode
+    if (!isDemoMode) {
+      saveAttendanceRecordsAction(selectedDate, selectedSession, [
+        {
+          studentId,
+          code: newCode,
+          source: "MANUAL",
+        },
+      ]).catch((err) => console.error("Error saving mark to DB:", err));
+    }
+
     // If absent or late after close, prompt quick reason drawer
     if (newCode === "A" || newCode === "LC" || newCode === "ML") {
       const target = roster.find((s) => s.id === studentId);
@@ -468,6 +511,17 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
     );
     setIsMarkAllModal(false);
     triggerToast("Marked all unmarked students as Present. Click Undo within 10s if accidental.");
+
+    if (!isDemoMode) {
+      const recordsToSave = roster.map((s) => ({
+        studentId: s.id,
+        code: "P",
+        source: "MANUAL",
+      }));
+      saveAttendanceRecordsAction(selectedDate, selectedSession, recordsToSave).catch((err) =>
+        console.error("Error saving all present to DB:", err)
+      );
+    }
   };
 
   const handleUndo = () => {

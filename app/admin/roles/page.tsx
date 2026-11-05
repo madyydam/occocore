@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Shield,
   Hash,
@@ -23,9 +23,10 @@ import {
   registerCustomRole,
 } from "@/lib/auth/roles";
 import { useAdmin } from "@/lib/admin/adminContext";
+import { getUsersList, updateUserCredentials } from "@/lib/actions/userActions";
 
 export default function AdminRolesPage() {
-  const { activeSubTab, setActiveSubTab } = useAdmin();
+  const { activeSubTab, setActiveSubTab, isDemoMode } = useAdmin();
 
   // Active Tab synchronized with Top Header sub-module pills
   const activeTab: "roles_matrix" | "user_pins" | "security_policies" =
@@ -40,6 +41,35 @@ export default function AdminRolesPage() {
   // Local state for user accounts & PINs
   const [userAccounts, setUserAccounts] = useState<ManagedUserAccount[]>([...INITIAL_USER_ACCOUNTS]);
   const [userSearchQuery, setUserSearchQuery] = useState("");
+
+  // Sync users with PostgreSQL in Real Mode
+  useEffect(() => {
+    if (isDemoMode) return;
+    let isMounted = true;
+    getUsersList()
+      .then((users) => {
+        if (!isMounted || users.length === 0) return;
+        setUserAccounts(
+          users.map((u) => ({
+            id: u.id,
+            name: u.name,
+            email: u.email,
+            roleKey: u.roleKey,
+            status: u.status as ManagedUserAccount["status"],
+            defaultPassword: u.password,
+            pin: u.pin,
+            allowedModules: ["academics", "attendance", "exams", "communication"],
+            mustChangePinOnLogin: u.mustChangePinOnLogin,
+            lastLogin: u.lastLogin,
+          }))
+        );
+      })
+      .catch((err) => console.error("Could not load users from PostgreSQL:", err));
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isDemoMode]);
 
   // Modals state
   const [isNewRoleModalOpen, setIsNewRoleModalOpen] = useState(false);
@@ -131,6 +161,15 @@ export default function AdminRolesPage() {
         return acc;
       })
     );
+
+    if (!isDemoMode) {
+      updateUserCredentials(editingUser.id, {
+        password: newPasswordVal,
+        pin: newPinVal,
+        status: statusVal,
+        mustChangePinOnLogin: mustResetVal,
+      }).catch((err) => console.error("Error saving user to DB:", err));
+    }
 
     setIsEditUserModalOpen(false);
     triggerToast(`Saved new Password & 4-Digit PIN (${newPinVal}) for ${editingUser.name}`);

@@ -45,6 +45,8 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     adminRole,
     theme,
     enabledModules,
+    isDemoMode,
+    setIsDemoMode,
   } = useAdmin();
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -330,6 +332,27 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             </Link>
           </div>
         </header>
+
+        {/* Demo Mode Alert Banner */}
+        {isDemoMode && (
+          <div className="bg-amber-500 text-amber-950 px-4 sm:px-6 py-2 text-xs font-bold flex items-center justify-between border-b border-amber-600 shadow-xs">
+            <div className="flex items-center space-x-2">
+              <span className="w-2 h-2 rounded-full bg-amber-950 animate-ping" />
+              <span>
+                <strong>Demo Sandbox Active:</strong> You are exploring with mock data without authentication. Changes in this session are not saved to the PostgreSQL database.
+              </span>
+            </div>
+            <Link
+              href="/admin"
+              onClick={() => {
+                setIsDemoMode(false);
+              }}
+              className="px-2.5 py-1 rounded bg-amber-950 hover:bg-black text-amber-100 text-[10px] font-mono uppercase tracking-wider transition-colors cursor-pointer shrink-0 ml-4 inline-block"
+            >
+              Switch to Real DB Mode
+            </Link>
+          </div>
+        )}
 
         {/* ══════════════════════════════════════════════════════════════════════
             SUB-MODULE SECONDARY NAVIGATION STRIP (BELOW MAIN HEADER)
