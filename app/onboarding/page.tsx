@@ -317,7 +317,7 @@ function OnboardingWizardContent() {
         isDemo
           ? "[0.8s] Initializing interactive in-memory demo sandbox..."
           : `[0.8s] Allocating isolated PostgreSQL schema: "tenant_${formData.subdomain || "demo"}"...`,
-        "[1.1s] Applying Prisma ORM migrations & relational table constraints...",
+        "[1.1s] Applying PostgreSQL DDL schema & relational foreign-key constraints...",
       ]);
     }, 900);
 

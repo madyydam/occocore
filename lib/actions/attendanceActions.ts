@@ -1,7 +1,6 @@
 "use server";
 
-import prisma from "@/lib/prisma";
-import { AttendanceCode } from "@prisma/client";
+import { query } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
 export interface AttendanceRecordPayload {
@@ -13,34 +12,56 @@ export interface AttendanceRecordPayload {
 
 export async function getAttendanceRosterAction(dateStr: string, sessionStr: string) {
   try {
-    const tenant = await prisma.tenant.findFirst({
-      where: { slug: "apexacademy" },
-    });
-    if (!tenant) return { success: false, roster: [] };
+    const tenantRes = await query<{ id: string }>(
+      `SELECT id FROM tenants WHERE slug = $1 LIMIT 1`,
+      ["apexacademy"]
+    );
+    if (tenantRes.rows.length === 0) return { success: false, roster: [] };
+    const tenantId = tenantRes.rows[0].id;
 
-    const students = await prisma.student.findMany({
-      where: { tenant_id: tenant.id },
-      orderBy: { roll_no: "asc" },
-      include: {
-        section: {
-          include: { class: true },
-        },
-      },
-    });
+    // Fetch students with section and class details
+    const studentsRes = await query<{
+      id: string;
+      admission_no: string;
+      roll_no: number | null;
+      first_name: string;
+      last_name: string;
+      photo_url: string | null;
+      category: string;
+      is_rte_quota: boolean;
+      guardian_name: string | null;
+      emergency_phone: string | null;
+      section_name: string;
+      class_name: string;
+    }>(
+      `SELECT s.id, s.admission_no, s.roll_no, s.first_name, s.last_name,
+              s.photo_url, s.category, s.is_rte_quota, s.guardian_name, s.emergency_phone,
+              sec.name AS section_name, c.name AS class_name
+       FROM students s
+       JOIN sections sec ON s.section_id = sec.id
+       JOIN classes c ON sec.class_id = c.id
+       WHERE s.tenant_id = $1 AND s.is_active = TRUE
+       ORDER BY s.roll_no ASC`,
+      [tenantId]
+    );
 
-    const parsedDate = new Date(dateStr);
+    // Fetch existing attendance records for the date and session
+    const recordsRes = await query<{
+      student_id: string;
+      code: string;
+      reason: string | null;
+      source: string;
+      updated_at: Date;
+    }>(
+      `SELECT student_id, code, reason, source, updated_at
+       FROM attendance_records
+       WHERE tenant_id = $1 AND date = $2::date AND session = $3`,
+      [tenantId, dateStr, sessionStr]
+    );
 
-    const existingRecords = await prisma.attendanceRecord.findMany({
-      where: {
-        tenant_id: tenant.id,
-        date: parsedDate,
-        session: sessionStr,
-      },
-    });
+    const recordMap = new Map(recordsRes.rows.map((r) => [r.student_id, r]));
 
-    const recordMap = new Map(existingRecords.map((r) => [r.student_id, r]));
-
-    const roster = students.map((s) => {
+    const roster = studentsRes.rows.map((s) => {
       const rec = recordMap.get(s.id);
       return {
         id: s.id,
@@ -51,7 +72,7 @@ export async function getAttendanceRosterAction(dateStr: string, sessionStr: str
         currentMark: rec ? rec.code : "P",
         reason: rec?.reason || undefined,
         reasonCategory: rec?.reason ? "Recorded Note" : undefined,
-        markedAt: rec ? rec.updated_at.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : undefined,
+        markedAt: rec ? new Date(rec.updated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : undefined,
         markedBy: "Class Teacher",
         source: (rec?.source as "MANUAL" | "BIOMETRIC" | "RFID") || "MANUAL",
         category: s.category,
@@ -67,7 +88,7 @@ export async function getAttendanceRosterAction(dateStr: string, sessionStr: str
 
     return { success: true, roster };
   } catch (error) {
-    console.error("Failed to load attendance roster from PostgreSQL:", error);
+    console.error("Failed to load attendance roster from PostgreSQL via native SQL:", error);
     return { success: false, roster: [] };
   }
 }
@@ -78,58 +99,62 @@ export async function saveAttendanceRecordsAction(
   records: AttendanceRecordPayload[]
 ) {
   try {
-    const tenant = await prisma.tenant.findFirst({
-      where: { slug: "apexacademy" },
-    });
-    if (!tenant) return { success: false, error: "Tenant not found." };
-
-    const parsedDate = new Date(dateStr);
+    const tenantRes = await query<{ id: string }>(
+      `SELECT id FROM tenants WHERE slug = $1 LIMIT 1`,
+      ["apexacademy"]
+    );
+    if (tenantRes.rows.length === 0) return { success: false, error: "Tenant not found." };
+    const tenantId = tenantRes.rows[0].id;
 
     for (const rec of records) {
-      const student = await prisma.student.findUnique({
-        where: { id: rec.studentId },
-      });
-      if (!student) continue;
+      // Find student and their section
+      const studentRes = await query<{ id: string; section_id: string }>(
+        `SELECT id, section_id FROM students WHERE id = $1 AND tenant_id = $2 LIMIT 1`,
+        [rec.studentId, tenantId]
+      );
+      if (studentRes.rows.length === 0) continue;
+      const student = studentRes.rows[0];
 
-      const codeVal = Object.values(AttendanceCode).includes(rec.code as AttendanceCode)
-        ? (rec.code as AttendanceCode)
-        : AttendanceCode.P;
-
-      await prisma.attendanceRecord.upsert({
-        where: {
-          tenant_id_student_id_date_session: {
-            tenant_id: tenant.id,
-            student_id: student.id,
-            date: parsedDate,
-            session: sessionStr,
-          },
-        },
-        update: {
-          code: codeVal,
-          reason: rec.reason || null,
-          source: rec.source || "MANUAL",
-        },
-        create: {
-          tenant_id: tenant.id,
-          student_id: student.id,
-          section_id: student.section_id,
-          date: parsedDate,
-          session: sessionStr,
-          code: codeVal,
-          reason: rec.reason || null,
-          source: rec.source || "MANUAL",
-        },
-      });
+      // Native PostgreSQL Upsert
+      await query(
+        `INSERT INTO attendance_records (
+            tenant_id,
+            student_id,
+            section_id,
+            date,
+            session,
+            code,
+            reason,
+            source,
+            updated_at
+         ) VALUES ($1, $2, $3, $4::date, $5, $6, $7, $8, CURRENT_TIMESTAMP)
+         ON CONFLICT (tenant_id, student_id, date, session) DO UPDATE SET
+            code = EXCLUDED.code,
+            reason = EXCLUDED.reason,
+            source = EXCLUDED.source,
+            updated_at = CURRENT_TIMESTAMP`,
+        [
+          tenantId,
+          student.id,
+          student.section_id,
+          dateStr,
+          sessionStr,
+          rec.code,
+          rec.reason || null,
+          rec.source || "MANUAL",
+        ]
+      );
     }
 
     try {
-      revalidatePath("/admin");
+      revalidatePath("/admin/attendance");
     } catch {
-      // ignore when outside request context
+      // ignore outside request context
     }
-    return { success: true, count: records.length };
+
+    return { success: true };
   } catch (error) {
-    console.error("Failed to save attendance records to PostgreSQL:", error);
+    console.error("Failed to save attendance records to PostgreSQL via native SQL:", error);
     return { success: false, error: String(error) };
   }
 }
