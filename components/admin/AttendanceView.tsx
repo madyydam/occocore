@@ -1,7 +1,20 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { getAttendanceRosterAction, saveAttendanceRecordsAction } from "@/lib/actions/attendanceActions";
+import {
+  getAttendanceRosterAction,
+  saveAttendanceRecordsAction,
+  getLeaveRequestsAction,
+  updateLeaveStatusAction,
+  getBiometricDevicesAction,
+} from "@/lib/actions/attendanceActions";
+import {
+  DEMO_ROSTER,
+  DEMO_DEVICES,
+  DEMO_LEAVES,
+  DEMO_UNMATCHED_PUNCHES,
+  DEMO_ALERTS_LOG,
+} from "@/lib/demo/demoMockData";
 import {
   CheckCircle2,
   Send,
@@ -145,177 +158,8 @@ export interface ParentAlertLogItem {
   parentReply?: string;
 }
 
-// Initial Sample Roster with realistic Indian names & attendance metrics
-const INITIAL_ROSTER: StudentRosterRecord[] = [
-  {
-    id: "st-1",
-    name: "Aarav Sharma",
-    studentId: "APX-0491",
-    rollNo: 1,
-    guardianName: "Sunil Sharma",
-    guardianPhone: "9845497084",
-    todayCode: "P",
-    todaySource: "Biometric",
-    timeLogged: "08:14 AM",
-    monthPresentDays: 22,
-    monthTotalDays: 24,
-    yearPresentDays: 136,
-    yearTotalDays: 142,
-    lastFiveDays: ["P", "P", "P", "L", "P"],
-    archetype: "K12_SCHOOL",
-  },
-  {
-    id: "st-2",
-    name: "Diya Patel",
-    studentId: "APX-0492",
-    rollNo: 2,
-    guardianName: "Ramesh Patel",
-    guardianPhone: "9820123456",
-    todayCode: "P",
-    todaySource: "RFID Turnstile",
-    timeLogged: "08:11 AM",
-    monthPresentDays: 24,
-    monthTotalDays: 24,
-    yearPresentDays: 140,
-    yearTotalDays: 142,
-    lastFiveDays: ["P", "P", "P", "P", "P"],
-    archetype: "K12_SCHOOL",
-  },
-  {
-    id: "st-3",
-    name: "Rohan Varma",
-    studentId: "APX-0493",
-    rollNo: 3,
-    guardianName: "Mahesh Varma",
-    guardianPhone: "9444123890",
-    todayCode: "ML",
-    todaySource: "Approved Leave",
-    timeLogged: "Leave Slip",
-    monthPresentDays: 15,
-    monthTotalDays: 24,
-    yearPresentDays: 98,
-    yearTotalDays: 142,
-    lastFiveDays: ["P", "A", "ML", "ML", "ML"],
-    hasMedicalCertificate: true,
-    isCondonationApplied: true,
-    condonationStatus: "Pending",
-    reasonNote: "Viral hepatitis recovery; hospital discharge summary verified.",
-    archetype: "K12_SCHOOL",
-  },
-  {
-    id: "st-4",
-    name: "Ananya Deshmukh",
-    studentId: "APX-0494",
-    rollNo: 4,
-    guardianName: "Sanjay Deshmukh",
-    guardianPhone: "9123456780",
-    todayCode: "P",
-    todaySource: "Manual Teacher",
-    timeLogged: "08:20 AM",
-    monthPresentDays: 23,
-    monthTotalDays: 24,
-    yearPresentDays: 134,
-    yearTotalDays: 142,
-    lastFiveDays: ["P", "P", "P", "P", "P"],
-    archetype: "K12_SCHOOL",
-  },
-  {
-    id: "st-5",
-    name: "Karan Johar",
-    studentId: "APX-0495",
-    rollNo: 5,
-    guardianName: "Yash Johar",
-    guardianPhone: "9988776655",
-    todayCode: "L",
-    todaySource: "Biometric",
-    timeLogged: "08:24 AM",
-    monthPresentDays: 21,
-    monthTotalDays: 24,
-    yearPresentDays: 125,
-    yearTotalDays: 142,
-    lastFiveDays: ["P", "L", "P", "P", "L"],
-    archetype: "K12_SCHOOL",
-  },
-  {
-    id: "st-6",
-    name: "Siddharth Sen",
-    studentId: "APX-0496",
-    rollNo: 6,
-    guardianName: "Abhijit Sen",
-    guardianPhone: "9811443322",
-    todayCode: "A",
-    todaySource: "Unmarked",
-    timeLogged: "--:--",
-    monthPresentDays: 14,
-    monthTotalDays: 24,
-    yearPresentDays: 91,
-    yearTotalDays: 142,
-    lastFiveDays: ["A", "P", "A", "A", "A"],
-    examHoldApproved: false,
-    reasonNote: "Chronic absenteeism on Mondays/Fridays; counsellor call scheduled.",
-    archetype: "K12_SCHOOL",
-  },
-  {
-    id: "st-7",
-    name: "Pooja Hegde",
-    studentId: "APX-0497",
-    rollNo: 7,
-    guardianName: "Manjunath Hegde",
-    guardianPhone: "9766554433",
-    todayCode: "OD",
-    todaySource: "Approved Leave",
-    timeLogged: "Circular #44",
-    monthPresentDays: 22,
-    monthTotalDays: 24,
-    yearPresentDays: 138,
-    yearTotalDays: 142,
-    lastFiveDays: ["P", "P", "OD", "OD", "OD"],
-    reasonNote: "State Level Inter-School Badminton Championship (Bengaluru).",
-    archetype: "K12_SCHOOL",
-  },
-  {
-    id: "st-8",
-    name: "Tanmay Bhat",
-    studentId: "APX-0498",
-    rollNo: 8,
-    guardianName: "Satish Bhat",
-    guardianPhone: "9977881122",
-    todayCode: "LC",
-    todaySource: "RFID Turnstile",
-    timeLogged: "08:44 AM",
-    monthPresentDays: 18,
-    monthTotalDays: 24,
-    yearPresentDays: 112,
-    yearTotalDays: 142,
-    lastFiveDays: ["P", "P", "LC", "P", "LC"],
-    reasonNote: "School bus delay on Outer Ring Road.",
-    archetype: "K12_SCHOOL",
-  },
-];
-
-const INITIAL_DEVICES: BiometricDevice[] = [
-  { id: "dev-1", name: "Main Campus Gate Turnstile Alpha", type: "RFID Turnstile", ipAddress: "192.168.10.45", location: "North Main Gate", status: "Online", batteryStatus: "Mains AC (100%)", lastHeartbeat: "Just now", totalPunchesToday: 842, queueLength: 0, firmware: "v4.2.1-sec" },
-  { id: "dev-2", name: "Senior Block Biometric Terminal #1", type: "Fingerprint", ipAddress: "192.168.10.48", location: "Academic Block 1st Floor", status: "Online", batteryStatus: "Battery 84%", lastHeartbeat: "3s ago", totalPunchesToday: 215, queueLength: 0, firmware: "v4.1.8-bio" },
-  { id: "dev-3", name: "Science & Robotics Lab Facial Pod", type: "Face Recognition Pod", ipAddress: "192.168.10.52", location: "Innovation Hub Foyer", status: "Online", batteryStatus: "Mains AC (100%)", lastHeartbeat: "8s ago", totalPunchesToday: 310, queueLength: 0, firmware: "v5.0.2-ai" },
-  { id: "dev-4", name: "Hostel & Mess Gatekeeper Terminal", type: "RFID Turnstile", ipAddress: "192.168.10.60", location: "Dormitory Block C", status: "Online", batteryStatus: "Mains AC (100%)", lastHeartbeat: "Just now", totalPunchesToday: 420, queueLength: 0, firmware: "v4.2.1-sec" },
-];
-
-const INITIAL_LEAVES: LeaveRequestItem[] = [
-  { id: "lv-1", applicantName: "Rohan Varma", studentId: "APX-0493", roleOrCohort: "Class 10-A", type: "Medical Leave", dates: "1 Nov - 5 Nov 2026", daysCount: 5, reason: "Viral hepatitis under specialist care. Medical fitness slip attached.", status: "Approved", hasAttachment: true, medicalDocName: "Apollo_Clinic_Cert_981.pdf", submittedAt: "1 Nov 2026 09:00 AM", archetype: "K12_SCHOOL" },
-  { id: "lv-2", applicantName: "Siddharth Sen", studentId: "APX-0496", roleOrCohort: "Class 10-A", type: "Casual Leave", dates: "4 Nov 2026", daysCount: 1, reason: "Family religious pilgrimage.", status: "Pending", hasAttachment: false, submittedAt: "Today 07:30 AM", archetype: "K12_SCHOOL" },
-  { id: "lv-3", applicantName: "Pooja Hegde", studentId: "APX-0497", roleOrCohort: "Class 10-A", type: "On-Duty (OD) Event", dates: "2 Nov - 4 Nov 2026", daysCount: 3, reason: "Selected for State Badminton Championship under Sports Authority of India.", status: "Approved", hasAttachment: true, medicalDocName: "SAI_Selection_Order_2026.pdf", submittedAt: "28 Oct 2026 11:30 AM", archetype: "K12_SCHOOL" },
-];
-
-const INITIAL_UNMATCHED_PUNCHES: UnmatchedPunchItem[] = [
-  { id: "un-1", badgeUid: "RFID-CARD-099418", deviceLocation: "North Main Gate Turnstile", timestamp: "Today 08:08 AM", suggestedMatch: "Rohan Varma (Card Re-issue)", status: "Unresolved" },
-  { id: "un-2", badgeUid: "FP-SENSOR-HASH-2291", deviceLocation: "Academic Block 1st Floor", timestamp: "Today 08:12 AM", suggestedMatch: "Aarav Sharma (Dry skin retry)", status: "Unresolved" },
-];
-
-const INITIAL_ALERTS_LOG: ParentAlertLogItem[] = [
-  { id: "alt-1", studentName: "Siddharth Sen", studentId: "APX-0496", guardianPhone: "9811443322", triggerEvent: "Absent Today", channel: "WhatsApp Business", dltTemplateId: "DLT-TE-2026-ATT-01", timestamp: "Today 08:35 AM", status: "Delivered", parentReply: "Viral fever, visiting clinic" },
-  { id: "alt-2", studentName: "Tanmay Bhat", studentId: "APX-0498", guardianPhone: "9977881122", triggerEvent: "Late After 08:30", channel: "Govt DLT SMS", dltTemplateId: "DLT-TE-2026-ATT-02", timestamp: "Today 08:45 AM", status: "Delivered", parentReply: "School bus was delayed at toll plaza" },
-  { id: "alt-3", studentName: "Rohan Varma", studentId: "APX-0493", guardianPhone: "9444123890", triggerEvent: "Below 75% Notice", channel: "WhatsApp Business", dltTemplateId: "DLT-TE-2026-ATT-04", timestamp: "Yesterday 04:30 PM", status: "Read", parentReply: "Medical certificate submitted to Principal" },
-];
+// All mock data has been strictly quarantined to lib/demo/demoMockData.ts.
+// In Real Production Mode (isDemoMode === false), zero mock data is loaded.
 
 interface AttendanceViewProps {
   archetype: InstitutionalArchetype;
@@ -339,11 +183,23 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
   const [selectedSession, setSelectedSession] = useState("Full Day");
 
   // Roster, Devices, Leaves, and Alerts state
-  const [roster, setRoster] = useState<StudentRosterRecord[]>(INITIAL_ROSTER);
-  const [devices] = useState<BiometricDevice[]>(INITIAL_DEVICES);
-  const [leaves, setLeaves] = useState<LeaveRequestItem[]>(INITIAL_LEAVES);
-  const [unmatchedPunches, setUnmatchedPunches] = useState<UnmatchedPunchItem[]>(INITIAL_UNMATCHED_PUNCHES);
-  const [alertsLog] = useState<ParentAlertLogItem[]>(INITIAL_ALERTS_LOG);
+  // Quarantined demo data is ONLY used in demo mode; real mode strictly initializes to empty arrays
+  const [roster, setRoster] = useState<StudentRosterRecord[]>(() =>
+    isDemoMode ? (DEMO_ROSTER as StudentRosterRecord[]) : []
+  );
+  const [devices, setDevices] = useState<BiometricDevice[]>(() =>
+    isDemoMode ? (DEMO_DEVICES as BiometricDevice[]) : []
+  );
+  const [leaves, setLeaves] = useState<LeaveRequestItem[]>(() =>
+    isDemoMode ? (DEMO_LEAVES as LeaveRequestItem[]) : []
+  );
+  const [unmatchedPunches, setUnmatchedPunches] = useState<UnmatchedPunchItem[]>(() =>
+    isDemoMode ? (DEMO_UNMATCHED_PUNCHES as UnmatchedPunchItem[]) : []
+  );
+  const [alertsLog] = useState<ParentAlertLogItem[]>(() =>
+    isDemoMode ? (DEMO_ALERTS_LOG as ParentAlertLogItem[]) : []
+  );
+  const [isLoadingRealData, setIsLoadingRealData] = useState<boolean>(!isDemoMode);
 
   // Register state: Draft -> Submitted -> Locked
   const [registerStatus, setRegisterStatus] = useState<"Draft" | "Submitted" | "Locked">("Draft");
@@ -377,31 +233,45 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
     setTimeout(() => setToastMessage(""), 3500);
   };
 
-  // Sync with PostgreSQL attendance records if not in demo mode
+  // Strictly fetch real data from PostgreSQL when in production mode
   useEffect(() => {
-    if (isDemoMode) return;
+    if (isDemoMode) {
+      return;
+    }
+
     let isMounted = true;
-    getAttendanceRosterAction(selectedDate, selectedSession)
-      .then((res) => {
-        if (!isMounted || !res.success || !res.roster || res.roster.length === 0) return;
-        setRoster((prev) =>
-          res.roster.map((dbStudent) => {
-            const existing = prev.find((p) => p.studentId === dbStudent.admissionNo || p.id === dbStudent.id);
-            return {
-              ...(existing || prev[0] || {}),
-              id: dbStudent.id,
-              rollNo: dbStudent.rollNo,
-              studentId: dbStudent.admissionNo,
-              name: dbStudent.name,
-              todayCode: (dbStudent.currentMark as AttendanceCode) || "P",
-              todaySource: (dbStudent.source as "Manual Teacher" | "Biometric" | "RFID Turnstile" | "Unmarked") || "Manual Teacher",
-              timeLogged: dbStudent.markedAt || "08:15 AM",
-              reasonNote: dbStudent.reason || undefined,
-            };
-          })
-        );
+
+    Promise.all([
+      getAttendanceRosterAction(selectedDate, selectedSession),
+      getLeaveRequestsAction(),
+      getBiometricDevicesAction(),
+    ])
+      .then(([rosterRes, leavesRes, devicesRes]) => {
+        if (!isMounted) return;
+        if (rosterRes.success && rosterRes.roster) {
+          setRoster(rosterRes.roster as StudentRosterRecord[]);
+        } else {
+          setRoster([]);
+        }
+
+        if (leavesRes.success && leavesRes.leaves) {
+          setLeaves(leavesRes.leaves as LeaveRequestItem[]);
+        } else {
+          setLeaves([]);
+        }
+
+        if (devicesRes.success && devicesRes.devices) {
+          setDevices(devicesRes.devices as BiometricDevice[]);
+        } else {
+          setDevices([]);
+        }
       })
-      .catch((err) => console.error("Error loading roster from DB:", err));
+      .catch((err) => {
+        console.error("Error loading real data from PostgreSQL:", err);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingRealData(false);
+      });
 
     return () => {
       isMounted = false;
@@ -555,6 +425,11 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
     setLeaves((prev) =>
       prev.map((l) => (l.id === leaveId ? { ...l, status: "Approved" } : l))
     );
+    if (!isDemoMode) {
+      updateLeaveStatusAction(leaveId, "Approved").catch((err) =>
+        console.error("Error updating leave in PostgreSQL:", err)
+      );
+    }
     triggerToast(`Approved leave request for ${studentName}. Synchronized register codes.`);
   };
 
@@ -921,11 +796,35 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {roster.map((st) => {
-                    const isDefaulter = (st.yearPresentDays / st.yearTotalDays) * 100 < 75.0;
+                  {isLoadingRealData ? (
+                    <tr>
+                      <td colSpan={7} className="py-12 text-center">
+                        <div className="flex flex-col items-center justify-center space-y-2">
+                          <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                          <p className="text-xs font-semibold text-slate-500">Loading verified student roster from PostgreSQL database...</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : roster.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-12 text-center">
+                        <div className="max-w-sm mx-auto text-center space-y-2">
+                          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+                            <Users className="w-5 h-5" />
+                          </div>
+                          <p className="font-bold text-slate-800 text-xs">No Scholars Enrolled in PostgreSQL</p>
+                          <p className="text-[11px] text-slate-500">
+                            Zero records found for this section. All data is securely partitioned in PostgreSQL.
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    roster.map((st) => {
+                      const isDefaulter = (st.yearPresentDays / st.yearTotalDays) * 100 < 75.0;
 
-                    return (
-                      <tr key={st.id} className="hover:bg-slate-50/70 transition-colors">
+                      return (
+                        <tr key={st.id} className="hover:bg-slate-50/70 transition-colors">
                         {/* Roll No */}
                         <td className="py-3 px-2 text-center font-bold text-slate-500 font-mono">
                           {st.rollNo}
@@ -1063,7 +962,8 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
                         </td>
                       </tr>
                     );
-                  })}
+                  })
+                )}
                 </tbody>
               </table>
             </div>
@@ -1210,7 +1110,23 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {roster.map((st) => {
+                  {isLoadingRealData ? (
+                    <tr>
+                      <td colSpan={36} className="py-12 text-center">
+                        <div className="flex flex-col items-center justify-center space-y-2">
+                          <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                          <p className="text-xs font-semibold text-slate-500">Loading verified muster roll register from PostgreSQL...</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : roster.length === 0 ? (
+                    <tr>
+                      <td colSpan={36} className="py-12 text-center text-slate-400 text-xs font-medium">
+                        No attendance muster records found for this academic period.
+                      </td>
+                    </tr>
+                  ) : (
+                    roster.map((st) => {
                     const isBelow75 = (st.monthPresentDays / st.monthTotalDays) * 100 < 75.0;
 
                     return (
@@ -1288,7 +1204,8 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
                         </td>
                       </tr>
                     );
-                  })}
+                  })
+                )}
                 </tbody>
               </table>
             </div>

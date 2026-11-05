@@ -232,6 +232,42 @@ CREATE TABLE IF NOT EXISTS attendance_records (
 );
 CREATE INDEX IF NOT EXISTS idx_attendance_records_lookup ON attendance_records(tenant_id, section_id, date);
 
+-- 6.1 Leave Requests (Approvals & Condonations)
+CREATE TABLE IF NOT EXISTS leave_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    type VARCHAR(50) NOT NULL DEFAULT 'Medical Leave',
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    days_count INT NOT NULL DEFAULT 1,
+    reason TEXT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'Pending',
+    has_attachment BOOLEAN NOT NULL DEFAULT FALSE,
+    medical_doc_name TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_leave_requests_tenant ON leave_requests(tenant_id, status);
+
+-- 6.2 Biometric Devices & Turnstiles Telemetry
+CREATE TABLE IF NOT EXISTS biometric_devices (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    name VARCHAR(150) NOT NULL,
+    type VARCHAR(50) NOT NULL DEFAULT 'Fingerprint',
+    ip_address VARCHAR(45) NOT NULL,
+    location VARCHAR(150) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'Online',
+    battery_status VARCHAR(50) NOT NULL DEFAULT 'Mains AC (100%)',
+    last_heartbeat TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    total_punches_today INT NOT NULL DEFAULT 0,
+    queue_length INT NOT NULL DEFAULT 0,
+    firmware VARCHAR(50) NOT NULL DEFAULT 'v4.2.1-sec',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_biometric_devices_tenant ON biometric_devices(tenant_id);
+
 -- ----------------------------------------------------------------------------
 -- 7. Fee Structures, Invoices & Receipts
 -- ----------------------------------------------------------------------------
@@ -311,6 +347,8 @@ CREATE INDEX IF NOT EXISTS idx_marks_lookup ON marks(tenant_id, exam_id, student
 -- ----------------------------------------------------------------------------
 ALTER TABLE students ENABLE ROW LEVEL SECURITY;
 ALTER TABLE attendance_records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE leave_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE biometric_devices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE receipts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE marks ENABLE ROW LEVEL SECURITY;
@@ -329,6 +367,22 @@ CREATE POLICY tenant_isolation_students ON students
 
 DROP POLICY IF EXISTS tenant_isolation_attendance ON attendance_records;
 CREATE POLICY tenant_isolation_attendance ON attendance_records
+    FOR ALL
+    USING (
+        tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+        OR current_setting('app.is_super_admin', true) = 'true'
+    );
+
+DROP POLICY IF EXISTS tenant_isolation_leave_requests ON leave_requests;
+CREATE POLICY tenant_isolation_leave_requests ON leave_requests
+    FOR ALL
+    USING (
+        tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
+        OR current_setting('app.is_super_admin', true) = 'true'
+    );
+
+DROP POLICY IF EXISTS tenant_isolation_biometric_devices ON biometric_devices;
+CREATE POLICY tenant_isolation_biometric_devices ON biometric_devices
     FOR ALL
     USING (
         tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
@@ -636,3 +690,4 @@ UNION ALL
 SELECT 'invoices', count(*) FROM invoices
 UNION ALL
 SELECT 'receipts', count(*) FROM receipts;
+

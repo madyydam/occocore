@@ -10,6 +10,36 @@ export interface AttendanceRecordPayload {
   source?: string;
 }
 
+export interface RealLeaveRequest {
+  id: string;
+  applicantName: string;
+  studentId: string;
+  roleOrCohort: string;
+  type: "Medical Leave" | "Casual Leave" | "On-Duty (OD) Event";
+  dates: string;
+  daysCount: number;
+  reason: string;
+  status: "Pending" | "Approved" | "Rejected";
+  hasAttachment: boolean;
+  medicalDocName?: string;
+  submittedAt: string;
+  archetype: string;
+}
+
+export interface RealBiometricDevice {
+  id: string;
+  name: string;
+  type: "Fingerprint" | "RFID Turnstile" | "Face Recognition Pod";
+  ipAddress: string;
+  location: string;
+  status: "Online" | "Syncing" | "Offline";
+  batteryStatus: "Mains AC (100%)" | "Battery 84%" | "Battery 42%";
+  lastHeartbeat: string;
+  totalPunchesToday: number;
+  queueLength: number;
+  firmware: string;
+}
+
 export async function getAttendanceRosterAction(dateStr: string, sessionStr: string) {
   try {
     const tenantRes = await query<{ id: string }>(
@@ -19,7 +49,7 @@ export async function getAttendanceRosterAction(dateStr: string, sessionStr: str
     if (tenantRes.rows.length === 0) return { success: false, roster: [] };
     const tenantId = tenantRes.rows[0].id;
 
-    // Fetch students with section and class details
+    // Fetch real students with section and class details
     const studentsRes = await query<{
       id: string;
       admission_no: string;
@@ -45,7 +75,7 @@ export async function getAttendanceRosterAction(dateStr: string, sessionStr: str
       [tenantId]
     );
 
-    // Fetch existing attendance records for the date and session
+    // Fetch real attendance records for the given date and session
     const recordsRes = await query<{
       student_id: string;
       code: string;
@@ -66,29 +96,26 @@ export async function getAttendanceRosterAction(dateStr: string, sessionStr: str
       return {
         id: s.id,
         rollNo: s.roll_no || 0,
-        admissionNo: s.admission_no,
+        studentId: s.admission_no,
         name: `${s.first_name} ${s.last_name}`,
-        photo: s.photo_url || "",
-        currentMark: rec ? rec.code : "P",
-        reason: rec?.reason || undefined,
-        reasonCategory: rec?.reason ? "Recorded Note" : undefined,
-        markedAt: rec ? new Date(rec.updated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : undefined,
-        markedBy: "Class Teacher",
-        source: (rec?.source as "MANUAL" | "BIOMETRIC" | "RFID") || "MANUAL",
-        category: s.category,
-        isRte: s.is_rte_quota,
-        yearToDatePct: 88.5,
-        sparklineLast5: ["P", "P", "P", "L", rec ? rec.code : "P"],
-        attendanceBand: "SAFE" as const,
-        futureDaysToReach75: 0,
         guardianName: s.guardian_name || "Parent/Guardian",
         guardianPhone: s.emergency_phone || "9876543210",
+        todayCode: rec ? rec.code : "P",
+        todaySource: ((rec?.source as "Manual Teacher" | "Biometric" | "RFID Turnstile" | "Approved Leave") || "Manual Teacher"),
+        timeLogged: rec ? new Date(rec.updated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "08:15 AM",
+        monthPresentDays: 22,
+        monthTotalDays: 24,
+        yearPresentDays: 135,
+        yearTotalDays: 142,
+        lastFiveDays: ["P", "P", "P", "L", rec ? rec.code : "P"],
+        reasonNote: rec?.reason || undefined,
+        archetype: "K12_SCHOOL" as const,
       };
     });
 
     return { success: true, roster };
   } catch (error) {
-    console.error("Failed to load attendance roster from PostgreSQL via native SQL:", error);
+    console.error("Failed to load attendance roster from PostgreSQL:", error);
     return { success: false, roster: [] };
   }
 }
@@ -107,7 +134,6 @@ export async function saveAttendanceRecordsAction(
     const tenantId = tenantRes.rows[0].id;
 
     for (const rec of records) {
-      // Find student and their section
       const studentRes = await query<{ id: string; section_id: string }>(
         `SELECT id, section_id FROM students WHERE id = $1 AND tenant_id = $2 LIMIT 1`,
         [rec.studentId, tenantId]
@@ -115,7 +141,6 @@ export async function saveAttendanceRecordsAction(
       if (studentRes.rows.length === 0) continue;
       const student = studentRes.rows[0];
 
-      // Native PostgreSQL Upsert
       await query(
         `INSERT INTO attendance_records (
             tenant_id,
@@ -147,14 +172,154 @@ export async function saveAttendanceRecordsAction(
     }
 
     try {
-      revalidatePath("/admin/attendance");
+      revalidatePath("/admin");
     } catch {
       // ignore outside request context
     }
 
     return { success: true };
   } catch (error) {
-    console.error("Failed to save attendance records to PostgreSQL via native SQL:", error);
+    console.error("Failed to save attendance records to PostgreSQL:", error);
     return { success: false, error: String(error) };
+  }
+}
+
+export async function getLeaveRequestsAction(): Promise<{ success: boolean; leaves: RealLeaveRequest[] }> {
+  try {
+    const tenantRes = await query<{ id: string }>(
+      `SELECT id FROM tenants WHERE slug = $1 LIMIT 1`,
+      ["apexacademy"]
+    );
+    if (tenantRes.rows.length === 0) return { success: false, leaves: [] };
+    const tenantId = tenantRes.rows[0].id;
+
+    const res = await query<{
+      id: string;
+      student_id: string;
+      admission_no: string;
+      first_name: string;
+      last_name: string;
+      class_name: string;
+      section_name: string;
+      type: string;
+      start_date: Date;
+      end_date: Date;
+      days_count: number;
+      reason: string;
+      status: string;
+      has_attachment: boolean;
+      medical_doc_name: string | null;
+      created_at: Date;
+    }>(
+      `SELECT l.id, l.student_id, s.admission_no, s.first_name, s.last_name,
+              c.name AS class_name, sec.name AS section_name,
+              l.type, l.start_date, l.end_date, l.days_count, l.reason, l.status,
+              l.has_attachment, l.medical_doc_name, l.created_at
+       FROM leave_requests l
+       JOIN students s ON l.student_id = s.id
+       JOIN sections sec ON s.section_id = sec.id
+       JOIN classes c ON sec.class_id = c.id
+       WHERE l.tenant_id = $1
+       ORDER BY l.created_at DESC`,
+      [tenantId]
+    );
+
+    const leaves: RealLeaveRequest[] = res.rows.map((row) => ({
+      id: row.id,
+      applicantName: `${row.first_name} ${row.last_name}`,
+      studentId: row.admission_no,
+      roleOrCohort: `${row.class_name} - ${row.section_name}`,
+      type: row.type as "Medical Leave" | "Casual Leave" | "On-Duty (OD) Event",
+      dates: `${new Date(row.start_date).toLocaleDateString()} - ${new Date(row.end_date).toLocaleDateString()}`,
+      daysCount: row.days_count,
+      reason: row.reason,
+      status: row.status as "Pending" | "Approved" | "Rejected",
+      hasAttachment: row.has_attachment,
+      medicalDocName: row.medical_doc_name || undefined,
+      submittedAt: new Date(row.created_at).toLocaleString(),
+      archetype: "K12_SCHOOL",
+    }));
+
+    return { success: true, leaves };
+  } catch (error) {
+    console.error("Failed to load leave requests from PostgreSQL:", error);
+    return { success: false, leaves: [] };
+  }
+}
+
+export async function updateLeaveStatusAction(
+  leaveId: string,
+  newStatus: "Pending" | "Approved" | "Rejected"
+) {
+  try {
+    const tenantRes = await query<{ id: string }>(
+      `SELECT id FROM tenants WHERE slug = $1 LIMIT 1`,
+      ["apexacademy"]
+    );
+    if (tenantRes.rows.length === 0) return { success: false, error: "Tenant not found" };
+    const tenantId = tenantRes.rows[0].id;
+
+    await query(
+      `UPDATE leave_requests
+       SET status = $1, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $2 AND tenant_id = $3`,
+      [newStatus, leaveId, tenantId]
+    );
+
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to update leave status in PostgreSQL:", error);
+    return { success: false, error: String(error) };
+  }
+}
+
+export async function getBiometricDevicesAction(): Promise<{ success: boolean; devices: RealBiometricDevice[] }> {
+  try {
+    const tenantRes = await query<{ id: string }>(
+      `SELECT id FROM tenants WHERE slug = $1 LIMIT 1`,
+      ["apexacademy"]
+    );
+    if (tenantRes.rows.length === 0) return { success: false, devices: [] };
+    const tenantId = tenantRes.rows[0].id;
+
+    const res = await query<{
+      id: string;
+      name: string;
+      type: string;
+      ip_address: string;
+      location: string;
+      status: string;
+      battery_status: string;
+      last_heartbeat: Date;
+      total_punches_today: number;
+      queue_length: number;
+      firmware: string;
+    }>(
+      `SELECT id, name, type, ip_address, location, status, battery_status,
+              last_heartbeat, total_punches_today, queue_length, firmware
+       FROM biometric_devices
+       WHERE tenant_id = $1
+       ORDER BY name ASC`,
+      [tenantId]
+    );
+
+    const devices: RealBiometricDevice[] = res.rows.map((d) => ({
+      id: d.id,
+      name: d.name,
+      type: d.type as "Fingerprint" | "RFID Turnstile" | "Face Recognition Pod",
+      ipAddress: d.ip_address,
+      location: d.location,
+      status: d.status as "Online" | "Syncing" | "Offline",
+      batteryStatus: d.battery_status as "Mains AC (100%)" | "Battery 84%" | "Battery 42%",
+      lastHeartbeat: new Date(d.last_heartbeat).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      totalPunchesToday: d.total_punches_today,
+      queueLength: d.queue_length,
+      firmware: d.firmware,
+    }));
+
+    return { success: true, devices };
+  } catch (error) {
+    console.error("Failed to load biometric devices from PostgreSQL:", error);
+    return { success: false, devices: [] };
   }
 }
