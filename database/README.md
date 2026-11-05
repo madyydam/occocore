@@ -52,3 +52,4 @@ Multi-tenancy is enforced natively at the database level:
 - Every table contains a `tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE`.
 - Row-Level Security (RLS) is enabled on operational tables (`students`, `attendance_records`, `invoices`, `receipts`, `marks`, `audit_logs`).
 - Application sessions set `SET LOCAL app.current_tenant_id = '...'` to guarantee strict mathematical isolation between schools, colleges, and academies.
+

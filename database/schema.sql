@@ -334,3 +334,4 @@ CREATE POLICY tenant_isolation_attendance ON attendance_records
         tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
         OR current_setting('app.is_super_admin', true) = 'true'
     );
+

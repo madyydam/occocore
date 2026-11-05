@@ -7,9 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:init": "psql -U postgres -d occocore_db -f database/init.sql",
-    "db:schema": "psql -U postgres -d occocore_db -f database/schema.sql",
-    "db:seed": "psql -U postgres -d occocore_db -f database/seed.sql"
+    "db:init": "psql -U postgres -d occocore_db -f database.sql",
+    "db:seed": "psql -U postgres -d occocore_db -f database.sql"
   },
   "dependencies": {
     "clsx": "^2.1.1",

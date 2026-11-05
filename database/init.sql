@@ -49,3 +49,4 @@ SELECT 'receipts', count(*) FROM receipts;
 \echo '---------------------------------------------------------'
 \echo '>>> Database Initialization Completed Successfully! <<<'
 \echo '---------------------------------------------------------'
+
