@@ -323,3 +323,137 @@ export async function getBiometricDevicesAction(): Promise<{ success: boolean; d
     return { success: false, devices: [] };
   }
 }
+
+export interface MusterStudentRow {
+  id: string;
+  rollNo: number;
+  studentId: string;
+  name: string;
+  dailyMarks: Record<number, string>;
+  presentDays: number;
+  absentDays: number;
+  percentage: number;
+}
+
+export async function getMonthlyMusterAction(year: number, month: number) {
+  try {
+    const tenantRes = await query<{ id: string }>(
+      `SELECT id FROM tenants WHERE slug = $1 LIMIT 1`,
+      ["apexacademy"]
+    );
+    if (tenantRes.rows.length === 0) return { success: false, students: [], daysInMonth: 30 };
+    const tenantId = tenantRes.rows[0].id;
+
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
+    const endDate = `${year}-${String(month).padStart(2, "0")}-${String(daysInMonth).padStart(2, "0")}`;
+
+    // 1. Fetch Students
+    const studentsRes = await query<{
+      id: string;
+      admission_no: string;
+      roll_no: number | null;
+      first_name: string;
+      last_name: string;
+    }>(
+      `SELECT id, admission_no, roll_no, first_name, last_name
+       FROM students
+       WHERE tenant_id = $1 AND is_active = TRUE
+       ORDER BY roll_no ASC`,
+      [tenantId]
+    );
+
+    // 2. Fetch all marks in the date range
+    const recordsRes = await query<{
+      student_id: string;
+      date: string;
+      code: string;
+    }>(
+      `SELECT student_id, to_char(date, 'YYYY-MM-DD') AS date, code
+       FROM attendance_records
+       WHERE tenant_id = $1 AND date >= $2::date AND date <= $3::date`,
+      [tenantId, startDate, endDate]
+    );
+
+    // Group marks by student_id -> day -> code
+    const marksByStudent = new Map<string, Record<number, string>>();
+    for (const r of recordsRes.rows) {
+      const dayNum = parseInt(r.date.split("-")[2], 10);
+      if (!marksByStudent.has(r.student_id)) {
+        marksByStudent.set(r.student_id, {});
+      }
+      marksByStudent.get(r.student_id)![dayNum] = r.code;
+    }
+
+    const students: MusterStudentRow[] = studentsRes.rows.map((s) => {
+      const dailyMarks = marksByStudent.get(s.id) || {};
+      let presentCount = 0;
+      let absentCount = 0;
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const mark = dailyMarks[d];
+        if (mark === "P" || mark === "OD") presentCount += 1.0;
+        else if (mark === "L") presentCount += 1.0;
+        else if (mark === "HD") presentCount += 0.5;
+        else if (mark === "A" || mark === "LC") absentCount += 1.0;
+      }
+
+      const totalMarkedDays = presentCount + absentCount;
+      const percentage = totalMarkedDays > 0 ? (presentCount / totalMarkedDays) * 100 : 100.0;
+
+      return {
+        id: s.id,
+        rollNo: s.roll_no || 0,
+        studentId: s.admission_no,
+        name: `${s.first_name} ${s.last_name}`,
+        dailyMarks,
+        presentDays: presentCount,
+        absentDays: absentCount,
+        percentage: Number(percentage.toFixed(1)),
+      };
+    });
+
+    return { success: true, daysInMonth, students };
+  } catch (error) {
+    console.error("Failed to load monthly muster from PostgreSQL:", error);
+    return { success: false, students: [], daysInMonth: 30 };
+  }
+}
+
+export async function saveCondonationCaseAction(studentId: string, reason: string, medicalSlipRef?: string) {
+  try {
+    const tenantRes = await query<{ id: string }>(
+      `SELECT id FROM tenants WHERE slug = $1 LIMIT 1`,
+      ["apexacademy"]
+    );
+    if (tenantRes.rows.length === 0) return { success: false, error: "Tenant not found" };
+    const tenantId = tenantRes.rows[0].id;
+
+    // Log the condonation approval into audit_logs table for statutory DPDPA compliance
+    await query(
+      `INSERT INTO audit_logs (
+          tenant_id,
+          action,
+          entity,
+          entity_id,
+          new_values,
+          created_at
+       ) VALUES ($1, 'CONDONATION_APPROVED', 'STUDENT', $2, $3::jsonb, CURRENT_TIMESTAMP)`,
+      [
+        tenantId,
+        studentId,
+        JSON.stringify({
+          reason,
+          medicalSlipRef: medicalSlipRef || "Verified By Head of Institution",
+          approvedAt: new Date().toISOString(),
+          status: "EXAM_ADMIT_CARD_UNLOCKED",
+        }),
+      ]
+    );
+
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to save condonation case to PostgreSQL:", error);
+    return { success: false, error: String(error) };
+  }
+}
