@@ -305,6 +305,24 @@ CREATE TABLE IF NOT EXISTS marks (
 );
 CREATE INDEX IF NOT EXISTS idx_marks_lookup ON marks(tenant_id, exam_id, student_id);
 
+-- ----------------------------------------------------------------------------
+-- 8B. Transfer Certificates & Multi-Department Clearance (Statutory TC Engine)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS transfer_certificates (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    tc_number VARCHAR(64) NOT NULL,
+    reason_for_leaving VARCHAR(255) DEFAULT 'Course Completion / Parent Relocation',
+    conduct_remarks VARCHAR(255) DEFAULT 'Exemplary',
+    dues_cleared BOOLEAN DEFAULT TRUE,
+    library_cleared BOOLEAN DEFAULT TRUE,
+    issued_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_tc UNIQUE(tenant_id, tc_number)
+);
+CREATE INDEX IF NOT EXISTS idx_tc_tenant_student ON transfer_certificates(tenant_id, student_id);
+
 -- ============================================================================
 -- 9. Row-Level Security (RLS) Kernel Isolation
 -- ============================================================================

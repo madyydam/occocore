@@ -137,10 +137,11 @@ export const MODULE_SUBTABS: Record<AdminMainModule, SubModuleTab[]> = {
     { id: "statutory_shield", label: "Statutory Shield", badge: "100%" },
   ],
   admissions: [
-    { id: "all_applications", label: "All Inquiries & Applications", badge: "28" },
+    { id: "all_applications", label: "All Inquiries & Applications" },
     { id: "entrance_merit", label: "Entrance Merit List" },
-    { id: "document_vault", label: "Document Verification", badge: "4" },
+    { id: "document_vault", label: "Document Verification" },
     { id: "rte_quotas", label: "RTE 25% & Quotas" },
+    { id: "transfer_certificates", label: "Transfer Certificates (TC)", badge: "Statutory" },
   ],
   academics: [
     { id: "cohorts_sections", label: "Cohorts & Class Divisions" },

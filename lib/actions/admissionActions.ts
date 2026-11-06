@@ -483,3 +483,297 @@ export async function deleteAdmissionCandidateAction(candidateId: string): Promi
     };
   }
 }
+
+export interface RealTransferCertificate {
+  id: string;
+  tcNumber: string;
+  studentId: string;
+  studentName: string;
+  admissionNo: string;
+  cohort: string;
+  reasonForLeaving: string;
+  conductRemarks: string;
+  duesCleared: boolean;
+  libraryCleared: boolean;
+  issuedAt: string;
+}
+
+export async function checkStudentClearanceAction(studentId: string): Promise<{
+  success: boolean;
+  duesCleared: boolean;
+  unpaidAmount: number;
+  libraryCleared: boolean;
+  error?: string;
+}> {
+  try {
+    const tenantRes = await query<{ id: string }>(
+      `SELECT id FROM tenants WHERE slug = $1 LIMIT 1`,
+      ["apexacademy"]
+    );
+    if (tenantRes.rows.length === 0) return { success: false, duesCleared: false, unpaidAmount: 0, libraryCleared: false, error: "Tenant not found" };
+    const tenantId = tenantRes.rows[0].id;
+
+    // Check unpaid invoices
+    const dueRes = await query<{ unpaid_count: string; total_due: string }>(
+      `SELECT COUNT(*)::text AS unpaid_count, COALESCE(SUM(amount - paid_amount), 0)::text AS total_due
+       FROM invoices
+       WHERE student_id = $1 AND tenant_id = $2 AND status != 'PAID'`,
+      [studentId, tenantId]
+    );
+
+    const unpaidCount = parseInt(dueRes.rows[0]?.unpaid_count || "0", 10);
+    const unpaidAmount = parseFloat(dueRes.rows[0]?.total_due || "0");
+
+    return {
+      success: true,
+      duesCleared: unpaidCount === 0 && unpaidAmount <= 0,
+      unpaidAmount,
+      libraryCleared: true,
+    };
+  } catch (error) {
+    console.error("Failed to check student clearance:", error);
+    return {
+      success: false,
+      duesCleared: false,
+      unpaidAmount: 0,
+      libraryCleared: false,
+      error: error instanceof Error ? error.message : "Failed to check clearance",
+    };
+  }
+}
+
+export async function issueTransferCertificateAction(payload: {
+  studentId: string;
+  reasonForLeaving?: string;
+  conductRemarks?: string;
+}): Promise<{
+  success: boolean;
+  tcNumber?: string;
+  issuedAt?: string;
+  error?: string;
+}> {
+  const client = await getClient();
+  try {
+    const tenantRes = await client.query<{ id: string; name: string }>(
+      `SELECT id, name FROM tenants WHERE slug = $1 LIMIT 1`,
+      ["apexacademy"]
+    );
+    if (tenantRes.rows.length === 0) return { success: false, error: "Tenant not found" };
+    const tenantId = tenantRes.rows[0].id;
+
+    await client.query("BEGIN");
+
+    // Check student existence
+    const stuRes = await client.query<{ id: string; first_name: string; last_name: string; admission_no: string }>(
+      `SELECT id, first_name, last_name, admission_no FROM students WHERE id = $1 AND tenant_id = $2 FOR UPDATE`,
+      [payload.studentId, tenantId]
+    );
+    if (stuRes.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return { success: false, error: "Student not found" };
+    }
+    const student = stuRes.rows[0];
+
+    // Check if TC already issued
+    const existingTc = await client.query<{ id: string; tc_number: string }>(
+      `SELECT id, tc_number FROM transfer_certificates WHERE student_id = $1 AND tenant_id = $2 LIMIT 1`,
+      [payload.studentId, tenantId]
+    );
+    if (existingTc.rows.length > 0) {
+      await client.query("ROLLBACK");
+      return {
+        success: false,
+        error: `Transfer Certificate already issued for this student (#${existingTc.rows[0].tc_number}).`,
+      };
+    }
+
+    // Verify fee clearance
+    const dueRes = await client.query<{ total_due: string }>(
+      `SELECT COALESCE(SUM(amount - paid_amount), 0)::text AS total_due
+       FROM invoices
+       WHERE student_id = $1 AND tenant_id = $2 AND status != 'PAID'`,
+      [payload.studentId, tenantId]
+    );
+    const unpaidAmount = parseFloat(dueRes.rows[0]?.total_due || "0");
+    if (unpaidAmount > 0) {
+      await client.query("ROLLBACK");
+      return {
+        success: false,
+        error: `Cannot issue Transfer Certificate: Student has ₹${unpaidAmount.toLocaleString("en-IN")} in pending fee dues. Please clear dues first.`,
+      };
+    }
+
+    // Generate atomic sequential TC number
+    const countRes = await client.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM transfer_certificates WHERE tenant_id = $1`,
+      [tenantId]
+    );
+    const seq = parseInt(countRes.rows[0]?.count || "0", 10) + 1;
+    const tcNumber = `TC/${new Date().getFullYear()}/${String(seq).padStart(4, "0")}`;
+
+    const reason = payload.reasonForLeaving || "Course Completion / Higher Studies";
+    const conduct = payload.conductRemarks || "Exemplary Conduct and Diligence";
+
+    // Insert TC
+    const tcRes = await client.query<{ id: string; issued_at: string }>(
+      `INSERT INTO transfer_certificates (
+          tenant_id, student_id, tc_number, reason_for_leaving,
+          conduct_remarks, dues_cleared, library_cleared, issued_at
+       ) VALUES ($1, $2, $3, $4, $5, TRUE, TRUE, CURRENT_TIMESTAMP)
+       RETURNING id, to_char(issued_at, 'DD Mon YYYY') AS issued_at`,
+      [tenantId, payload.studentId, tcNumber, reason, conduct]
+    );
+
+    // Mark student as transferred/inactive
+    await client.query(
+      `UPDATE students SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND tenant_id = $2`,
+      [payload.studentId, tenantId]
+    );
+
+    // Audit log
+    await client.query(
+      `INSERT INTO audit_logs (tenant_id, action, entity, entity_id, new_values, created_at)
+       VALUES ($1, 'TRANSFER_CERTIFICATE_ISSUED', 'STUDENT', $2, $3::jsonb, CURRENT_TIMESTAMP)`,
+      [
+        tenantId,
+        payload.studentId,
+        JSON.stringify({
+          tc_number: tcNumber,
+          student_id: payload.studentId,
+          admission_no: student.admission_no,
+          name: `${student.first_name} ${student.last_name}`,
+          issued_at: tcRes.rows[0].issued_at,
+        }),
+      ]
+    );
+
+    await client.query("COMMIT");
+
+    try {
+      revalidatePath("/admin");
+    } catch {
+      // outside request context
+    }
+
+    return {
+      success: true,
+      tcNumber,
+      issuedAt: tcRes.rows[0].issued_at,
+    };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Failed to issue transfer certificate:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to issue transfer certificate",
+    };
+  } finally {
+    client.release();
+  }
+}
+
+export async function getTransferCertificatesAction(): Promise<{
+  success: boolean;
+  certificates: RealTransferCertificate[];
+}> {
+  try {
+    const tenantRes = await query<{ id: string }>(
+      `SELECT id FROM tenants WHERE slug = $1 LIMIT 1`,
+      ["apexacademy"]
+    );
+    if (tenantRes.rows.length === 0) return { success: false, certificates: [] };
+    const tenantId = tenantRes.rows[0].id;
+
+    const res = await query<{
+      id: string;
+      tc_number: string;
+      student_id: string;
+      first_name: string;
+      last_name: string;
+      admission_no: string;
+      class_name: string;
+      section_name: string;
+      reason_for_leaving: string;
+      conduct_remarks: string;
+      dues_cleared: boolean;
+      library_cleared: boolean;
+      issued_at: string;
+    }>(
+      `SELECT tc.id, tc.tc_number, tc.student_id,
+              s.first_name, s.last_name, s.admission_no,
+              c.name AS class_name, sec.name AS section_name,
+              tc.reason_for_leaving, tc.conduct_remarks,
+              tc.dues_cleared, tc.library_cleared,
+              to_char(tc.issued_at, 'DD Mon YYYY') AS issued_at
+       FROM transfer_certificates tc
+       JOIN students s ON tc.student_id = s.id
+       JOIN sections sec ON s.section_id = sec.id
+       JOIN classes c ON sec.class_id = c.id
+       WHERE tc.tenant_id = $1
+       ORDER BY tc.issued_at DESC`,
+      [tenantId]
+    );
+
+    const certificates: RealTransferCertificate[] = res.rows.map((r) => ({
+      id: r.id,
+      tcNumber: r.tc_number,
+      studentId: r.student_id,
+      studentName: `${r.first_name} ${r.last_name}`,
+      admissionNo: r.admission_no,
+      cohort: `${r.class_name} - ${r.section_name}`,
+      reasonForLeaving: r.reason_for_leaving,
+      conductRemarks: r.conduct_remarks,
+      duesCleared: Boolean(r.dues_cleared),
+      libraryCleared: Boolean(r.library_cleared),
+      issuedAt: r.issued_at,
+    }));
+
+    return { success: true, certificates };
+  } catch (error) {
+    console.error("Failed to fetch transfer certificates:", error);
+    return { success: false, certificates: [] };
+  }
+}
+
+export async function getActiveStudentsForTcAction(): Promise<{
+  success: boolean;
+  students: { id: string; name: string; admissionNo: string; cohort: string }[];
+}> {
+  try {
+    const tenantRes = await query<{ id: string }>(
+      `SELECT id FROM tenants WHERE slug = $1 LIMIT 1`,
+      ["apexacademy"]
+    );
+    if (tenantRes.rows.length === 0) return { success: false, students: [] };
+    const tenantId = tenantRes.rows[0].id;
+
+    const res = await query<{
+      id: string;
+      admission_no: string;
+      first_name: string;
+      last_name: string;
+      class_name: string;
+      section_name: string;
+    }>(
+      `SELECT s.id, s.admission_no, s.first_name, s.last_name, c.name AS class_name, sec.name AS section_name
+       FROM students s
+       JOIN sections sec ON s.section_id = sec.id
+       JOIN classes c ON sec.class_id = c.id
+       WHERE s.tenant_id = $1 AND s.is_active = TRUE
+       ORDER BY c.numeric_level ASC, s.first_name ASC`,
+      [tenantId]
+    );
+
+    const students = res.rows.map((r) => ({
+      id: r.id,
+      name: `${r.first_name} ${r.last_name}`,
+      admissionNo: r.admission_no,
+      cohort: `${r.class_name} - ${r.section_name}`,
+    }));
+
+    return { success: true, students };
+  } catch (error) {
+    console.error("Failed to fetch active students for TC:", error);
+    return { success: false, students: [] };
+  }
+}

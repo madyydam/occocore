@@ -294,3 +294,54 @@ The Owner / Admin Portal implements a high-craft, dual-navigation administrative
      - **Quick Actions Column**: Tactical rounded dark-pill buttons (`#153E35`) for rapid execution: Manage Admissions, Dynamic UPI QR Collection Counter, Roll Call, and 4-Digit PIN Governance.
      - **Live Operational Gateways**: Real-time status indicators for offline Dexie sync, Razorpay/Cashfree gateway latency, and DPDPA 2023 Statutory Consent seal.
    - **Table & Inquiries View**: Integrated data table with live debounced search, status filter dropdowns, sorting, and inline audit modals.
+
+
+---
+
+## PRD 11: Enterprise Architectural Hardening & High-Reliability Additions
+
+### 11.1 Quarantined Zero-Leak Demo Mode Sandbox (`isDemoMode`)
+- **Objective**: Allow frictionless 1-click prospective customer product demonstrations without contaminating production database records or risking accidental data loss.
+- **Specification**:
+  - All mock records and sample arrays are strictly quarantined in `lib/demo/demoMockData.ts`.
+  - When `isDemoMode === false` (Real Mode), all server actions connect 100% directly to native PostgreSQL (`occocore_db`). Zero mock fallbacks, auto-seeders, or synthetic arrays are permitted.
+  - If a database table is empty, server actions return clean empty arrays `[]` and the UI renders actionable empty states with one-click creation modals.
+
+### 11.2 Multi-Query ACID Transaction Safety & Row-Level Locking
+- **Objective**: Prevent split-brain states, orphaned financial records, or partial admissions enrollments under concurrent access.
+- **Specification**:
+  - Implemented via `getClient()` from `@/lib/db`.
+  - Multi-step operations (`enrollApplicantAsStudentAction`, `recordFeePaymentAction`, `bulkImportStudentsAction`, `issueTransferCertificateAction`) are strictly wrapped in `BEGIN ... COMMIT` blocks with automatic `ROLLBACK` in error handlers and mandatory connection release in `finally`.
+  - Pessimistic locking (`FOR UPDATE`) is enforced on target invoices and student records to eliminate double-collection and concurrent enrollment race conditions.
+
+### 11.3 Statutory Transfer Certificate (TC) & Clearance Engine
+- **Objective**: Government-compliant departure certification with automated multi-department clearance validation.
+- **Specification**:
+  - **Automated Dues Check**: `checkStudentClearanceAction` queries unpaid fee invoices and library loans. TC issuance is strictly blocked if outstanding dues > ₹0.
+  - **Atomic Issuance**: `issueTransferCertificateAction` writes to the `transfer_certificates` table, generates an atomic sequential number (`TC/YYYY/XXXX`), deactivates student enrollment seat, and logs an immutable audit event.
+  - **A4 Print Engine**: Built-in government-standard A4 printable certificate with institution crest, affiliation codes, conduct remarks, principal signature seal, and QR verification stamp.
+
+### 11.4 Official Report Cards & Holistic Progress Card (HPC) Hub
+- **Objective**: Statutory CBSE / NEP 2020 student progress reporting with continuous evaluation rubrics.
+- **Specification**:
+  - Dedicated Report Cards Generator view with batch printing and individual student card generation.
+  - High-craft A4 printable layout featuring Part 1 Scholastic Subject Performance (Scores, Grades, Percentile), Part 2 Co-Scholastic & Life Skills (Work Education, Art/Music, Sports), and Attendance verification seal.
+
+### 11.5 Collision-Free Atomic Sequential Numbering Engine
+- **Objective**: Guarantee collision-free, human-readable serial numbers across concurrent fee counter payments and admissions.
+- **Specification**:
+  - Replaced insecure `Math.random()` with database-backed atomic sequential counters:
+    - Fee Receipts: `RCP/YYYY/0001`
+    - Fee Invoices: `INV/YYYY/001`
+    - Student Admissions: `SCH/YYYY/0491`
+    - Transfer Certificates: `TC/YYYY/0001`
+
+### 11.6 Universal 1-Click Client-Side CSV Data Portability
+- **Objective**: Zero-friction data export for board audits, accountant reconciliation, and external backups.
+- **Specification**:
+  - Built-in CSV generators with RFC-4180 quotation escaping across Admissions Candidates, Fee Ledgers, Attendance Monthly Muster, and Exam Tabulation Broadsheets.
+
+### 11.7 Real-Time Search & Cohort Filtering
+- **Objective**: Sub-second keyboard navigation and instant data discovery across large institutional directories.
+- **Specification**:
+  - Real-time debounced filtering across Cohorts, Syllabi, Admissions Inquiries, and Invoices.

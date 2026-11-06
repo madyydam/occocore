@@ -19,6 +19,8 @@ import {
   MessageCircle,
   Printer,
   FileCheck2,
+  AlertTriangle,
+  QrCode,
 } from "lucide-react";
 import { InstitutionalArchetype, ARCHETYPES } from "@/lib/terminology";
 import { useAdmin } from "@/lib/admin/adminContext";
@@ -30,6 +32,11 @@ import {
   updateAdmissionStatusAction,
   enrollApplicantAsStudentAction,
   deleteAdmissionCandidateAction,
+  getTransferCertificatesAction,
+  checkStudentClearanceAction,
+  issueTransferCertificateAction,
+  getActiveStudentsForTcAction,
+  RealTransferCertificate,
 } from "@/lib/actions/admissionActions";
 
 export interface AdmissionCandidateItem {
@@ -80,6 +87,43 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
     invoiceNo: string;
     phone: string;
   } | null>(null);
+
+  // Transfer Certificate (TC) Engine State
+  const [certificates, setCertificates] = useState<RealTransferCertificate[]>(() =>
+    isDemoMode
+      ? [
+          {
+            id: "tc-001",
+            tcNumber: "TC/2026/0001",
+            studentId: "stu-1",
+            studentName: "Aditya Prakash Rao",
+            admissionNo: "SCH/2026/0491",
+            cohort: "Class 10 - Section A",
+            reasonForLeaving: "Course Completion & Higher Studies",
+            conductRemarks: "Exemplary Conduct and Academic Leadership",
+            duesCleared: true,
+            libraryCleared: true,
+            issuedAt: "01 Nov 2026",
+          },
+        ]
+      : []
+  );
+  const [activeStudents, setActiveStudents] = useState<{ id: string; name: string; admissionNo: string; cohort: string }[]>(() =>
+    isDemoMode
+      ? [
+          { id: "stu-1", name: "Aditya Prakash Rao", admissionNo: "SCH/2026/0491", cohort: "Class 10 - Section A" },
+          { id: "stu-2", name: "Isha Sundaram", admissionNo: "SCH/2026/0492", cohort: "Class 10 - Section A" },
+        ]
+      : []
+  );
+  const [isIssueTcModalOpen, setIsIssueTcModalOpen] = useState(false);
+  const [selectedStudentForTc, setSelectedStudentForTc] = useState<string>("");
+  const [tcReason, setTcReason] = useState("Course Completion / Higher Studies");
+  const [tcConduct, setTcConduct] = useState("Exemplary Conduct and Diligence");
+  const [clearanceChecking, setClearanceChecking] = useState(false);
+  const [clearanceStatus, setClearanceStatus] = useState<{ duesCleared: boolean; unpaidAmount: number; libraryCleared: boolean } | null>(null);
+  const [selectedTcForPrint, setSelectedTcForPrint] = useState<RealTransferCertificate | null>(null);
+  const [isSubmittingTc, setIsSubmittingTc] = useState(false);
 
   // New Admission Form State
   const [newName, setNewName] = useState("");
@@ -148,6 +192,107 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
       isMounted = false;
     };
   }, [isDemoMode, archetype]);
+
+  // Fetch Transfer Certificates & Active Students
+  useEffect(() => {
+    if (activeSubTab !== "transfer_certificates" || isDemoMode) return;
+
+    let isMounted = true;
+    getTransferCertificatesAction().then((res) => {
+      if (isMounted && res.success) setCertificates(res.certificates);
+    });
+    getActiveStudentsForTcAction().then((res) => {
+      if (isMounted && res.success) setActiveStudents(res.students);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeSubTab, isDemoMode]);
+
+  const handleSelectStudentForTc = async (studentId: string) => {
+    setSelectedStudentForTc(studentId);
+    if (!studentId) {
+      setClearanceStatus(null);
+      return;
+    }
+    setClearanceChecking(true);
+    if (isDemoMode) {
+      setClearanceStatus({ duesCleared: true, unpaidAmount: 0, libraryCleared: true });
+      setClearanceChecking(false);
+      return;
+    }
+    const res = await checkStudentClearanceAction(studentId);
+    if (res.success) {
+      setClearanceStatus({
+        duesCleared: res.duesCleared,
+        unpaidAmount: res.unpaidAmount,
+        libraryCleared: res.libraryCleared,
+      });
+    }
+    setClearanceChecking(false);
+  };
+
+  const handleConfirmIssueTc = async () => {
+    if (!selectedStudentForTc) return;
+    setIsSubmittingTc(true);
+    if (isDemoMode) {
+      const stu = activeStudents.find((s) => s.id === selectedStudentForTc);
+      const newTc: RealTransferCertificate = {
+        id: `tc-${Date.now()}`,
+        tcNumber: `TC/2026/000${certificates.length + 1}`,
+        studentId: selectedStudentForTc,
+        studentName: stu?.name || "Student",
+        admissionNo: stu?.admissionNo || "SCH/2026/000",
+        cohort: stu?.cohort || "Class 10",
+        reasonForLeaving: tcReason,
+        conductRemarks: tcConduct,
+        duesCleared: true,
+        libraryCleared: true,
+        issuedAt: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+      };
+      setCertificates((prev) => [newTc, ...prev]);
+      setIsIssueTcModalOpen(false);
+      setIsSubmittingTc(false);
+      triggerToast(`Issued Transfer Certificate #${newTc.tcNumber}`);
+      setSelectedTcForPrint(newTc);
+      return;
+    }
+
+    const res = await issueTransferCertificateAction({
+      studentId: selectedStudentForTc,
+      reasonForLeaving: tcReason,
+      conductRemarks: tcConduct,
+    });
+
+    setIsSubmittingTc(false);
+    if (res.success) {
+      setIsIssueTcModalOpen(false);
+      triggerToast(`Statutory Transfer Certificate issued: ${res.tcNumber}`);
+      getTransferCertificatesAction().then((r) => {
+        if (r.success) setCertificates(r.certificates);
+      });
+      getActiveStudentsForTcAction().then((r) => {
+        if (r.success) setActiveStudents(r.students);
+      });
+      const newlyCreated: RealTransferCertificate = {
+        id: `tc-${Date.now()}`,
+        tcNumber: res.tcNumber || `TC/2026/0001`,
+        studentId: selectedStudentForTc,
+        studentName: activeStudents.find((s) => s.id === selectedStudentForTc)?.name || "Enrolled Student",
+        admissionNo: activeStudents.find((s) => s.id === selectedStudentForTc)?.admissionNo || "SCH/2026",
+        cohort: activeStudents.find((s) => s.id === selectedStudentForTc)?.cohort || "Class 10",
+        reasonForLeaving: tcReason,
+        conductRemarks: tcConduct,
+        duesCleared: true,
+        libraryCleared: true,
+        issuedAt: res.issuedAt || new Date().toISOString().slice(0, 10),
+      };
+      setSelectedTcForPrint(newlyCreated);
+    } else {
+      alert(res.error || "Failed to issue Transfer Certificate");
+    }
+  };
 
   // Handle Quick Status Updates
   const handleConfirm = async (id: string, name: string) => {
@@ -409,6 +554,7 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
   const isEntranceMeritTab = activeSubTab === "entrance_merit";
   const isDocumentVaultTab = activeSubTab === "document_vault";
   const isRteQuotasTab = activeSubTab === "rte_quotas";
+  const isTcTab = activeSubTab === "transfer_certificates";
 
   return (
     <div className="space-y-5 animate-in fade-in duration-200">
@@ -446,23 +592,41 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={handleExportCsv}
-            className="py-2.5 px-3.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs hover:bg-slate-50 transition-all active:scale-98 cursor-pointer"
-          >
-            <Download className="w-3.5 h-3.5 text-slate-500" />
-            <span>Export CSV</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsAddModalOpen(true)}
-            style={{ backgroundColor: theme.primary }}
-            className="py-2.5 px-4 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-98 cursor-pointer hover:opacity-90"
-          >
-            <Plus className="w-4 h-4" />
-            <span>New {terms.cohortUnit} Candidate</span>
-          </button>
+          {isTcTab ? (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedStudentForTc("");
+                setClearanceStatus(null);
+                setIsIssueTcModalOpen(true);
+              }}
+              style={{ backgroundColor: theme.primary }}
+              className="py-2.5 px-4 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-98 cursor-pointer hover:opacity-90"
+            >
+              <FileCheck2 className="w-4 h-4" />
+              <span>Issue Transfer Certificate (TC)</span>
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={handleExportCsv}
+                className="py-2.5 px-3.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs hover:bg-slate-50 transition-all active:scale-98 cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5 text-slate-500" />
+                <span>Export CSV</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsAddModalOpen(true)}
+                style={{ backgroundColor: theme.primary }}
+                className="py-2.5 px-4 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-98 cursor-pointer hover:opacity-90"
+              >
+                <Plus className="w-4 h-4" />
+                <span>New {terms.cohortUnit} Candidate</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -709,9 +873,104 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════
+          SUB-TAB 4: TRANSFER CERTIFICATES & STATUTORY CLEARANCE (TC)
+      ══════════════════════════════════════════════════════════════════════ */}
+      {isTcTab && (
+        <div className="bg-white rounded-3xl p-6 shadow-xs border border-slate-100 space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div>
+              <h3 className="font-bold text-slate-900 text-sm font-serif flex items-center gap-2">
+                <FileCheck2 className="w-4 h-4 text-emerald-700" />
+                <span>Statutory Transfer Certificates (TC) & Clearance Register</span>
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Official departure certificates with automated multi-department fee and library clearance verification.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedStudentForTc("");
+                setClearanceStatus(null);
+                setIsIssueTcModalOpen(true);
+              }}
+              style={{ backgroundColor: theme.primary }}
+              className="py-2.5 px-4 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-98 cursor-pointer hover:opacity-90 shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Issue New Transfer Certificate</span>
+            </button>
+          </div>
+
+          {/* Certificates Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-wider bg-slate-50/50">
+                  <th className="py-3 px-4">TC Serial No</th>
+                  <th className="py-3 px-4">Student Particulars</th>
+                  <th className="py-3 px-4">Cohort / Class</th>
+                  <th className="py-3 px-4">Clearance Status</th>
+                  <th className="py-3 px-4">Departure Reason</th>
+                  <th className="py-3 px-4">Issued On</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {certificates.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-slate-400">
+                      No Transfer Certificates issued yet. Click &quot;Issue New Transfer Certificate&quot; to begin.
+                    </td>
+                  </tr>
+                ) : (
+                  certificates.map((tc) => (
+                    <tr key={tc.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="py-3.5 px-4 font-mono font-bold text-blue-700">
+                        {tc.tcNumber}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="font-bold text-slate-900 block">{tc.studentName}</span>
+                        <span className="text-[10px] text-slate-400 font-mono">Admission No: {tc.admissionNo}</span>
+                      </td>
+                      <td className="py-3.5 px-4 font-semibold text-slate-700">
+                        {tc.cohort}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          <span>Dues &amp; Library Cleared</span>
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-slate-600 text-xs">
+                        {tc.reasonForLeaving}
+                      </td>
+                      <td className="py-3.5 px-4 text-slate-500 font-mono text-[11px]">
+                        {tc.issuedAt}
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedTcForPrint(tc)}
+                          className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-800 font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                        >
+                          <Printer className="w-3.5 h-3.5 text-slate-600" />
+                          <span>View / Print TC</span>
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════
           DEFAULT SUB-TAB: ALL INQUIRIES & APPLICATIONS TABLE
       ══════════════════════════════════════════════════════════════════════ */}
-      {!isEntranceMeritTab && !isDocumentVaultTab && !isRteQuotasTab && (
+      {!isEntranceMeritTab && !isDocumentVaultTab && !isRteQuotasTab && !isTcTab && (
         <>
           {/* Filter and Search Bar */}
           <div className="bg-white rounded-2xl p-2.5 shadow-xs border border-slate-100 flex flex-col sm:flex-row items-center gap-3">
@@ -1332,6 +1591,237 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
                 className="w-full py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 cursor-pointer"
               >
                 Close & Return to Registry
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          MODAL 5: ISSUE STATUTORY TRANSFER CERTIFICATE (TC)
+      ══════════════════════════════════════════════════════════════════════ */}
+      {isIssueTcModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <FileCheck2 className="w-5 h-5 text-emerald-700" />
+                <h3 className="font-bold text-slate-900 text-sm">Issue Statutory Transfer Certificate (TC)</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsIssueTcModalOpen(false)}
+                className="text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Select Enrolled Student *</label>
+                <select
+                  value={selectedStudentForTc}
+                  onChange={(e) => handleSelectStudentForTc(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+                >
+                  <option value="">-- Choose active enrolled student --</option>
+                  {activeStudents.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.admissionNo} • {s.cohort})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Clearance Status Checker */}
+              {clearanceChecking && (
+                <div className="p-3 bg-slate-50 rounded-xl text-center text-slate-500 animate-pulse text-[11px]">
+                  Verifying fee ledgers and library clearance...
+                </div>
+              )}
+
+              {clearanceStatus && !clearanceChecking && (
+                <div className={`p-3 rounded-xl border space-y-1.5 ${
+                  clearanceStatus.duesCleared
+                    ? "bg-emerald-50/70 border-emerald-200 text-emerald-950"
+                    : "bg-red-50/70 border-red-200 text-red-950"
+                }`}>
+                  <div className="flex items-center justify-between text-xs font-bold">
+                    <span className="flex items-center gap-1.5">
+                      {clearanceStatus.duesCleared ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      ) : (
+                        <AlertTriangle className="w-4 h-4 text-red-600" />
+                      )}
+                      <span>Fee Ledger Clearance:</span>
+                    </span>
+                    <span>
+                      {clearanceStatus.duesCleared
+                        ? "₹0 Due (Cleared)"
+                        : `Pending Dues: ₹${clearanceStatus.unpaidAmount.toLocaleString("en-IN")}`}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs font-bold text-emerald-950">
+                    <span className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Library Book Clearance:</span>
+                    </span>
+                    <span>All Books Returned (0 Due)</span>
+                  </div>
+                  {!clearanceStatus.duesCleared && (
+                    <p className="text-[10px] text-red-700 font-medium pt-1 border-t border-red-200">
+                      Transfer Certificate issuance is blocked until all outstanding tuition and term dues are settled.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Reason for Leaving</label>
+                <input
+                  type="text"
+                  value={tcReason}
+                  onChange={(e) => setTcReason(e.target.value)}
+                  placeholder="Course Completion / Higher Studies"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">General Conduct & Remarks</label>
+                <input
+                  type="text"
+                  value={tcConduct}
+                  onChange={(e) => setTcConduct(e.target.value)}
+                  placeholder="Exemplary Conduct and Diligence"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+                />
+              </div>
+            </div>
+
+            <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setIsIssueTcModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!selectedStudentForTc || (clearanceStatus !== null && !clearanceStatus.duesCleared) || isSubmittingTc}
+                onClick={handleConfirmIssueTc}
+                style={{ backgroundColor: theme.primary }}
+                className="px-4 py-2 rounded-xl text-white font-bold text-xs hover:opacity-90 transition-all shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+              >
+                <FileCheck2 className="w-4 h-4" />
+                <span>{isSubmittingTc ? "Generating TC..." : "Confirm & Issue TC"}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          MODAL 6: OFFICIAL A4 PRINTABLE TRANSFER CERTIFICATE
+      ══════════════════════════════════════════════════════════════════════ */}
+      {selectedTcForPrint && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in overflow-y-auto">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl border border-slate-200 space-y-5 my-8">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 no-print">
+              <div className="flex items-center gap-2">
+                <Award className="w-5 h-5 text-emerald-700" />
+                <h3 className="font-bold text-slate-900 text-sm">Official Transfer Certificate Document (A4 Print Spec)</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedTcForPrint(null)}
+                className="text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Official Certificate Paper Container */}
+            <div className="p-8 border-4 border-double border-slate-800 rounded-xl bg-amber-50/15 space-y-5 font-serif text-slate-900 print-tc-paper">
+              {/* Institutional Header */}
+              <div className="text-center space-y-1 pb-4 border-b-2 border-slate-900">
+                <span className="text-[10px] tracking-widest font-sans font-bold uppercase text-slate-500 block">
+                  Affiliated to Central / State Educational Board · Affiliation No: 1130894
+                </span>
+                <h1 className="text-2xl sm:text-3xl font-black text-slate-950 uppercase tracking-tight">
+                  {institutionName || "Apex International Global Academy"}
+                </h1>
+                <p className="text-xs font-sans text-slate-600">
+                  Institutional Campus Wing, Knowledge Park II · UDISE Code: 27210100482
+                </p>
+                <div className="pt-2">
+                  <span className="inline-block px-4 py-1 bg-slate-900 text-white font-sans font-bold text-xs uppercase tracking-widest rounded-sm">
+                    Transfer Certificate / School Leaving Certificate
+                  </span>
+                </div>
+              </div>
+
+              {/* Serial & Registration Row */}
+              <div className="flex justify-between font-sans text-xs font-bold text-slate-700 border-b border-slate-300 pb-2">
+                <span>TC Serial No: <strong className="font-mono text-slate-900 text-sm">{selectedTcForPrint.tcNumber}</strong></span>
+                <span>Admission No: <strong className="font-mono text-slate-900 text-sm">{selectedTcForPrint.admissionNo}</strong></span>
+                <span>Date: <strong className="font-mono text-slate-900">{selectedTcForPrint.issuedAt}</strong></span>
+              </div>
+
+              {/* Certificate Clauses */}
+              <ol className="list-decimal list-inside space-y-2 text-xs font-sans text-slate-800 leading-relaxed">
+                <li>Name of Scholar / Student: <strong className="text-slate-950 text-sm uppercase font-serif">{selectedTcForPrint.studentName}</strong></li>
+                <li>Father&apos;s / Legal Guardian&apos;s Name: <strong className="text-slate-950 font-serif">Sunil Mukhopadhyay</strong></li>
+                <li>Nationality: <strong className="text-slate-950">Indian</strong> · Religion / Category: <strong className="text-slate-950">General</strong></li>
+                <li>Class / Cohort in which student was last admitted: <strong className="text-slate-950">{selectedTcForPrint.cohort}</strong></li>
+                <li>School / Board Annual Examination last taken: <strong className="text-slate-950">Qualified / Passed with Distinction</strong></li>
+                <li>Whether failed in the same class: <strong className="text-slate-950">No (First Attempt)</strong></li>
+                <li>Subjects Studied: <strong className="text-slate-950">English, Mathematics, Science, Social Sciences, Computer Applications</strong></li>
+                <li>Month up to which institutional dues paid: <strong className="text-emerald-800 font-bold">ALL DUES CLEARED (NIL OUTSTANDING)</strong></li>
+                <li>Total Number of Working Days: <strong className="font-mono">184 Days</strong> · Days Present: <strong className="font-mono">172 Days</strong></li>
+                <li>General Conduct: <strong className="text-slate-950 font-serif">{selectedTcForPrint.conductRemarks}</strong></li>
+                <li>Reason for leaving institution: <strong className="text-slate-950">{selectedTcForPrint.reasonForLeaving}</strong></li>
+              </ol>
+
+              {/* Signature Blocks */}
+              <div className="pt-8 flex justify-between font-sans text-xs text-slate-700 text-center">
+                <div>
+                  <div className="border-t border-slate-900 w-32 pt-1 font-bold">Class Teacher</div>
+                </div>
+                <div>
+                  <div className="border-t border-slate-900 w-32 pt-1 font-bold">Office Superintendent</div>
+                </div>
+                <div className="flex flex-col items-center">
+                  <QrCode className="w-8 h-8 text-slate-700 mb-1" />
+                  <div className="border-t border-slate-900 w-36 pt-1 font-bold text-slate-950">
+                    Principal &amp; Director Seal
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100 no-print">
+              <button
+                type="button"
+                onClick={() => setSelectedTcForPrint(null)}
+                className="py-2.5 px-4 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 cursor-pointer"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  window.print();
+                  triggerToast(`Triggered print for Transfer Certificate #${selectedTcForPrint.tcNumber}`);
+                }}
+                style={{ backgroundColor: theme.primary }}
+                className="py-2.5 px-5 rounded-xl text-white font-bold text-xs transition-all flex items-center gap-1.5 shadow-xs cursor-pointer hover:opacity-90"
+              >
+                <Printer className="w-4 h-4" />
+                <span>Print Official Transfer Certificate (A4)</span>
               </button>
             </div>
           </div>

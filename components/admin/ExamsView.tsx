@@ -71,7 +71,7 @@ interface ExamsViewProps {
 }
 
 export default function ExamsView({ archetype }: ExamsViewProps) {
-  const { activeSubTab, theme, isDemoMode } = useAdmin();
+  const { activeSubTab, theme, isDemoMode, institutionName } = useAdmin();
   const archetypeConfig = ARCHETYPES[archetype] || ARCHETYPES.K12_SCHOOL;
   const terms = archetypeConfig.terms;
 
@@ -279,6 +279,7 @@ export default function ExamsView({ archetype }: ExamsViewProps) {
 
   const isScheduleTab = activeSubTab === "exam_schedules";
   const isHallTicketsTab = activeSubTab === "hall_tickets";
+  const isReportCardsTab = activeSubTab === "report_cards";
 
   return (
     <div className="space-y-5 animate-in fade-in duration-200">
@@ -501,9 +502,93 @@ export default function ExamsView({ archetype }: ExamsViewProps) {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════
+          SUB-TAB 3: OFFICIAL REPORT CARDS & HOLISTIC PROGRESS CARDS (HPC)
+      ══════════════════════════════════════════════════════════════════════ */}
+      {isReportCardsTab && (
+        <div className="bg-white rounded-3xl p-6 shadow-xs border border-slate-100 space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div>
+              <h3 className="font-bold text-slate-900 text-sm font-serif flex items-center gap-2">
+                <Award className="w-4 h-4 text-emerald-700" />
+                <span>Official Report Cards &amp; Holistic Progress Cards (HPC)</span>
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Statutory CBSE / NEP 2020 student progress reports with multi-subject scholastic rubrics and QR verification.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  window.print();
+                  triggerToast("Batch printing all official student report cards (A4).");
+                }}
+                className="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+              >
+                <Printer className="w-3.5 h-3.5 text-slate-600" />
+                <span>Bulk Print All Report Cards</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {displayRecords.length === 0 ? (
+              <div className="col-span-full py-12 text-center text-slate-400">
+                No examination records available to generate report cards.
+              </div>
+            ) : (
+              displayRecords.map((r) => (
+                <div
+                  key={r.id}
+                  className="p-5 rounded-2xl border border-slate-200 bg-white hover:border-emerald-300 hover:shadow-md transition-all space-y-3.5"
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className="font-bold text-slate-900 text-sm">{r.studentName}</h4>
+                      <span className="text-[11px] text-slate-500 font-mono">Admission No: {r.studentId}</span>
+                      <span className="text-xs text-slate-600 block mt-0.5">{r.cohort}</span>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                      r.status === "Distinction" || r.status === "Passed"
+                        ? "bg-emerald-100 text-emerald-800"
+                        : "bg-amber-100 text-amber-800"
+                    }`}>
+                      {r.gradeOrSgpaOrRank}
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5 text-xs">
+                    <div className="flex justify-between text-slate-600">
+                      <span>Total Scholastic Score:</span>
+                      <strong className="font-mono text-slate-900 font-bold">{r.totalMarksOrScore}</strong>
+                    </div>
+                    <div className="flex justify-between text-slate-600">
+                      <span>Assessment Status:</span>
+                      <strong className="text-emerald-700 font-bold">{r.status}</strong>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedReportCard(r)}
+                    style={{ backgroundColor: theme.primary }}
+                    className="w-full py-2.5 px-3 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs hover:opacity-90 transition-all cursor-pointer"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>View &amp; Print Official Card (A4)</span>
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════
           DEFAULT SUB-TAB: TABULATION SHEET / BROADSHEET & REPORT CARDS
       ══════════════════════════════════════════════════════════════════════ */}
-      {!isScheduleTab && !isHallTicketsTab && (
+      {!isScheduleTab && !isHallTicketsTab && !isReportCardsTab && (
         <div className="bg-white rounded-3xl shadow-xs border border-slate-100 overflow-hidden space-y-4 p-5">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
             <div>
@@ -631,49 +716,79 @@ export default function ExamsView({ archetype }: ExamsViewProps) {
               </button>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 text-xs">
-              <div className="text-center pb-2 border-b">
-                <strong className="text-slate-900 block font-serif text-base">Apex International Global Academy</strong>
-                <span className="text-[10px] text-slate-500 font-mono">Academic Session 2026-27 • Statutory Assessment Record</span>
+            <div className="p-5 rounded-2xl bg-white border border-slate-300 space-y-3.5 text-xs font-serif text-slate-900 shadow-xs">
+              <div className="text-center pb-2 border-b border-slate-200">
+                <span className="text-[10px] tracking-widest font-sans font-bold uppercase text-slate-500 block">
+                  Affiliated to Central / State Educational Board · School Code: 40892
+                </span>
+                <strong className="text-slate-950 block font-serif text-base uppercase">
+                  {institutionName || "Apex International Global Academy"}
+                </strong>
+                <span className="text-[10px] text-slate-500 font-sans font-medium block">
+                  Continuous and Comprehensive Evaluation · Holistic Progress Card (HPC)
+                </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 font-sans text-xs">
                 <div>
                   <span className="text-slate-400 block text-[10px] uppercase font-bold">Scholar Name</span>
-                  <strong className="text-slate-900">{selectedReportCard.studentName}</strong>
+                  <strong className="text-slate-950 text-sm">{selectedReportCard.studentName}</strong>
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[10px] uppercase font-bold">Admission / Seat ID</span>
-                  <strong className="text-slate-900 font-mono">{selectedReportCard.studentId}</strong>
+                  <strong className="text-slate-950 font-mono text-sm">{selectedReportCard.studentId}</strong>
                 </div>
               </div>
 
-              <div className="pt-2 border-t">
-                <span className="font-bold text-slate-700 block mb-1">Subject Scholastic Performance:</span>
-                <div className="space-y-1">
+              <div className="pt-2 border-t border-slate-200">
+                <span className="font-sans font-bold text-slate-700 block mb-1.5 uppercase text-[10px] tracking-wider">
+                  Part 1: Scholastic Subject Performance
+                </span>
+                <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden font-sans">
                   {selectedReportCard.subjectScores.map((s, idx) => (
-                    <div key={idx} className="flex justify-between py-1 border-b border-slate-200/60 text-[11px]">
-                      <span>{s.subject}</span>
-                      <strong className="font-mono text-slate-900">{s.score} ({s.grade})</strong>
+                    <div key={idx} className="flex justify-between px-3 py-1.5 text-xs bg-slate-50/50">
+                      <span className="font-medium text-slate-800">{s.subject}</span>
+                      <strong className="font-mono text-slate-900 font-bold">{s.score} ({s.grade})</strong>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="pt-2 flex justify-between font-bold text-sm text-slate-900 border-t">
-                <span>Final Assessment Result:</span>
-                <span className="text-emerald-700">{selectedReportCard.gradeOrSgpaOrRank} ({selectedReportCard.status})</span>
+              <div className="pt-2 border-t border-slate-200 font-sans">
+                <span className="font-bold text-slate-700 block mb-1 uppercase text-[10px] tracking-wider">
+                  Part 2: Co-Scholastic &amp; Life Skills
+                </span>
+                <div className="grid grid-cols-3 gap-1.5 text-[10px]">
+                  <div className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-center">
+                    <span className="text-slate-500 block truncate">Work Education</span>
+                    <strong className="text-emerald-800 font-bold">Grade A</strong>
+                  </div>
+                  <div className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-center">
+                    <span className="text-slate-500 block truncate">Art / Music</span>
+                    <strong className="text-emerald-800 font-bold">Grade A</strong>
+                  </div>
+                  <div className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-center">
+                    <span className="text-slate-500 block truncate">Health &amp; Sports</span>
+                    <strong className="text-emerald-800 font-bold">Grade A</strong>
+                  </div>
+                </div>
               </div>
 
-              <div className="pt-4 border-t flex justify-between text-[10px] text-slate-400 font-sans">
+              <div className="pt-2 flex justify-between font-bold text-sm text-slate-900 border-t border-slate-200 font-sans">
+                <span>Final Assessment Result:</span>
+                <span className="text-emerald-700 font-extrabold">{selectedReportCard.gradeOrSgpaOrRank} ({selectedReportCard.status})</span>
+              </div>
+
+              <div className="pt-4 border-t border-slate-200 flex justify-between items-end text-[10px] text-slate-500 font-sans">
                 <div className="text-center">
-                  <div className="border-t border-slate-300 w-24 pt-1">Class Teacher</div>
+                  <div className="border-t border-slate-400 w-24 pt-1 font-bold text-slate-800">Class Teacher</div>
                 </div>
                 <div className="text-center">
-                  <div className="border-t border-slate-300 w-24 pt-1">Exam Controller</div>
+                  <div className="border-t border-slate-400 w-24 pt-1 font-bold text-slate-800">Exam Controller</div>
                 </div>
-                <div className="text-center">
-                  <div className="border-t border-slate-300 w-24 pt-1">Principal Seal</div>
+                <div className="flex flex-col items-center">
+                  <QrCode className="w-6 h-6 text-slate-700 mb-0.5" />
+                  <div className="border-t border-slate-400 w-28 pt-1 font-bold text-slate-900">Principal Seal</div>
                 </div>
               </div>
             </div>
