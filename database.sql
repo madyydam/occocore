@@ -377,6 +377,22 @@ CREATE TABLE IF NOT EXISTS marks (
 CREATE INDEX IF NOT EXISTS idx_marks_lookup ON marks(tenant_id, exam_id, student_id);
 
 -- ----------------------------------------------------------------------------
+-- 8.1 Broadcast Communications & Circulars
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS broadcast_messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    channel VARCHAR(50) NOT NULL,
+    target_audience VARCHAR(100) NOT NULL,
+    recipients_count INT NOT NULL DEFAULT 0,
+    delivery_rate VARCHAR(20) NOT NULL DEFAULT '100%',
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_broadcast_tenant_created ON broadcast_messages(tenant_id, created_at DESC);
+
+-- ----------------------------------------------------------------------------
 -- 9. Row-Level Security (RLS) Policies
 -- ----------------------------------------------------------------------------
 ALTER TABLE students ENABLE ROW LEVEL SECURITY;

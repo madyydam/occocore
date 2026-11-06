@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   MessageSquare,
   Send,
@@ -12,8 +12,18 @@ import {
 } from "lucide-react";
 import { InstitutionalArchetype, ARCHETYPES } from "@/lib/terminology";
 import { useAdmin } from "@/lib/admin/adminContext";
+import {
+  DEMO_BROADCASTS,
+  DEMO_WHATSAPP_TEMPLATES,
+  DEMO_DLT_LOGS,
+} from "@/lib/demo/demoMockData";
+import {
+  getBroadcastsAction,
+  createBroadcastAction,
+  getRealDltSmsLogsAction,
+} from "@/lib/actions/communicationActions";
 
-interface BroadcastRecord {
+export interface BroadcastRecord {
   id: string;
   title: string;
   channel: "WhatsApp & SMS" | "WhatsApp Only" | "Govt DLT SMS" | "In-App Portal";
@@ -22,10 +32,10 @@ interface BroadcastRecord {
   recipientsCount: number;
   deliveryRate: string;
   content: string;
-  archetype: InstitutionalArchetype;
+  archetype: string;
 }
 
-interface WhatsAppTemplate {
+export interface WhatsAppTemplate {
   id: string;
   name: string;
   triggerEvent: string;
@@ -35,7 +45,7 @@ interface WhatsAppTemplate {
   archetype: InstitutionalArchetype;
 }
 
-interface DltSmsLog {
+export interface DltSmsLog {
   id: string;
   headerSenderId: string;
   peid: string;
@@ -47,129 +57,30 @@ interface DltSmsLog {
   status: "DELIVERED" | "QUEUED";
 }
 
-const SAMPLE_BROADCASTS: BroadcastRecord[] = [
-  // School
-  {
-    id: "bc-1",
-    title: "Parent-Teacher Conference (PTC) Schedule Announcement",
-    channel: "WhatsApp & SMS",
-    targetAudience: "All Parents (Nursery to Class 12)",
-    timestamp: "Today • 09:30 AM",
-    recipientsCount: 1240,
-    deliveryRate: "99.4%",
-    content: "Dear Parents, Term 1 Parent-Teacher Conferences are scheduled for Saturday 9:00 AM. Please book your 15-minute slot through the parent portal.",
-    archetype: "K12_SCHOOL",
-  },
-  {
-    id: "bc-2",
-    title: "Winter Uniform & Bus Schedule Update",
-    channel: "WhatsApp Only",
-    targetAudience: "Junior Wing Parents",
-    timestamp: "Yesterday • 04:15 PM",
-    recipientsCount: 480,
-    deliveryRate: "99.8%",
-    content: "Notice: Mandatory switch to winter blazer and sweater effective Monday. Morning bus pickups will commence 10 minutes earlier on Route 4 & 7.",
-    archetype: "K12_SCHOOL",
-  },
-  // College
-  {
-    id: "bc-201",
-    title: "Campus Placement Drive 2026-27: Tier 1 Tech Day",
-    channel: "WhatsApp & SMS",
-    targetAudience: "B.Tech Final Year (CSE & ECE)",
-    timestamp: "2 Nov 2026 • 11:00 AM",
-    recipientsCount: 240,
-    deliveryRate: "98.8%",
-    content: "Campus recruitment drive commences next Monday. Eligible students with CGPA > 8.0 must upload resume PDFs to the placement portal before Friday 5 PM.",
-    archetype: "DEGREE_COLLEGE",
-  },
-  // University
-  {
-    id: "bc-301",
-    title: "38th Annual Convocation Robe Distribution & Rehearsal",
-    channel: "In-App Portal",
-    targetAudience: "Graduating PG & Ph.D. Scholars",
-    timestamp: "1 Nov 2026 • 02:00 PM",
-    recipientsCount: 850,
-    deliveryRate: "100%",
-    content: "The 38th University Convocation will be held at the Main Auditorium. Gown collection counter open from 10 AM to 4 PM at the Central Library foyer.",
-    archetype: "UNIVERSITY",
-  },
-  // Coaching
-  {
-    id: "bc-401",
-    title: "All-India Mock Test #4 Answer Key & Rank List Live",
-    channel: "WhatsApp & SMS",
-    targetAudience: "Rankers Super-30 & Champions NEET",
-    timestamp: "Today • 08:00 AM",
-    recipientsCount: 320,
-    deliveryRate: "99.7%",
-    content: "Sunday Grand Test #4 results and video solutions are now live! Check your All-India Rank, question-wise time analysis, and negative marking scorecards.",
-    archetype: "COACHING_ACADEMY",
-  },
-];
-
-const SAMPLE_WHATSAPP_TEMPLATES: WhatsAppTemplate[] = [
-  {
-    id: "wt-1",
-    name: "attendance_absent_alert_v2",
-    triggerEvent: "Classroom Roll Call marked Absent",
-    bodyPreview: "Dear Parent, your child {{1}} was marked ABSENT today ({{2}}) in {{3}}. For queries, reply to this official institution line.",
-    language: "en_IN",
-    status: "APPROVED (Meta Verified)",
-    archetype: "K12_SCHOOL",
-  },
-  {
-    id: "wt-2",
-    name: "dynamic_fee_upi_receipt",
-    triggerEvent: "Counter / Online Fee Payment",
-    bodyPreview: "Dear Parent, thank you for paying ₹{{1}} towards invoice #{{2}}. Click here to download your tax invoice receipt: {{3}}",
-    language: "en_IN",
-    status: "APPROVED (Meta Verified)",
-    archetype: "K12_SCHOOL",
-  },
-  {
-    id: "wt-201",
-    name: "hall_ticket_admit_card_release",
-    triggerEvent: "Semester Exam Hall Ticket Generated",
-    bodyPreview: "Dear {{1}}, your semester hall ticket for {{2}} is ready. Verify your exam seat number and center rules here: {{3}}",
-    language: "en_IN",
-    status: "APPROVED (Meta Verified)",
-    archetype: "DEGREE_COLLEGE",
-  },
-  {
-    id: "wt-401",
-    name: "test_series_air_scorecard",
-    triggerEvent: "Weekly Mock Test Evaluation",
-    bodyPreview: "Dear Parent, {{1}} secured All-India Rank {{2}} in Mock Test #{{3}} with score {{4}}/300. Detailed analysis attached.",
-    language: "en_IN",
-    status: "APPROVED (Meta Verified)",
-    archetype: "COACHING_ACADEMY",
-  },
-];
-
-const SAMPLE_DLT_LOGS: DltSmsLog[] = [
-  { id: "dlt-1", headerSenderId: "APXACD", peid: "140129384729104", templateId: "110716182930491", recipientPhone: "+91 9845497084", messageSnippet: "Aarav Sharma marked ABSENT today. - APEX ACD", charCount: 46, deliveredAt: "Today • 08:35 AM", status: "DELIVERED" },
-  { id: "dlt-2", headerSenderId: "APXACD", peid: "140129384729104", templateId: "110716182930492", recipientPhone: "+91 9444123890", messageSnippet: "Fee due reminder for Rohan Varma: ₹22,000 due on 25 Oct. - APEX ACD", charCount: 68, deliveredAt: "Yesterday • 05:00 PM", status: "DELIVERED" },
-  { id: "dlt-3", headerSenderId: "APXACD", peid: "140129384729104", templateId: "110716182930493", recipientPhone: "+91 9820123456", messageSnippet: "Paid ₹24,500 via Dynamic UPI QR for Aarav Sharma. Rec #891. - APEX ACD", charCount: 71, deliveredAt: "Today • 10:46 AM", status: "DELIVERED" },
-];
-
 interface CommunicationViewProps {
   archetype: InstitutionalArchetype;
 }
 
 export default function CommunicationView({ archetype }: CommunicationViewProps) {
-  const { activeSubTab, theme } = useAdmin();
+  const { activeSubTab, theme, isDemoMode } = useAdmin();
   const archetypeConfig = ARCHETYPES[archetype] || ARCHETYPES.K12_SCHOOL;
 
-  const [broadcasts, setBroadcasts] = useState<BroadcastRecord[]>(SAMPLE_BROADCASTS);
+  const [broadcasts, setBroadcasts] = useState<BroadcastRecord[]>(() =>
+    isDemoMode ? (DEMO_BROADCASTS as BroadcastRecord[]) : []
+  );
+  const [dltLogs, setDltLogs] = useState<DltSmsLog[]>(() =>
+    isDemoMode ? (DEMO_DLT_LOGS as DltSmsLog[]) : []
+  );
+  const [isLoading, setIsLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [isComposeModal, setIsComposeModal] = useState(false);
 
   // New Circular Form State
   const [circularTitle, setCircularTitle] = useState("");
-  const [circularAudience, setCircularAudience] = useState("All Parents");
-  const [circularChannel, setCircularChannel] = useState<"WhatsApp & SMS" | "WhatsApp Only" | "Govt DLT SMS" | "In-App Portal">("WhatsApp & SMS");
+  const [circularAudience, setCircularAudience] = useState("All Parents & Guardians");
+  const [circularChannel, setCircularChannel] = useState<
+    "WhatsApp & SMS" | "WhatsApp Only" | "Govt DLT SMS" | "In-App Portal"
+  >("WhatsApp & SMS");
   const [circularContent, setCircularContent] = useState("");
 
   const triggerToast = (msg: string) => {
@@ -177,35 +88,102 @@ export default function CommunicationView({ archetype }: CommunicationViewProps)
     setTimeout(() => setToastMessage(""), 3500);
   };
 
-  const handleSendBroadcast = (e: React.FormEvent) => {
+  const refreshBroadcasts = useCallback(() => {
+    if (isDemoMode) {
+      setBroadcasts(DEMO_BROADCASTS as BroadcastRecord[]);
+      setDltLogs(DEMO_DLT_LOGS as DltSmsLog[]);
+      return;
+    }
+
+    setIsLoading(true);
+    Promise.all([
+      getBroadcastsAction(archetype),
+      getRealDltSmsLogsAction(),
+    ])
+      .then(([bcRes, dltRes]) => {
+        if (bcRes.success) setBroadcasts(bcRes.broadcasts as BroadcastRecord[]);
+        if (dltRes.success) setDltLogs(dltRes.logs as DltSmsLog[]);
+      })
+      .catch((err) => {
+        console.error("Failed to load communication records:", err);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, [isDemoMode, archetype]);
+
+  useEffect(() => {
+    if (isDemoMode) return;
+    let isMounted = true;
+
+    Promise.all([
+      getBroadcastsAction(archetype),
+      getRealDltSmsLogsAction(),
+    ])
+      .then(([bcRes, dltRes]) => {
+        if (isMounted) {
+          if (bcRes.success) setBroadcasts(bcRes.broadcasts as BroadcastRecord[]);
+          if (dltRes.success) setDltLogs(dltRes.logs as DltSmsLog[]);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load communication records:", err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isDemoMode, archetype]);
+
+  const handleSendBroadcast = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!circularTitle.trim() || !circularContent.trim()) return;
 
-    const newBroadcast: BroadcastRecord = {
-      id: `bc-${Date.now().toString().slice(-4)}`,
+    if (isDemoMode) {
+      const newBroadcast: BroadcastRecord = {
+        id: `bc-${broadcasts.length + 101}`,
+        title: circularTitle,
+        channel: circularChannel,
+        targetAudience: circularAudience,
+        timestamp: "Today • Just now",
+        recipientsCount: 48,
+        deliveryRate: "99.9%",
+        content: circularContent,
+        archetype,
+      };
+
+      setBroadcasts([newBroadcast, ...broadcasts]);
+      setIsComposeModal(false);
+      setCircularTitle("");
+      setCircularContent("");
+      triggerToast(`Broadcast '${newBroadcast.title}' dispatched to ${newBroadcast.recipientsCount} recipients.`);
+      return;
+    }
+
+    const res = await createBroadcastAction({
       title: circularTitle,
       channel: circularChannel,
       targetAudience: circularAudience,
-      timestamp: "Today • Just now",
-      recipientsCount: 450,
-      deliveryRate: "99.9%",
       content: circularContent,
-      archetype,
-    };
+    });
 
-    setBroadcasts([newBroadcast, ...broadcasts]);
-    setIsComposeModal(false);
-    setCircularTitle("");
-    setCircularContent("");
-    triggerToast(`Broadcast '${newBroadcast.title}' dispatched to 450 recipients.`);
+    if (res.success) {
+      setIsComposeModal(false);
+      setCircularTitle("");
+      setCircularContent("");
+      triggerToast(`Broadcast '${circularTitle}' recorded and dispatched via PostgreSQL.`);
+      refreshBroadcasts();
+    } else {
+      alert(res.error || "Failed to dispatch broadcast");
+    }
   };
 
   // Filter for active archetype
-  const activeBroadcasts = broadcasts.filter((b) => b.archetype === archetype);
+  const activeBroadcasts = broadcasts.filter((b) => !b.archetype || b.archetype === archetype);
   const displayBroadcasts = activeBroadcasts.length > 0 ? activeBroadcasts : broadcasts.slice(0, 3);
 
-  const activeTemplates = SAMPLE_WHATSAPP_TEMPLATES.filter((t) => t.archetype === archetype);
-  const displayTemplates = activeTemplates.length > 0 ? activeTemplates : SAMPLE_WHATSAPP_TEMPLATES.slice(0, 2);
+  const activeTemplates = DEMO_WHATSAPP_TEMPLATES.filter((t) => t.archetype === archetype);
+  const displayTemplates = activeTemplates.length > 0 ? activeTemplates : DEMO_WHATSAPP_TEMPLATES.slice(0, 2);
 
   const isWhatsappTab = activeSubTab === "whatsapp_pushes";
   const isDltTab = activeSubTab === "sms_dlt_logs";
@@ -231,6 +209,11 @@ export default function CommunicationView({ archetype }: CommunicationViewProps)
             <span className="text-xs px-2.5 py-0.5 rounded-full font-sans font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
               {archetypeConfig.name}
             </span>
+            {!isDemoMode && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-blue-50 text-blue-800 border border-blue-200">
+                PostgreSQL Live
+              </span>
+            )}
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
             {archetype === "K12_SCHOOL" && "Official WhatsApp Business API, TRAI DLT statutory SMS, and bus delay announcements."}
@@ -251,6 +234,12 @@ export default function CommunicationView({ archetype }: CommunicationViewProps)
         </button>
       </div>
 
+      {isLoading && (
+        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-center text-xs text-slate-500 animate-pulse">
+          Connecting to institution communication gateway and audit trail...
+        </div>
+      )}
+
       {/* KPI Metric Pods */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs">
@@ -270,11 +259,11 @@ export default function CommunicationView({ archetype }: CommunicationViewProps)
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Delivered Messages Today</span>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Broadcasts Sent</span>
           <span className="text-xl sm:text-2xl font-black text-slate-900 block mt-0.5 font-sans">
-            2,480
+            {broadcasts.length}
           </span>
-          <span className="text-[10px] text-slate-500 mt-1 block">0 Failed Transmissions</span>
+          <span className="text-[10px] text-slate-500 mt-1 block">Active Circulars</span>
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs">
@@ -298,38 +287,34 @@ export default function CommunicationView({ archetype }: CommunicationViewProps)
                 <span>Meta Official WhatsApp Business API Templates</span>
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Automated event-triggered notifications with 99%+ read rates and zero phone number leakage.
+                Pre-approved statutory communication templates automatically dispatched on critical triggers.
               </p>
             </div>
             <span className="text-[10px] font-bold bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-full border border-emerald-200">
-              Meta Webhook Online
+              Verified Webhook Active
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {displayTemplates.map((wt) => (
-              <div key={wt.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+              <div key={wt.id} className="p-4 rounded-2xl bg-emerald-50/40 border border-emerald-200/80 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono font-bold text-slate-900 text-xs">{wt.name}</span>
-                  <span className="text-[9px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
+                  <span className="font-mono text-xs font-bold text-emerald-900">{wt.name}</span>
+                  <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
                     {wt.status}
                   </span>
                 </div>
-
-                <div className="p-3 bg-white rounded-xl border border-emerald-200/60 shadow-2xs text-xs text-slate-800 font-sans space-y-1">
-                  <span className="text-[9px] text-emerald-700 font-bold uppercase tracking-wider block">
-                    Trigger: {wt.triggerEvent}
-                  </span>
+                <div className="bg-white p-3 rounded-xl border border-emerald-200 text-xs shadow-2xs space-y-1">
+                  <span className="text-[10px] text-slate-400 block font-bold">Trigger: {wt.triggerEvent}</span>
                   <p className="text-slate-700 leading-relaxed text-[11px]">{wt.bodyPreview}</p>
                 </div>
-
-                <div className="flex items-center justify-between text-[10px] text-slate-500">
+                <div className="flex items-center justify-between text-[10px] text-emerald-800 font-medium">
                   <span>Language: {wt.language}</span>
                   <button
-                    onClick={() => triggerToast(`Dispatched test template ping for ${wt.name}.`)}
-                    className="text-blue-700 font-bold hover:underline cursor-pointer"
+                    onClick={() => triggerToast(`Dispatched test WhatsApp push for ${wt.name}`)}
+                    className="text-emerald-700 font-bold hover:underline cursor-pointer"
                   >
-                    Test Template →
+                    Test Push →
                   </button>
                 </div>
               </div>
@@ -339,95 +324,136 @@ export default function CommunicationView({ archetype }: CommunicationViewProps)
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════
-          SUB-TAB 3: GOVT DLT SMS LOGS
+          SUB-TAB 3: GOVT TRAI DLT SMS AUDIT LOGS
       ══════════════════════════════════════════════════════════════════════ */}
       {isDltTab && (
-        <div className="bg-white rounded-3xl p-6 shadow-xs border border-slate-100 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="bg-white rounded-3xl shadow-xs border border-slate-100 overflow-hidden">
+          <div className="p-5 pb-3 border-b border-slate-100 flex items-center justify-between">
             <div>
               <h3 className="font-bold text-slate-900 text-sm font-serif flex items-center gap-2">
                 <Radio className="w-4 h-4 text-blue-700" />
-                <span>Statutory TRAI DLT SMS Gateway Logs</span>
+                <span>Statutory Govt TRAI DLT SMS Dispatch Audit Logs</span>
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Indian telecommunications mandate: Every transaction carries registered PEID and approved Template ID.
+                Every outgoing transactional SMS is cryptographically stamped with Principal Entity ID (PEID) and Telemarketer Chain.
               </p>
             </div>
-            <span className="text-[10px] font-bold bg-blue-50 text-blue-800 px-2.5 py-1 rounded-full border border-blue-200">
-              DLT Compliance 100%
-            </span>
+            <span className="text-xs text-slate-400 font-mono">Header: #APXACD</span>
           </div>
 
-          <div className="divide-y divide-slate-100">
-            {SAMPLE_DLT_LOGS.map((log) => (
-              <div key={log.id} className="py-3.5 flex items-center justify-between px-2 hover:bg-slate-50 rounded-xl text-xs">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold font-mono text-slate-900 text-xs">{log.headerSenderId}</span>
-                    <span className="text-slate-400">•</span>
-                    <span className="text-slate-600 font-mono text-[11px]">{log.recipientPhone}</span>
-                  </div>
-                  <p className="text-[11px] text-slate-700 mt-0.5">{log.messageSnippet}</p>
-                </div>
-
-                <div className="text-right">
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full inline-block">
-                    {log.status}
-                  </span>
-                  <span className="text-[9px] text-slate-400 block font-mono mt-0.5">
-                    {log.deliveredAt} • {log.charCount} chars
-                  </span>
-                </div>
-              </div>
-            ))}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-wider bg-slate-50/50">
+                  <th className="py-3.5 px-6">Header / Sender ID</th>
+                  <th className="py-3.5 px-6">DLT Template ID</th>
+                  <th className="py-3.5 px-6">Recipient Phone</th>
+                  <th className="py-3.5 px-6">SMS Body Snippet</th>
+                  <th className="py-3.5 px-6">Timestamp</th>
+                  <th className="py-3.5 px-6 text-right">DLT Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-700">
+                {dltLogs.map((row) => (
+                  <tr key={row.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-4 px-6 font-mono font-bold text-slate-900">
+                      {row.headerSenderId}
+                    </td>
+                    <td className="py-4 px-6 font-mono text-slate-500 text-[11px]">
+                      {row.templateId}
+                    </td>
+                    <td className="py-4 px-6 font-mono text-slate-800">
+                      {row.recipientPhone}
+                    </td>
+                    <td className="py-4 px-6 text-slate-700 max-w-xs truncate">
+                      {row.messageSnippet}
+                    </td>
+                    <td className="py-4 px-6 text-slate-400 font-mono text-[11px]">
+                      {row.deliveredAt}
+                    </td>
+                    <td className="py-4 px-6 text-right">
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                        {row.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════
-          DEFAULT SUB-TAB: EMERGENCY BROADCASTS ARCHIVE
+          DEFAULT SUB-TAB: ACTIVE CIRCULARS & BROADCASTS FEED
       ══════════════════════════════════════════════════════════════════════ */}
-      {(!isWhatsappTab && !isDltTab) && (
-        <div className="bg-white rounded-3xl shadow-xs border border-slate-100 overflow-hidden space-y-4 p-5">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
-            <div>
-              <h3 className="font-bold text-slate-900 text-sm font-serif">Recent Institutional Broadcasts</h3>
-              <span className="text-xs text-slate-500 font-mono">Transmission Ledger</span>
-            </div>
-          </div>
+      {!isWhatsappTab && !isDltTab && (
+        <div className="space-y-3">
+          {displayBroadcasts.map((item) => (
+            <div
+              key={item.id}
+              className="bg-white rounded-3xl p-5 shadow-xs border border-slate-100 hover:shadow-md transition-shadow space-y-3"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-2 border-b border-slate-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-800 flex items-center justify-center shrink-0">
+                    <MessageSquare className="w-4 h-4 text-blue-700" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-sm">{item.title}</h3>
+                    <span className="text-[11px] text-slate-500 font-medium">
+                      Audience: {item.targetAudience} • {item.timestamp}
+                    </span>
+                  </div>
+                </div>
 
-          <div className="divide-y divide-slate-100">
-            {displayBroadcasts.map((bc) => (
-              <div key={bc.id} className="py-4 px-2 hover:bg-slate-50 rounded-2xl transition-colors space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-900 text-xs block">{bc.title}</span>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                    {bc.deliveryRate} Delivered ({bc.recipientsCount} recipients)
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-full border border-emerald-200">
+                    {item.channel}
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-400 bg-slate-50 px-2 py-0.5 rounded border">
+                    {item.recipientsCount} Recipients
                   </span>
                 </div>
+              </div>
 
-                <p className="text-xs text-slate-600 leading-relaxed">{bc.content}</p>
+              <p className="text-xs text-slate-700 leading-relaxed bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+                {item.content}
+              </p>
 
-                <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-                  <span>Target: {bc.targetAudience} • Channel: {bc.channel}</span>
-                  <span className="font-mono">{bc.timestamp}</span>
+              <div className="flex items-center justify-between text-[11px] pt-1">
+                <span className="text-emerald-700 font-bold flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Delivery Success Rate: {item.deliveryRate}</span>
+                </span>
+
+                <div className="flex items-center gap-2">
+                  {/* Quick WhatsApp Share */}
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(`${item.title}\n\n${item.content}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-emerald-700 hover:text-emerald-900 font-bold cursor-pointer hover:underline flex items-center gap-1"
+                  >
+                    <span>Share on WhatsApp →</span>
+                  </a>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════
-          COMPOSE NEW CIRCULAR MODAL
+          MODAL: COMPOSE NEW CIRCULAR
       ══════════════════════════════════════════════════════════════════════ */}
       {isComposeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-200 space-y-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-emerald-800" />
-                <h3 className="font-bold text-slate-900 text-sm">Compose New Institutional Circular</h3>
+                <Send className="w-5 h-5 text-blue-700" />
+                <h3 className="font-bold text-slate-900 text-sm">Compose Omnichannel Circular</h3>
               </div>
               <button onClick={() => setIsComposeModal(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
                 <X className="w-5 h-5" />
@@ -442,8 +468,8 @@ export default function CommunicationView({ archetype }: CommunicationViewProps)
                   required
                   value={circularTitle}
                   onChange={(e) => setCircularTitle(e.target.value)}
-                  placeholder="e.g. Schedule for Annual Examinations"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none"
+                  placeholder="e.g. Schedule for Annual Sports Meet 2026"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600"
                 />
               </div>
 
@@ -455,21 +481,22 @@ export default function CommunicationView({ archetype }: CommunicationViewProps)
                     onChange={(e) => setCircularAudience(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold cursor-pointer"
                   >
-                    <option value="All Parents">All Parents</option>
-                    <option value="Faculty & Staff">Faculty &amp; Staff</option>
-                    <option value="Bus Commuters">Bus Route Commuters</option>
-                    <option value="Final Year Students">Final Year Students</option>
+                    <option value="All Parents & Guardians">All Parents & Guardians</option>
+                    <option value="Class 10 & 12 Board Batches">Class 10 & 12 Board Batches</option>
+                    <option value="Hostel Residents">Hostel Residents</option>
+                    <option value="Transport Bus Commuters">Transport Bus Commuters</option>
+                    <option value="All Faculty & Staff">All Faculty & Staff</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Delivery Channel</label>
+                  <label className="font-bold text-slate-700 block mb-1">Dispatch Gateway</label>
                   <select
                     value={circularChannel}
-                    onChange={(e) => setCircularChannel(e.target.value as "WhatsApp & SMS" | "WhatsApp Only" | "Govt DLT SMS" | "In-App Portal")}
+                    onChange={(e) => setCircularChannel(e.target.value as BroadcastRecord["channel"])}
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold cursor-pointer"
                   >
-                    <option value="WhatsApp & SMS">WhatsApp &amp; SMS (Fallback)</option>
+                    <option value="WhatsApp & SMS">WhatsApp & SMS</option>
                     <option value="WhatsApp Only">WhatsApp Only</option>
                     <option value="Govt DLT SMS">Govt DLT SMS</option>
                     <option value="In-App Portal">In-App Portal Only</option>
@@ -478,14 +505,14 @@ export default function CommunicationView({ archetype }: CommunicationViewProps)
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Message Content *</label>
+                <label className="font-bold text-slate-700 block mb-1">Circular Message Body *</label>
                 <textarea
-                  required
                   rows={4}
+                  required
                   value={circularContent}
                   onChange={(e) => setCircularContent(e.target.value)}
-                  placeholder="Enter official circular content..."
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs leading-relaxed focus:outline-none"
+                  placeholder="Type official message body..."
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600"
                 />
               </div>
 
@@ -493,14 +520,14 @@ export default function CommunicationView({ archetype }: CommunicationViewProps)
                 <button
                   type="button"
                   onClick={() => setIsComposeModal(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs cursor-pointer hover:bg-slate-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   style={{ backgroundColor: theme.primary }}
-                  className="px-5 py-2.5 rounded-xl text-white font-bold text-xs hover:opacity-90 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl text-white font-bold text-xs transition-all shadow-xs cursor-pointer hover:opacity-90 flex items-center gap-1.5"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>Dispatch Circular</span>

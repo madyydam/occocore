@@ -766,4 +766,145 @@ export const DEMO_FACULTY_WORKLOAD: DemoFacultyWorkloadRecord[] = [
   { id: "fw-402", name: "Dr. Anjali Rao (AIIMS)", designation: "Head of Biology", departmentOrSubject: "Botany & Zoology", lectureHoursWeekly: 18, practicalOrDoubtHours: 8, maxTargetHours: 26, archetype: "COACHING_ACADEMY", status: "Balanced" },
 ];
 
+export interface DemoBroadcastRecord {
+  id: string;
+  title: string;
+  channel: "WhatsApp & SMS" | "WhatsApp Only" | "Govt DLT SMS" | "In-App Portal";
+  targetAudience: string;
+  timestamp: string;
+  recipientsCount: number;
+  deliveryRate: string;
+  content: string;
+  archetype: InstitutionalArchetype;
+}
+
+export interface DemoWhatsAppTemplate {
+  id: string;
+  name: string;
+  triggerEvent: string;
+  bodyPreview: string;
+  language: string;
+  status: "APPROVED (Meta Verified)" | "PENDING_REVIEW";
+  archetype: InstitutionalArchetype;
+}
+
+export interface DemoDltSmsLog {
+  id: string;
+  headerSenderId: string;
+  peid: string;
+  templateId: string;
+  recipientPhone: string;
+  messageSnippet: string;
+  charCount: number;
+  deliveredAt: string;
+  status: "DELIVERED" | "QUEUED";
+}
+
+export const DEMO_BROADCASTS: DemoBroadcastRecord[] = [
+  // School
+  {
+    id: "bc-1",
+    title: "Parent-Teacher Conference (PTC) Schedule Announcement",
+    channel: "WhatsApp & SMS",
+    targetAudience: "All Parents (Nursery to Class 12)",
+    timestamp: "Today • 09:30 AM",
+    recipientsCount: 1240,
+    deliveryRate: "99.4%",
+    content: "Dear Parents, Term 1 Parent-Teacher Conferences are scheduled for Saturday 9:00 AM. Please book your 15-minute slot through the parent portal.",
+    archetype: "K12_SCHOOL",
+  },
+  {
+    id: "bc-2",
+    title: "Winter Uniform & Bus Schedule Update",
+    channel: "WhatsApp Only",
+    targetAudience: "Junior Wing Parents",
+    timestamp: "Yesterday • 04:15 PM",
+    recipientsCount: 480,
+    deliveryRate: "99.8%",
+    content: "Notice: Mandatory switch to winter blazer and sweater effective Monday. Morning bus pickups will commence 10 minutes earlier on Route 4 & 7.",
+    archetype: "K12_SCHOOL",
+  },
+  // College
+  {
+    id: "bc-201",
+    title: "Campus Placement Drive 2026-27: Tier 1 Tech Day",
+    channel: "WhatsApp & SMS",
+    targetAudience: "B.Tech Final Year (CSE & ECE)",
+    timestamp: "2 Nov 2026 • 11:00 AM",
+    recipientsCount: 240,
+    deliveryRate: "98.8%",
+    content: "Campus recruitment drive commences next Monday. Eligible students with CGPA > 8.0 must upload resume PDFs to the placement portal before Friday 5 PM.",
+    archetype: "DEGREE_COLLEGE",
+  },
+  // University
+  {
+    id: "bc-301",
+    title: "38th Annual Convocation Robe Distribution & Rehearsal",
+    channel: "In-App Portal",
+    targetAudience: "Graduating PG & Ph.D. Scholars",
+    timestamp: "1 Nov 2026 • 02:00 PM",
+    recipientsCount: 850,
+    deliveryRate: "100%",
+    content: "The 38th University Convocation will be held at the Main Auditorium. Gown collection counter open from 10 AM to 4 PM at the Central Library foyer.",
+    archetype: "UNIVERSITY",
+  },
+  // Coaching
+  {
+    id: "bc-401",
+    title: "All-India Mock Test #4 Answer Key & Rank List Live",
+    channel: "WhatsApp & SMS",
+    targetAudience: "Rankers Super-30 & Champions NEET",
+    timestamp: "Today • 08:00 AM",
+    recipientsCount: 320,
+    deliveryRate: "99.7%",
+    content: "Sunday Grand Test #4 results and video solutions are now live! Check your All-India Rank, question-wise time analysis, and negative marking scorecards.",
+    archetype: "COACHING_ACADEMY",
+  },
+];
+
+export const DEMO_WHATSAPP_TEMPLATES: DemoWhatsAppTemplate[] = [
+  {
+    id: "wt-1",
+    name: "attendance_absent_alert_v2",
+    triggerEvent: "Classroom Roll Call marked Absent",
+    bodyPreview: "Dear Parent, your child {{1}} was marked ABSENT today ({{2}}) in {{3}}. For queries, reply to this official institution line.",
+    language: "en_IN",
+    status: "APPROVED (Meta Verified)",
+    archetype: "K12_SCHOOL",
+  },
+  {
+    id: "wt-2",
+    name: "dynamic_fee_upi_receipt",
+    triggerEvent: "Counter / Online Fee Payment",
+    bodyPreview: "Dear Parent, thank you for paying ₹{{1}} towards invoice #{{2}}. Click here to download your tax invoice receipt: {{3}}",
+    language: "en_IN",
+    status: "APPROVED (Meta Verified)",
+    archetype: "K12_SCHOOL",
+  },
+  {
+    id: "wt-201",
+    name: "hall_ticket_admit_card_release",
+    triggerEvent: "Semester Exam Hall Ticket Generated",
+    bodyPreview: "Dear {{1}}, your semester hall ticket for {{2}} is ready. Verify your exam seat number and center rules here: {{3}}",
+    language: "en_IN",
+    status: "APPROVED (Meta Verified)",
+    archetype: "DEGREE_COLLEGE",
+  },
+  {
+    id: "wt-401",
+    name: "test_series_air_scorecard",
+    triggerEvent: "Weekly Mock Test Evaluation",
+    bodyPreview: "Dear Parent, {{1}} secured All-India Rank {{2}} in Mock Test #{{3}} with score {{4}}/300. Detailed analysis attached.",
+    language: "en_IN",
+    status: "APPROVED (Meta Verified)",
+    archetype: "COACHING_ACADEMY",
+  },
+];
+
+export const DEMO_DLT_LOGS: DemoDltSmsLog[] = [
+  { id: "dlt-1", headerSenderId: "APXACD", peid: "140129384729104", templateId: "110716182930491", recipientPhone: "+91 9845497084", messageSnippet: "Vihaan Deshmukh marked ABSENT today. - APEX ACD", charCount: 46, deliveredAt: "Today • 08:35 AM", status: "DELIVERED" },
+  { id: "dlt-2", headerSenderId: "APXACD", peid: "140129384729104", templateId: "110716182930492", recipientPhone: "+91 9444123890", messageSnippet: "Fee due reminder for Ananya Iyer: ₹24,500 due on 25 Nov. - APEX ACD", charCount: 68, deliveredAt: "Yesterday • 05:00 PM", status: "DELIVERED" },
+  { id: "dlt-3", headerSenderId: "APXACD", peid: "140129384729104", templateId: "110716182930493", recipientPhone: "+91 9820123456", messageSnippet: "Paid ₹24,500 via Dynamic UPI QR for Vihaan Deshmukh. Rec #891. - APEX ACD", charCount: 71, deliveredAt: "Today • 10:46 AM", status: "DELIVERED" },
+];
+
 
