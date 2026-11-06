@@ -264,3 +264,62 @@ export const DEMO_ALERTS_LOG: DemoParentAlertLogItem[] = [
   { id: "demo-alt-3", studentName: "Rohan Varma", studentId: "APX-0493", guardianPhone: "9444123890", triggerEvent: "Below 75% Notice", channel: "WhatsApp Business", dltTemplateId: "DLT-TE-2026-ATT-04", timestamp: "Yesterday 04:30 PM", status: "Read", parentReply: "Medical certificate submitted to Principal" },
 ];
 
+export interface DemoFeeInvoiceRecord {
+  id: string;
+  invoiceNo: string;
+  studentName: string;
+  studentId: string;
+  cohort: string;
+  heads: string;
+  amount: number;
+  paidAmount?: number;
+  dueDate: string;
+  status: "Paid" | "Pending" | "Overdue" | "Partial";
+  paymentMode?: string;
+  paidOn?: string;
+  guardianPhone?: string;
+  archetype: InstitutionalArchetype;
+}
+
+export interface DemoFeeStructureHead {
+  id: string;
+  headName: string;
+  frequency: "Annual" | "Per Semester" | "Quarterly" | "Monthly";
+  amount: number;
+  isOptional: boolean;
+  concessionAllowed: boolean;
+  archetype: InstitutionalArchetype;
+}
+
+export const DEMO_INVOICES: DemoFeeInvoiceRecord[] = [
+  // School
+  { id: "inv-1", invoiceNo: "INV-2026-891", studentName: "Aarav Sharma", studentId: "APX-0491", cohort: "Class 10-A", heads: "Q3 Tuition + Smart Lab + Bus", amount: 24500, paidAmount: 24500, dueDate: "10 Nov 2026", status: "Paid", paymentMode: "Dynamic UPI QR (GPay)", paidOn: "Today • 10:45 AM", guardianPhone: "9876543210", archetype: "K12_SCHOOL" },
+  { id: "inv-2", invoiceNo: "INV-2026-892", studentName: "Rohan Varma", studentId: "APX-0493", cohort: "Class 10-A", heads: "Q3 Tuition + Transport", amount: 22000, paidAmount: 0, dueDate: "25 Oct 2026", status: "Overdue", guardianPhone: "9444123890", archetype: "K12_SCHOOL" },
+  { id: "inv-3", invoiceNo: "INV-2026-893", studentName: "Vikramaditya Roy", studentId: "APX-0499", cohort: "Grade 4", heads: "RTE 25% EWS 100% Exemption", amount: 0, paidAmount: 0, dueDate: "31 Mar 2027", status: "Paid", paymentMode: "State Govt Grant #MH-914", paidOn: "1 Oct 2026", guardianPhone: "9822334455", archetype: "K12_SCHOOL" },
+  // College
+  { id: "inv-201", invoiceNo: "COL-2026-401", studentName: "Aaditya Singhania", studentId: "PRN-2026-014", cohort: "B.Tech CSE (Sem IV)", heads: "Sem IV Tuition + Uni Exam Fee", amount: 54000, paidAmount: 54000, dueDate: "15 Nov 2026", status: "Paid", paymentMode: "NetBanking HDFC", paidOn: "Yesterday", guardianPhone: "9833445566", archetype: "DEGREE_COLLEGE" },
+  { id: "inv-202", invoiceNo: "COL-2026-402", studentName: "Meera Krishnan", studentId: "PRN-2026-088", cohort: "B.Sc Biotech (Sem II)", heads: "Semester Tuition + Lab Safety", amount: 48500, paidAmount: 0, dueDate: "30 Oct 2026", status: "Overdue", guardianPhone: "9844556677", archetype: "DEGREE_COLLEGE" },
+  // University
+  { id: "inv-301", invoiceNo: "UNI-2026-101", studentName: "Dr. Siddharth Sen", studentId: "UNI-9812", cohort: "Ph.D. Computing", heads: "Doctoral Research Bench Fee", amount: 32000, paidAmount: 0, dueDate: "30 Nov 2026", status: "Pending", guardianPhone: "9855667788", archetype: "UNIVERSITY" },
+  // Coaching
+  { id: "inv-401", invoiceNo: "CCH-2026-701", studentName: "Harshwardhan Patil", studentId: "ASP-881", cohort: "Rankers JEE 2027", heads: "Installment 2 + All-India Test Series (18% GST)", amount: 45000, paidAmount: 0, dueDate: "5 Nov 2026", status: "Pending", guardianPhone: "9866778899", archetype: "COACHING_ACADEMY" },
+  { id: "inv-402", invoiceNo: "CCH-2026-702", studentName: "Roshni Deshpande", studentId: "ASP-884", cohort: "Champions NEET", heads: "Installment 1 Tuition", amount: 38000, paidAmount: 0, dueDate: "20 Oct 2026", status: "Overdue", guardianPhone: "9877889900", archetype: "COACHING_ACADEMY" },
+];
+
+export const DEMO_FEE_STRUCTURES: DemoFeeStructureHead[] = [
+  // School
+  { id: "fh-1", headName: "Tuition Fee (Q3)", frequency: "Quarterly", amount: 18000, isOptional: false, concessionAllowed: true, archetype: "K12_SCHOOL" },
+  { id: "fh-2", headName: "Smart STEM & Computer Lab", frequency: "Quarterly", amount: 2500, isOptional: false, concessionAllowed: false, archetype: "K12_SCHOOL" },
+  { id: "fh-3", headName: "AC School Bus (Route Slab 2)", frequency: "Quarterly", amount: 4000, isOptional: true, concessionAllowed: false, archetype: "K12_SCHOOL" },
+  // College
+  { id: "fh-201", headName: "Semester Tuition & Instruction", frequency: "Per Semester", amount: 45000, isOptional: false, concessionAllowed: true, archetype: "DEGREE_COLLEGE" },
+  { id: "fh-202", headName: "University Examination & Registration", frequency: "Per Semester", amount: 4000, isOptional: false, concessionAllowed: false, archetype: "DEGREE_COLLEGE" },
+  { id: "fh-203", headName: "Advanced Computing Lab Deposit", frequency: "Annual", amount: 5000, isOptional: false, concessionAllowed: false, archetype: "DEGREE_COLLEGE" },
+  // University
+  { id: "fh-301", headName: "Doctoral Bench & Research Infrastructure", frequency: "Annual", amount: 28000, isOptional: false, concessionAllowed: true, archetype: "UNIVERSITY" },
+  { id: "fh-302", headName: "Hostel & Mess Amenities", frequency: "Per Semester", amount: 36000, isOptional: true, concessionAllowed: false, archetype: "UNIVERSITY" },
+  // Coaching
+  { id: "fh-401", headName: "JEE Advanced Classroom Instruction", frequency: "Quarterly", amount: 35000, isOptional: false, concessionAllowed: true, archetype: "COACHING_ACADEMY" },
+  { id: "fh-402", headName: "All-India Computer Based Test Series (CBT)", frequency: "Annual", amount: 10000, isOptional: false, concessionAllowed: false, archetype: "COACHING_ACADEMY" },
+];
+

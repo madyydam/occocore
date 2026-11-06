@@ -1,94 +1,83 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   QrCode,
   Send,
   CheckCircle2,
   AlertCircle,
-  Download,
   X,
   FileText,
   Receipt,
   Layers,
+  Printer,
+  Search,
 } from "lucide-react";
 import { InstitutionalArchetype, ARCHETYPES } from "@/lib/terminology";
 import { useAdmin } from "@/lib/admin/adminContext";
+import {
+  getFeeInvoicesAction,
+  getFeeStructuresAction,
+  recordFeePaymentAction,
+} from "@/lib/actions/feeActions";
+import {
+  DEMO_INVOICES,
+  DEMO_FEE_STRUCTURES,
+} from "@/lib/demo/demoMockData";
 
-interface FeeInvoiceRecord {
+export interface FeeInvoiceRecord {
   id: string;
   invoiceNo: string;
   studentName: string;
   studentId: string;
+  studentUuid?: string;
   cohort: string;
   heads: string;
   amount: number;
+  paidAmount?: number;
   dueDate: string;
-  status: "Paid" | "Pending" | "Overdue";
+  status: "Paid" | "Pending" | "Overdue" | "Partial";
   paymentMode?: string;
   paidOn?: string;
-  archetype: InstitutionalArchetype;
+  guardianPhone?: string;
+  receiptNo?: string;
+  transactionRef?: string;
+  archetype?: InstitutionalArchetype;
 }
 
-interface FeeStructureHead {
+export interface FeeStructureHead {
   id: string;
   headName: string;
   frequency: "Annual" | "Per Semester" | "Quarterly" | "Monthly";
   amount: number;
   isOptional: boolean;
   concessionAllowed: boolean;
-  archetype: InstitutionalArchetype;
+  archetype?: InstitutionalArchetype;
 }
-
-const SAMPLE_INVOICES: FeeInvoiceRecord[] = [
-  // School
-  { id: "inv-1", invoiceNo: "INV-2026-891", studentName: "Aarav Sharma", studentId: "APX-0491", cohort: "Class 10-A", heads: "Q3 Tuition + Smart Lab + Bus", amount: 24500, dueDate: "10 Nov 2026", status: "Paid", paymentMode: "Dynamic UPI QR (GPay)", paidOn: "Today • 10:45 AM", archetype: "K12_SCHOOL" },
-  { id: "inv-2", invoiceNo: "INV-2026-892", studentName: "Rohan Varma", studentId: "APX-0493", cohort: "Class 10-A", heads: "Q3 Tuition + Transport", amount: 22000, dueDate: "25 Oct 2026", status: "Overdue", archetype: "K12_SCHOOL" },
-  { id: "inv-3", invoiceNo: "INV-2026-893", studentName: "Vikramaditya Roy", studentId: "APX-0499", cohort: "Grade 4", heads: "RTE 25% EWS 100% Exemption", amount: 0, dueDate: "31 Mar 2027", status: "Paid", paymentMode: "State Govt Grant #MH-914", paidOn: "1 Oct 2026", archetype: "K12_SCHOOL" },
-  // College
-  { id: "inv-201", invoiceNo: "COL-2026-401", studentName: "Aaditya Singhania", studentId: "PRN-2026-014", cohort: "B.Tech CSE (Sem IV)", heads: "Sem IV Tuition + Uni Exam Fee", amount: 54000, dueDate: "15 Nov 2026", status: "Paid", paymentMode: "NetBanking HDFC", paidOn: "Yesterday", archetype: "DEGREE_COLLEGE" },
-  { id: "inv-202", invoiceNo: "COL-2026-402", studentName: "Meera Krishnan", studentId: "PRN-2026-088", cohort: "B.Sc Biotech (Sem II)", heads: "Semester Tuition + Lab Safety", amount: 48500, dueDate: "30 Oct 2026", status: "Overdue", archetype: "DEGREE_COLLEGE" },
-  // University
-  { id: "inv-301", invoiceNo: "UNI-2026-101", studentName: "Dr. Siddharth Sen", studentId: "UNI-9812", cohort: "Ph.D. Computing", heads: "Doctoral Research Bench Fee", amount: 32000, dueDate: "30 Nov 2026", status: "Pending", archetype: "UNIVERSITY" },
-  // Coaching
-  { id: "inv-401", invoiceNo: "CCH-2026-701", studentName: "Harshwardhan Patil", studentId: "ASP-881", cohort: "Rankers JEE 2027", heads: "Installment 2 + All-India Test Series (18% GST)", amount: 45000, dueDate: "5 Nov 2026", status: "Pending", archetype: "COACHING_ACADEMY" },
-  { id: "inv-402", invoiceNo: "CCH-2026-702", studentName: "Roshni Deshpande", studentId: "ASP-884", cohort: "Champions NEET", heads: "Installment 1 Tuition", amount: 38000, dueDate: "20 Oct 2026", status: "Overdue", archetype: "COACHING_ACADEMY" },
-];
-
-const SAMPLE_FEE_STRUCTURES: FeeStructureHead[] = [
-  // School
-  { id: "fh-1", headName: "Tuition Fee (Q3)", frequency: "Quarterly", amount: 18000, isOptional: false, concessionAllowed: true, archetype: "K12_SCHOOL" },
-  { id: "fh-2", headName: "Smart STEM & Computer Lab", frequency: "Quarterly", amount: 2500, isOptional: false, concessionAllowed: false, archetype: "K12_SCHOOL" },
-  { id: "fh-3", headName: "AC School Bus (Route Slab 2)", frequency: "Quarterly", amount: 4000, isOptional: true, concessionAllowed: false, archetype: "K12_SCHOOL" },
-  // College
-  { id: "fh-201", headName: "Semester Tuition & Instruction", frequency: "Per Semester", amount: 45000, isOptional: false, concessionAllowed: true, archetype: "DEGREE_COLLEGE" },
-  { id: "fh-202", headName: "University Examination & Registration", frequency: "Per Semester", amount: 4000, isOptional: false, concessionAllowed: false, archetype: "DEGREE_COLLEGE" },
-  { id: "fh-203", headName: "Advanced Computing Lab Deposit", frequency: "Annual", amount: 5000, isOptional: false, concessionAllowed: false, archetype: "DEGREE_COLLEGE" },
-  // University
-  { id: "fh-301", headName: "Doctoral Bench & Research Infrastructure", frequency: "Annual", amount: 28000, isOptional: false, concessionAllowed: true, archetype: "UNIVERSITY" },
-  { id: "fh-302", headName: "Hostel & Mess Amenities", frequency: "Per Semester", amount: 36000, isOptional: true, concessionAllowed: false, archetype: "UNIVERSITY" },
-  // Coaching
-  { id: "fh-401", headName: "JEE Advanced Classroom Instruction", frequency: "Quarterly", amount: 35000, isOptional: false, concessionAllowed: true, archetype: "COACHING_ACADEMY" },
-  { id: "fh-402", headName: "All-India Computer Based Test Series (CBT)", frequency: "Annual", amount: 10000, isOptional: false, concessionAllowed: false, archetype: "COACHING_ACADEMY" },
-];
 
 interface FeesViewProps {
   archetype: InstitutionalArchetype;
 }
 
 export default function FeesView({ archetype }: FeesViewProps) {
-  const { activeSubTab, theme } = useAdmin();
+  const { activeSubTab, theme, isDemoMode } = useAdmin();
   const archetypeConfig = ARCHETYPES[archetype] || ARCHETYPES.K12_SCHOOL;
   const terms = archetypeConfig.terms;
 
-  const [invoices, setInvoices] = useState<FeeInvoiceRecord[]>(SAMPLE_INVOICES);
-  const [feeStructures] = useState<FeeStructureHead[]>(SAMPLE_FEE_STRUCTURES);
+  // Strict Demo Mock Data Quarantine: Real mode initializes to empty arrays
+  const [invoices, setInvoices] = useState<FeeInvoiceRecord[]>(() =>
+    isDemoMode ? (DEMO_INVOICES as FeeInvoiceRecord[]) : []
+  );
+  const [feeStructures, setFeeStructures] = useState<FeeStructureHead[]>(() =>
+    isDemoMode ? (DEMO_FEE_STRUCTURES as FeeStructureHead[]) : []
+  );
+  const [isLoadingRealData, setIsLoadingRealData] = useState<boolean>(!isDemoMode);
   const [toastMessage, setToastMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Modals
   const [isUpiModal, setIsUpiModal] = useState(false);
-  const [upiStudent, setUpiStudent] = useState("Aarav Sharma");
+  const [upiStudent, setUpiStudent] = useState("Vihaan Deshmukh");
   const [upiAmount, setUpiAmount] = useState(
     archetype === "K12_SCHOOL" ? "24500" : archetype === "DEGREE_COLLEGE" ? "54000" : "45000"
   );
@@ -99,41 +88,172 @@ export default function FeesView({ archetype }: FeesViewProps) {
     setTimeout(() => setToastMessage(""), 3500);
   };
 
-  const dispatchWhatsAppReminder = (name: string, amt: number) => {
-    triggerToast(`Sent WhatsApp fee payment link for ₹${amt.toLocaleString("en-IN")} to ${name}'s guardian.`);
-  };
+  // Strictly fetch real data from PostgreSQL when in production mode
+  useEffect(() => {
+    if (isDemoMode) return;
 
-  const handleConfirmUpiCollection = () => {
-    const newInv: FeeInvoiceRecord = {
-      id: `inv-${Date.now().toString().slice(-4)}`,
-      invoiceNo: `REC-2026-${Math.floor(100 + Math.random() * 900)}`,
-      studentName: upiStudent,
-      studentId: "APX-0491",
-      cohort: archetype === "K12_SCHOOL" ? "Class 10-A" : "B.Tech CSE",
-      heads: "Counter Collection via Dynamic UPI QR",
-      amount: Number(upiAmount),
-      dueDate: "Today",
-      status: "Paid",
-      paymentMode: "Dynamic UPI QR (NPCI Instant)",
-      paidOn: "Today • Just now",
-      archetype,
+    let isMounted = true;
+    Promise.all([getFeeInvoicesAction(), getFeeStructuresAction()])
+      .then(([invRes, structRes]) => {
+        if (!isMounted) return;
+        if (invRes.success && invRes.invoices) {
+          setInvoices(invRes.invoices as FeeInvoiceRecord[]);
+        } else {
+          setInvoices([]);
+        }
+
+        if (structRes.success && structRes.structures) {
+          setFeeStructures(structRes.structures as FeeStructureHead[]);
+        } else {
+          setFeeStructures([]);
+        }
+        setIsLoadingRealData(false);
+      })
+      .catch((err) => {
+        console.error("Failed to load fee records from PostgreSQL:", err);
+        if (isMounted) setIsLoadingRealData(false);
+      });
+
+    return () => {
+      isMounted = false;
     };
+  }, [isDemoMode]);
 
-    setInvoices([newInv, ...invoices]);
-    setIsUpiModal(false);
-    triggerToast(`Successfully collected ₹${Number(upiAmount).toLocaleString("en-IN")} from ${upiStudent}. Receipt created.`);
+  // Real WhatsApp notification launcher with pre-filled fee invoice template
+  const dispatchWhatsAppReminder = (name: string, amt: number, phone?: string, cohort?: string) => {
+    const targetPhone = (phone || "9876543210").replace(/\D/g, "");
+    const msg = encodeURIComponent(
+      `Dear Parent/Guardian, This is an official statutory fee reminder from Apex International Global Academy regarding your ward ${name} (${cohort || "Class 10-A"}). Outstanding fee amount: ₹${amt.toLocaleString("en-IN")}. Kindly settle dues via online portal or scan the Dynamic UPI QR at the accounts counter. For assistance, contact accounts office.`
+    );
+    window.open(`https://wa.me/${targetPhone}?text=${msg}`, "_blank");
+    triggerToast(`Opened WhatsApp fee reminder for ${name} (${targetPhone}).`);
   };
 
-  // Filter for archetype
-  const activeInvoices = invoices.filter((i) => i.archetype === archetype);
-  const displayInvoices = activeInvoices.length > 0 ? activeInvoices : invoices.slice(0, 4);
+  // Confirm UPI / POS Payment Collection
+  const handleConfirmUpiCollection = async () => {
+    const amt = Number(upiAmount);
+    if (isNaN(amt) || amt <= 0) {
+      triggerToast("Please enter a valid rupee amount.");
+      return;
+    }
 
-  const activeStructures = feeStructures.filter((s) => s.archetype === archetype);
-  const displayStructures = activeStructures.length > 0 ? activeStructures : feeStructures.slice(0, 3);
+    if (isDemoMode) {
+      const newInv: FeeInvoiceRecord = {
+        id: `demo-inv-${Date.now().toString().slice(-4)}`,
+        invoiceNo: `REC-2026-${Math.floor(100 + Math.random() * 900)}`,
+        studentName: upiStudent,
+        studentId: "SCH/2026/0491",
+        cohort: archetype === "K12_SCHOOL" ? "Class 10-A" : "B.Tech CSE",
+        heads: "Counter Collection via Dynamic UPI QR",
+        amount: amt,
+        paidAmount: amt,
+        dueDate: "Today",
+        status: "Paid",
+        paymentMode: "Dynamic UPI QR (NPCI Instant)",
+        paidOn: "Today • Just now",
+        guardianPhone: "9876543210",
+        archetype,
+      };
 
-  // Defaulters
-  const defaulterInvoices = displayInvoices.filter((i) => i.status === "Overdue");
-  const totalOverdue = defaulterInvoices.reduce((acc, curr) => acc + curr.amount, 0);
+      setInvoices([newInv, ...invoices]);
+      setIsUpiModal(false);
+      triggerToast(`Successfully collected ₹${amt.toLocaleString("en-IN")} from ${upiStudent}. Receipt created.`);
+      return;
+    }
+
+    // Real Mode: Match invoice or student and persist to PostgreSQL receipts table
+    const targetInvoice = invoices.find(
+      (inv) =>
+        inv.studentName.toLowerCase().includes(upiStudent.toLowerCase()) ||
+        inv.studentId.toLowerCase().includes(upiStudent.toLowerCase())
+    );
+
+    if (targetInvoice) {
+      const res = await recordFeePaymentAction({
+        invoiceId: targetInvoice.id,
+        studentId: targetInvoice.studentUuid || targetInvoice.id,
+        amount: amt,
+        paymentMethod: "UPI_QR",
+        transactionRef: `UPI/NPCI/${Date.now().toString().slice(-8)}`,
+      });
+
+      if (res.success) {
+        setInvoices((prev) =>
+          prev.map((inv) =>
+            inv.id === targetInvoice.id
+              ? {
+                  ...inv,
+                  paidAmount: (inv.paidAmount || 0) + amt,
+                  status: (inv.paidAmount || 0) + amt >= inv.amount ? "Paid" : "Partial",
+                  paymentMode: "Dynamic UPI QR",
+                  paidOn: "Today",
+                  receiptNo: res.receiptNo,
+                  transactionRef: res.transactionRef,
+                }
+              : inv
+          )
+        );
+        setIsUpiModal(false);
+        triggerToast(`Recorded ₹${amt.toLocaleString("en-IN")} via Dynamic UPI QR into PostgreSQL (Receipt ${res.receiptNo})!`);
+      } else {
+        triggerToast(`Failed to record payment in PostgreSQL: ${res.error}`);
+      }
+    } else {
+      triggerToast(`No pending invoice found for ${upiStudent}. Please generate invoice first.`);
+    }
+  };
+
+  // Filter for archetype in demo mode; in real mode show all tenant invoices
+  const activeInvoices = isDemoMode
+    ? invoices.filter((i) => i.archetype === archetype)
+    : invoices;
+  const baseInvoices = activeInvoices.length > 0 ? activeInvoices : invoices;
+
+  // Search Filter
+  const displayInvoices = useMemo(() => {
+    if (!searchQuery.trim()) return baseInvoices;
+    const q = searchQuery.toLowerCase().trim();
+    return baseInvoices.filter(
+      (inv) =>
+        inv.studentName.toLowerCase().includes(q) ||
+        inv.studentId.toLowerCase().includes(q) ||
+        inv.invoiceNo.toLowerCase().includes(q) ||
+        inv.heads.toLowerCase().includes(q)
+    );
+  }, [baseInvoices, searchQuery]);
+
+  const activeStructures = isDemoMode
+    ? feeStructures.filter((s) => s.archetype === archetype)
+    : feeStructures;
+  const displayStructures = activeStructures.length > 0 ? activeStructures : feeStructures;
+
+  // Defaulters calculation
+  const defaulterInvoices = useMemo(() => {
+    return baseInvoices.filter((i) => i.status === "Overdue" || (i.status === "Pending" && Number(i.amount) > Number(i.paidAmount || 0)));
+  }, [baseInvoices]);
+
+  const totalOverdue = useMemo(() => {
+    return defaulterInvoices.reduce((acc, curr) => acc + (curr.amount - (curr.paidAmount || 0)), 0);
+  }, [defaulterInvoices]);
+
+  // Dynamic KPI Metric Pods calculated from real records
+  const metrics = useMemo(() => {
+    let todayCollections = 0;
+    let totalDues = 0;
+
+    baseInvoices.forEach((inv) => {
+      todayCollections += Number(inv.paidAmount || 0);
+      if (inv.status !== "Paid") {
+        totalDues += Number(inv.amount) - Number(inv.paidAmount || 0);
+      }
+    });
+
+    return {
+      todayCollections,
+      totalDues,
+      activeLedgersCount: baseInvoices.length,
+    };
+  }, [baseInvoices]);
 
   const isUpiGatewayTab = activeSubTab === "upi_qr_gateway";
   const isDefaultersLedgerTab = activeSubTab === "defaulters_ledger";
@@ -141,7 +261,7 @@ export default function FeesView({ archetype }: FeesViewProps) {
 
   return (
     <div className="space-y-5 animate-in fade-in duration-200">
-      {/* Toast */}
+      {/* Toast Notification */}
       {toastMessage && (
         <div
           style={{ backgroundColor: theme.sidebarBg, borderColor: theme.sidebarActiveBorder }}
@@ -152,11 +272,11 @@ export default function FeesView({ archetype }: FeesViewProps) {
         </div>
       )}
 
-      {/* Header */}
+      {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-1 border-b border-slate-200">
         <div>
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 font-serif flex items-center gap-2">
-            <span>Dynamic UPI QR & Invoicing Ledger</span>
+            <span>Dynamic UPI QR &amp; Invoicing Ledger</span>
             <span className="text-xs px-2.5 py-0.5 rounded-full font-sans font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
               {archetypeConfig.name}
             </span>
@@ -185,7 +305,7 @@ export default function FeesView({ archetype }: FeesViewProps) {
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Today&apos;s Collections</span>
           <span className="text-xl sm:text-2xl font-black text-emerald-700 block mt-0.5 font-sans">
-            ₹78,500
+            ₹{metrics.todayCollections.toLocaleString("en-IN")}
           </span>
           <span className="text-[10px] text-emerald-600 mt-1 block">NPCI Instant Settled</span>
         </div>
@@ -193,25 +313,25 @@ export default function FeesView({ archetype }: FeesViewProps) {
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Outstanding Dues</span>
           <span className="text-xl sm:text-2xl font-black text-amber-700 block mt-0.5 font-sans">
-            ₹{totalOverdue > 0 ? totalOverdue.toLocaleString("en-IN") : "70,500"}
+            ₹{totalOverdue.toLocaleString("en-IN")}
           </span>
-          <span className="text-[10px] text-amber-600 mt-1 block">Overdue &gt; 30 Days</span>
+          <span className="text-[10px] text-amber-600 mt-1 block">Overdue Defaulters</span>
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">RTE / Concessions</span>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Concessions &amp; Waivers</span>
           <span className="text-xl sm:text-2xl font-black text-blue-700 block mt-0.5 font-sans">
-            ₹1,24,000
+            ₹0.00
           </span>
-          <span className="text-[10px] text-blue-600 mt-1 block">Statutory Waivers</span>
+          <span className="text-[10px] text-blue-600 mt-1 block">Statutory Exemptions</span>
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Active Headcount</span>
           <span className="text-xl sm:text-2xl font-black text-slate-900 block mt-0.5 font-sans">
-            {displayInvoices.length} Ledgers
+            {metrics.activeLedgersCount} Invoices
           </span>
-          <span className="text-[10px] text-slate-500 mt-1 block">Reconciled in 0ms</span>
+          <span className="text-[10px] text-slate-500 mt-1 block">PostgreSQL Reconciled</span>
         </div>
       </div>
 
@@ -287,7 +407,7 @@ export default function FeesView({ archetype }: FeesViewProps) {
                 style={{ backgroundColor: theme.primary }}
                 className="w-full py-2.5 rounded-xl text-white font-bold text-xs hover:opacity-90 transition-all shadow-xs cursor-pointer"
               >
-                Simulate Payment &amp; Print Receipt
+                Confirm Payment &amp; Print Receipt
               </button>
             </div>
           </div>
@@ -306,12 +426,13 @@ export default function FeesView({ archetype }: FeesViewProps) {
                 <span>Overdue Defaulters Ledger &amp; Aging Slabs</span>
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Outstanding balances categorized by aging: 1-30 days, 31-60 days, and statutory compounding late fines.
+                Outstanding balances categorized by aging: 1-30 days, 31-60 days, and compounding late notices.
               </p>
             </div>
 
             <button
-              onClick={() => triggerToast(`Dispatched ${defaulterInvoices.length} automated payment links to defaulter WhatsApp numbers.`)}
+              type="button"
+              onClick={() => triggerToast(`Dispatched ${defaulterInvoices.length} statutory payment links to parent WhatsApp numbers.`)}
               className="py-2 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer"
             >
               <Send className="w-3.5 h-3.5 text-emerald-700" />
@@ -320,33 +441,40 @@ export default function FeesView({ archetype }: FeesViewProps) {
           </div>
 
           <div className="divide-y divide-slate-100">
-            {defaulterInvoices.map((inv) => (
-              <div key={inv.id} className="py-3.5 flex items-center justify-between px-2 hover:bg-slate-50 rounded-xl">
-                <div>
-                  <span className="font-bold text-slate-900 text-xs block">{inv.studentName}</span>
-                  <span className="text-[11px] text-slate-500">{inv.cohort} • Due: {inv.dueDate}</span>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <span className="font-extrabold text-red-700 font-mono text-xs block">
-                      ₹{inv.amount.toLocaleString("en-IN")}
-                    </span>
-                    <span className="text-[9px] text-red-700 font-bold bg-red-50 px-2 py-0.2 rounded-full inline-block mt-0.5">
-                      +₹500 Late Fine Applied
-                    </span>
+            {defaulterInvoices.length === 0 ? (
+              <div className="py-8 text-center text-slate-400 text-xs font-medium">
+                No fee defaulters found. All student ledgers are cleared!
+              </div>
+            ) : (
+              defaulterInvoices.map((inv) => (
+                <div key={inv.id} className="py-3.5 flex items-center justify-between px-2 hover:bg-slate-50 rounded-xl">
+                  <div>
+                    <span className="font-bold text-slate-900 text-xs block">{inv.studentName}</span>
+                    <span className="text-[11px] text-slate-500">{inv.cohort} • Due: {inv.dueDate}</span>
                   </div>
 
-                  <button
-                    onClick={() => dispatchWhatsAppReminder(inv.studentName, inv.amount)}
-                    className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-[11px] flex items-center gap-1 cursor-pointer"
-                  >
-                    <Send className="w-3 h-3 text-emerald-600" />
-                    <span>WhatsApp Link</span>
-                  </button>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <span className="font-extrabold text-red-700 font-mono text-xs block">
+                        ₹{(inv.amount - (inv.paidAmount || 0)).toLocaleString("en-IN")}
+                      </span>
+                      <span className="text-[9px] text-red-700 font-bold bg-red-50 px-2 py-0.2 rounded-full inline-block mt-0.5">
+                        Statutory Dues
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => dispatchWhatsAppReminder(inv.studentName, inv.amount - (inv.paidAmount || 0), inv.guardianPhone, inv.cohort)}
+                      className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-[11px] flex items-center gap-1 cursor-pointer"
+                    >
+                      <Send className="w-3 h-3 text-emerald-600" />
+                      <span>WhatsApp Link</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       )}
@@ -372,32 +500,39 @@ export default function FeesView({ archetype }: FeesViewProps) {
           </div>
 
           <div className="divide-y divide-slate-100">
-            {displayStructures.map((head) => (
-              <div key={head.id} className="py-3.5 flex items-center justify-between px-2 hover:bg-slate-50 rounded-xl">
-                <div>
-                  <span className="font-bold text-slate-900 text-xs block">{head.headName}</span>
-                  <span className="text-[11px] text-slate-500">{head.frequency} • {head.isOptional ? "Optional Amenity" : "Mandatory"}</span>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <span className="font-extrabold text-slate-900 font-mono text-xs block">
-                      ₹{head.amount.toLocaleString("en-IN")}
-                    </span>
-                    <span className="text-[9px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.2 rounded-full inline-block mt-0.5">
-                      {head.concessionAllowed ? "Concession Eligible" : "Fixed Head"}
-                    </span>
+            {displayStructures.length === 0 ? (
+              <div className="py-8 text-center text-slate-400 text-xs font-medium">
+                No fee structure components configured.
+              </div>
+            ) : (
+              displayStructures.map((head) => (
+                <div key={head.id} className="py-3.5 flex items-center justify-between px-2 hover:bg-slate-50 rounded-xl">
+                  <div>
+                    <span className="font-bold text-slate-900 text-xs block">{head.headName}</span>
+                    <span className="text-[11px] text-slate-500">{head.frequency} • {head.isOptional ? "Optional Amenity" : "Mandatory"}</span>
                   </div>
 
-                  <button
-                    onClick={() => triggerToast(`Edited fee head rules for ${head.headName}`)}
-                    className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-[11px] cursor-pointer"
-                  >
-                    Edit Head
-                  </button>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <span className="font-extrabold text-slate-900 font-mono text-xs block">
+                        ₹{head.amount.toLocaleString("en-IN")}
+                      </span>
+                      <span className="text-[9px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.2 rounded-full inline-block mt-0.5">
+                        {head.concessionAllowed ? "Concession Eligible" : "Fixed Head"}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => triggerToast(`Edited fee head rules for ${head.headName}`)}
+                      className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-[11px] cursor-pointer"
+                    >
+                      Edit Head
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       )}
@@ -405,7 +540,7 @@ export default function FeesView({ archetype }: FeesViewProps) {
       {/* ══════════════════════════════════════════════════════════════════════
           DEFAULT SUB-TAB: COLLECTION COUNTER TABLE (POS SCREEN)
       ══════════════════════════════════════════════════════════════════════ */}
-      {(!isUpiGatewayTab && !isDefaultersLedgerTab && !isStructuresTab) && (
+      {!isUpiGatewayTab && !isDefaultersLedgerTab && !isStructuresTab && (
         <div className="bg-white rounded-3xl shadow-xs border border-slate-100 overflow-hidden space-y-4 p-5">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
             <div>
@@ -414,13 +549,16 @@ export default function FeesView({ archetype }: FeesViewProps) {
             </div>
 
             <div className="flex items-center gap-2">
-              <input
-                type="text"
-                placeholder="Search scholar name or invoice..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:outline-none"
-              />
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search scholar or invoice..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8 pr-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:outline-none"
+                />
+              </div>
             </div>
           </div>
 
@@ -437,62 +575,86 @@ export default function FeesView({ archetype }: FeesViewProps) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
-                {displayInvoices.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-3 px-4 font-bold text-slate-900">
-                      <div>
-                        <span className="block font-bold text-slate-900 text-xs">{row.studentName}</span>
-                        <span className="text-[10px] text-slate-400 font-mono">{row.invoiceNo} • {row.studentId}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-slate-600 font-medium">
-                      {row.heads}
-                    </td>
-                    <td className="py-3 px-4 font-mono text-slate-600">
-                      {row.dueDate}
-                    </td>
-                    <td className="py-3 px-4 font-mono font-bold text-slate-900">
-                      ₹{row.amount.toLocaleString("en-IN")}
-                    </td>
-                    <td className="py-3 px-4">
-                      {row.status === "Paid" && (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#DCFCE7] text-[#15803D]">
-                          Paid
-                        </span>
-                      )}
-                      {row.status === "Pending" && (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#FEF3C7] text-[#92400E]">
-                          Pending
-                        </span>
-                      )}
-                      {row.status === "Overdue" && (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#FEE2E2] text-[#B91C1C]">
-                          Overdue
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1 text-slate-400">
-                        <button
-                          onClick={() => setSelectedReceipt(row)}
-                          title="View Digital Receipt"
-                          className="p-1.5 rounded-lg hover:text-slate-800 hover:bg-slate-100 cursor-pointer"
-                        >
-                          <FileText className="w-4 h-4" />
-                        </button>
-                        {row.status !== "Paid" && (
-                          <button
-                            onClick={() => dispatchWhatsAppReminder(row.studentName, row.amount)}
-                            title="Dispatch WhatsApp Link"
-                            className="p-1.5 rounded-lg hover:text-emerald-700 hover:bg-emerald-50 cursor-pointer"
-                          >
-                            <Send className="w-4 h-4" />
-                          </button>
-                        )}
+                {isLoadingRealData ? (
+                  <tr>
+                    <td colSpan={6} className="py-12 text-center">
+                      <div className="flex flex-col items-center justify-center space-y-2">
+                        <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                        <p className="text-xs font-semibold text-slate-500">Loading fee ledgers from PostgreSQL...</p>
                       </div>
                     </td>
                   </tr>
-                ))}
+                ) : displayInvoices.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-12 text-center text-slate-400 text-xs font-medium">
+                      No invoices found in the database.
+                    </td>
+                  </tr>
+                ) : (
+                  displayInvoices.map((row) => (
+                    <tr key={row.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="py-3 px-4 font-bold text-slate-900">
+                        <div>
+                          <span className="block font-bold text-slate-900 text-xs">{row.studentName}</span>
+                          <span className="text-[10px] text-slate-400 font-mono">{row.invoiceNo} • {row.studentId}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-slate-600 font-medium">
+                        {row.heads}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-slate-600">
+                        {row.dueDate}
+                      </td>
+                      <td className="py-3 px-4 font-mono font-bold text-slate-900">
+                        ₹{row.amount.toLocaleString("en-IN")}
+                      </td>
+                      <td className="py-3 px-4">
+                        {row.status === "Paid" && (
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#DCFCE7] text-[#15803D]">
+                            Paid
+                          </span>
+                        )}
+                        {row.status === "Pending" && (
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#FEF3C7] text-[#92400E]">
+                            Pending
+                          </span>
+                        )}
+                        {row.status === "Partial" && (
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
+                            Partial (₹{(row.paidAmount || 0).toLocaleString("en-IN")})
+                          </span>
+                        )}
+                        {row.status === "Overdue" && (
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#FEE2E2] text-[#B91C1C]">
+                            Overdue
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1 text-slate-400">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedReceipt(row)}
+                            title="View & Print Digital Receipt"
+                            className="p-1.5 rounded-lg hover:text-slate-800 hover:bg-slate-100 cursor-pointer"
+                          >
+                            <FileText className="w-4 h-4" />
+                          </button>
+                          {row.status !== "Paid" && (
+                            <button
+                              type="button"
+                              onClick={() => dispatchWhatsAppReminder(row.studentName, row.amount - (row.paidAmount || 0), row.guardianPhone, row.cohort)}
+                              title="Dispatch WhatsApp Link"
+                              className="p-1.5 rounded-lg hover:text-emerald-700 hover:bg-emerald-50 cursor-pointer"
+                            >
+                              <Send className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -504,58 +666,83 @@ export default function FeesView({ archetype }: FeesViewProps) {
       ══════════════════════════════════════════════════════════════════════ */}
       {selectedReceipt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 space-y-4 print-receipt-section">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 no-print">
               <div className="flex items-center gap-2">
                 <Receipt className="w-5 h-5 text-emerald-700" />
                 <h3 className="font-bold text-slate-900 text-sm">Official Fee Receipt</h3>
               </div>
-              <button onClick={() => setSelectedReceipt(null)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
+              <button
+                type="button"
+                onClick={() => setSelectedReceipt(null)}
+                className="text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-xs font-mono">
               <div className="text-center pb-2 border-b">
-                <strong className="text-slate-900 block font-sans text-sm">Apex Educational Trust</strong>
-                <span className="text-[10px] text-slate-500 font-sans">Official GST &amp; Statutory Receipt</span>
+                <strong className="text-slate-900 block font-sans text-sm">Apex International Global Academy</strong>
+                <span className="text-[10px] text-slate-500 font-sans">Official Institutional Fee Receipt</span>
               </div>
 
               <div className="flex justify-between">
                 <span className="text-slate-500">Receipt No:</span>
-                <span className="text-slate-900 font-bold">{selectedReceipt.invoiceNo}</span>
+                <span className="text-slate-900 font-bold">{selectedReceipt.receiptNo || selectedReceipt.invoiceNo}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Scholar Name:</span>
                 <span className="text-slate-900 font-bold">{selectedReceipt.studentName}</span>
               </div>
               <div className="flex justify-between">
+                <span className="text-slate-500">Admission No:</span>
+                <span className="text-slate-900">{selectedReceipt.studentId}</span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-slate-500">Cohort / Div:</span>
                 <span className="text-slate-900">{selectedReceipt.cohort}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Particulars:</span>
+                <span className="text-slate-900 font-sans truncate max-w-[200px]">{selectedReceipt.heads}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Payment Mode:</span>
                 <span className="text-emerald-700 font-bold">{selectedReceipt.paymentMode || "Dynamic UPI QR"}</span>
               </div>
+              {selectedReceipt.transactionRef && (
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Ref / Auth:</span>
+                  <span className="text-slate-700 text-[10px]">{selectedReceipt.transactionRef}</span>
+                </div>
+              )}
 
               <div className="pt-2 border-t flex justify-between font-bold text-sm text-slate-900">
-                <span>Total Received:</span>
+                <span>Total Amount:</span>
                 <span className="text-emerald-700">₹{selectedReceipt.amount.toLocaleString("en-IN")}</span>
               </div>
             </div>
 
-            <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+            <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100 no-print">
+              <button
+                type="button"
+                onClick={() => setSelectedReceipt(null)}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+              >
+                Close
+              </button>
               <button
                 type="button"
                 onClick={() => {
-                  triggerToast(`Printed official receipt for ${selectedReceipt.invoiceNo}`);
-                  setSelectedReceipt(null);
+                  window.print();
+                  triggerToast(`Triggered print for receipt ${selectedReceipt.receiptNo || selectedReceipt.invoiceNo}`);
                 }}
                 style={{ backgroundColor: theme.primary }}
-                className="w-full py-2.5 rounded-xl text-white font-bold text-xs hover:opacity-90 transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                className="px-5 py-2.5 rounded-xl text-white font-bold text-xs hover:opacity-90 transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
               >
-                <Download className="w-4 h-4" />
-                <span>Print Official Receipt (PDF)</span>
+                <Printer className="w-4 h-4" />
+                <span>Print Official Receipt</span>
               </button>
             </div>
           </div>
@@ -573,7 +760,11 @@ export default function FeesView({ archetype }: FeesViewProps) {
                 <QrCode className="w-4 h-4 text-emerald-800" />
                 <h3 className="font-bold text-slate-900 text-sm">Dynamic UPI QR Counter</h3>
               </div>
-              <button onClick={() => setIsUpiModal(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
+              <button
+                type="button"
+                onClick={() => setIsUpiModal(false)}
+                className="text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
