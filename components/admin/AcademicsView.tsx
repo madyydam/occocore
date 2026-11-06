@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Plus,
   CheckCircle2,
@@ -8,11 +8,23 @@ import {
   X,
   Shuffle,
   Briefcase,
+  Users,
 } from "lucide-react";
 import { InstitutionalArchetype, ARCHETYPES } from "@/lib/terminology";
 import { useAdmin } from "@/lib/admin/adminContext";
+import {
+  DEMO_COHORTS,
+  DEMO_SYLLABI,
+  DEMO_FACULTY_WORKLOAD,
+} from "@/lib/demo/demoMockData";
+import {
+  getAcademicCohortsAction,
+  createAcademicCohortAction,
+  getAcademicSyllabiAction,
+  getFacultyWorkloadAction,
+} from "@/lib/actions/academicActions";
 
-interface CohortRecord {
+export interface CohortRecord {
   id: string;
   name: string;
   division: string;
@@ -20,17 +32,17 @@ interface CohortRecord {
   enrolled: number;
   inchargeFaculty: string;
   roomNo: string;
-  archetype: InstitutionalArchetype;
+  archetype: string;
 }
 
-interface SyllabusItem {
+export interface SyllabusItem {
   id: string;
   code: string;
   title: string;
   creditsOrMarks: string;
   type: "Theory" | "Practical" | "Elective" | "Audit";
   facultyAssigned: string;
-  archetype: InstitutionalArchetype;
+  archetype: string;
 }
 
 interface TimetableSlot {
@@ -42,7 +54,7 @@ interface TimetableSlot {
   isLab?: boolean;
 }
 
-interface FacultyWorkloadRecord {
+export interface FacultyWorkloadRecord {
   id: string;
   name: string;
   designation: string;
@@ -50,59 +62,9 @@ interface FacultyWorkloadRecord {
   lectureHoursWeekly: number;
   practicalOrDoubtHours: number;
   maxTargetHours: number;
-  archetype: InstitutionalArchetype;
+  archetype: string;
   status: "Balanced" | "Overloaded" | "Available";
 }
-
-const SAMPLE_COHORTS: CohortRecord[] = [
-  // School
-  { id: "c-1", name: "Class 10", division: "Section A", capacity: 42, enrolled: 40, inchargeFaculty: "Mrs. Sunita Sharma", roomNo: "Room 204", archetype: "K12_SCHOOL" },
-  { id: "c-2", name: "Class 10", division: "Section B", capacity: 42, enrolled: 41, inchargeFaculty: "Mr. Rajesh Varma", roomNo: "Room 205", archetype: "K12_SCHOOL" },
-  { id: "c-3", name: "Class 11 Science", division: "Section PCMB", capacity: 35, enrolled: 34, inchargeFaculty: "Dr. K. Raman", roomNo: "Lab Wing 3", archetype: "K12_SCHOOL" },
-  { id: "c-4", name: "Class 9", division: "Section A", capacity: 45, enrolled: 43, inchargeFaculty: "Mrs. Priya Das", roomNo: "Room 102", archetype: "K12_SCHOOL" },
-  // College
-  { id: "c-201", name: "B.Tech Computer Science", division: "Sem IV - Div A", capacity: 60, enrolled: 58, inchargeFaculty: "Prof. S. Sen", roomNo: "CS Hall 1", archetype: "DEGREE_COLLEGE" },
-  { id: "c-202", name: "B.Tech Electronics & Comm", division: "Sem VI - Div A", capacity: 60, enrolled: 54, inchargeFaculty: "Dr. M. Iyer", roomNo: "ECE Block 2", archetype: "DEGREE_COLLEGE" },
-  { id: "c-203", name: "B.Com (Honors)", division: "Sem II - Div B", capacity: 70, enrolled: 68, inchargeFaculty: "Prof. A. Desai", roomNo: "Commerce 301", archetype: "DEGREE_COLLEGE" },
-  // University
-  { id: "c-301", name: "School of Computing & AI", division: "M.Tech AI - Sem II", capacity: 30, enrolled: 28, inchargeFaculty: "Prof. V. Nambiar (HOD)", roomNo: "PG Lab 4", archetype: "UNIVERSITY" },
-  { id: "c-302", name: "Faculty of Legal Studies", division: "B.A. LL.B - Sem VI", capacity: 50, enrolled: 47, inchargeFaculty: "Dr. K. Swamy", roomNo: "Moot Court 1", archetype: "UNIVERSITY" },
-  // Coaching
-  { id: "c-401", name: "Rankers Super-30", division: "JEE Advanced 2027", capacity: 30, enrolled: 30, inchargeFaculty: "Er. Nitin Verma (IITB)", roomNo: "Center Hall Alpha", archetype: "COACHING_ACADEMY" },
-  { id: "c-402", name: "Champions Intensive", division: "NEET Repeaters 2026", capacity: 45, enrolled: 44, inchargeFaculty: "Dr. Anjali Rao (AIIMS)", roomNo: "Bio-Arena 1", archetype: "COACHING_ACADEMY" },
-];
-
-const SAMPLE_SYLLABI: SyllabusItem[] = [
-  // School
-  { id: "s-1", code: "CBSE-041", title: "Class 10 Mathematics", creditsOrMarks: "Theory 80 + Internal 20", type: "Theory", facultyAssigned: "Mrs. Sunita Sharma", archetype: "K12_SCHOOL" },
-  { id: "s-2", code: "CBSE-086", title: "Class 10 General Science (PCM)", creditsOrMarks: "Theory 80 + Lab 20", type: "Practical", facultyAssigned: "Dr. K. Raman", archetype: "K12_SCHOOL" },
-  { id: "s-3", code: "CBSE-184", title: "English Language & Literature", creditsOrMarks: "Theory 80 + Oral 20", type: "Theory", facultyAssigned: "Mrs. Priya Das", archetype: "K12_SCHOOL" },
-  // College
-  { id: "s-201", code: "CS-401", title: "Data Structures & Algorithms", creditsOrMarks: "4 Credits (UGC CBCS)", type: "Theory", facultyAssigned: "Prof. S. Sen", archetype: "DEGREE_COLLEGE" },
-  { id: "s-202", code: "CS-402L", title: "Database Management Lab (PostgreSQL)", creditsOrMarks: "2 Credits (Practical)", type: "Practical", facultyAssigned: "Dr. M. Iyer", archetype: "DEGREE_COLLEGE" },
-  { id: "s-203", code: "AUD-101", title: "Constitution of India & Cyber Ethics", creditsOrMarks: "Mandatory Audit (Pass/Fail)", type: "Audit", facultyAssigned: "Prof. A. Desai", archetype: "DEGREE_COLLEGE" },
-  // University
-  { id: "s-301", code: "NEP-CSC601", title: "Advanced Distributed Deep Learning", creditsOrMarks: "4 Credits (ABC Digilocker)", type: "Theory", facultyAssigned: "Prof. V. Nambiar", archetype: "UNIVERSITY" },
-  { id: "s-302", code: "NEP-OE302", title: "Interdisciplinary: Computational Law", creditsOrMarks: "3 Credits (Multi-Disciplinary)", type: "Elective", facultyAssigned: "Dr. K. Swamy", archetype: "UNIVERSITY" },
-  // Coaching
-  { id: "s-401", code: "DPP-JEE-PH", title: "Physics: Rotational Dynamics & Optics", creditsOrMarks: "120 MCQs / Week (+4/-1)", type: "Theory", facultyAssigned: "Er. Nitin Verma", archetype: "COACHING_ACADEMY" },
-  { id: "s-402", code: "DPP-NEET-BIO", title: "Biology: Human Genetics & Cell Biology", creditsOrMarks: "180 MCQs / Week", type: "Practical", facultyAssigned: "Dr. Anjali Rao", archetype: "COACHING_ACADEMY" },
-];
-
-const SAMPLE_FACULTY_WORKLOAD: FacultyWorkloadRecord[] = [
-  // School
-  { id: "fw-1", name: "Mrs. Sunita Sharma", designation: "PGT Mathematics", departmentOrSubject: "Mathematics", lectureHoursWeekly: 18, practicalOrDoubtHours: 4, maxTargetHours: 22, archetype: "K12_SCHOOL", status: "Balanced" },
-  { id: "fw-2", name: "Dr. K. Raman", designation: "PGT Physics & Science Head", departmentOrSubject: "Physics", lectureHoursWeekly: 16, practicalOrDoubtHours: 8, maxTargetHours: 24, archetype: "K12_SCHOOL", status: "Balanced" },
-  { id: "fw-3", name: "Mrs. Priya Das", designation: "TGT English", departmentOrSubject: "Languages", lectureHoursWeekly: 12, practicalOrDoubtHours: 2, maxTargetHours: 20, archetype: "K12_SCHOOL", status: "Available" },
-  // College
-  { id: "fw-201", name: "Prof. S. Sen", designation: "Associate Professor & HOD", departmentOrSubject: "Computer Science", lectureHoursWeekly: 14, practicalOrDoubtHours: 6, maxTargetHours: 18, archetype: "DEGREE_COLLEGE", status: "Overloaded" },
-  { id: "fw-202", name: "Dr. M. Iyer", designation: "Assistant Professor", departmentOrSubject: "Information Tech", lectureHoursWeekly: 12, practicalOrDoubtHours: 6, maxTargetHours: 18, archetype: "DEGREE_COLLEGE", status: "Balanced" },
-  // University
-  { id: "fw-301", name: "Prof. V. Nambiar", designation: "Dean & Research Chair", departmentOrSubject: "Artificial Intelligence", lectureHoursWeekly: 8, practicalOrDoubtHours: 12, maxTargetHours: 16, archetype: "UNIVERSITY", status: "Balanced" },
-  // Coaching
-  { id: "fw-401", name: "Er. Nitin Verma (IITB)", designation: "Senior Master Faculty", departmentOrSubject: "Advanced Physics", lectureHoursWeekly: 20, practicalOrDoubtHours: 10, maxTargetHours: 28, archetype: "COACHING_ACADEMY", status: "Overloaded" },
-  { id: "fw-402", name: "Dr. Anjali Rao (AIIMS)", designation: "Head of Biology", departmentOrSubject: "Botany & Zoology", lectureHoursWeekly: 18, practicalOrDoubtHours: 8, maxTargetHours: 26, archetype: "COACHING_ACADEMY", status: "Balanced" },
-];
 
 const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -111,13 +73,21 @@ interface AcademicsViewProps {
 }
 
 export default function AcademicsView({ archetype }: AcademicsViewProps) {
-  const { activeSubTab, theme } = useAdmin();
+  const { activeSubTab, theme, isDemoMode } = useAdmin();
   const archetypeConfig = ARCHETYPES[archetype] || ARCHETYPES.K12_SCHOOL;
   const terms = archetypeConfig.terms;
 
-  const [cohorts, setCohorts] = useState<CohortRecord[]>(SAMPLE_COHORTS);
-  const [syllabi] = useState<SyllabusItem[]>(SAMPLE_SYLLABI);
-  const [workloads] = useState<FacultyWorkloadRecord[]>(SAMPLE_FACULTY_WORKLOAD);
+  const [cohorts, setCohorts] = useState<CohortRecord[]>(() =>
+    isDemoMode ? (DEMO_COHORTS as CohortRecord[]) : []
+  );
+  const [syllabi, setSyllabi] = useState<SyllabusItem[]>(() =>
+    isDemoMode ? (DEMO_SYLLABI as SyllabusItem[]) : []
+  );
+  const [workloads, setWorkloads] = useState<FacultyWorkloadRecord[]>(() =>
+    isDemoMode ? (DEMO_FACULTY_WORKLOAD as FacultyWorkloadRecord[]) : []
+  );
+
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedDay, setSelectedDay] = useState("Monday");
   const [toastMessage, setToastMessage] = useState("");
 
@@ -139,26 +109,99 @@ export default function AcademicsView({ archetype }: AcademicsViewProps) {
     setTimeout(() => setToastMessage(""), 3500);
   };
 
-  const handleCreateCohort = (e: React.FormEvent) => {
+  const refreshAcademics = useCallback(() => {
+    if (isDemoMode) {
+      setCohorts(DEMO_COHORTS as CohortRecord[]);
+      setSyllabi(DEMO_SYLLABI as SyllabusItem[]);
+      setWorkloads(DEMO_FACULTY_WORKLOAD as FacultyWorkloadRecord[]);
+      return;
+    }
+
+    setIsLoading(true);
+    Promise.all([
+      getAcademicCohortsAction(archetype),
+      getAcademicSyllabiAction(archetype),
+      getFacultyWorkloadAction(archetype),
+    ])
+      .then(([cohortRes, syllabiRes, workloadRes]) => {
+        if (cohortRes.success) setCohorts(cohortRes.cohorts as CohortRecord[]);
+        if (syllabiRes.success) setSyllabi(syllabiRes.syllabi as SyllabusItem[]);
+        if (workloadRes.success) setWorkloads(workloadRes.workloads as FacultyWorkloadRecord[]);
+      })
+      .catch((err) => {
+        console.error("Failed to load academic records:", err);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, [isDemoMode, archetype]);
+
+  useEffect(() => {
+    if (isDemoMode) return;
+    let isMounted = true;
+
+    Promise.all([
+      getAcademicCohortsAction(archetype),
+      getAcademicSyllabiAction(archetype),
+      getFacultyWorkloadAction(archetype),
+    ])
+      .then(([cohortRes, syllabiRes, workloadRes]) => {
+        if (isMounted) {
+          if (cohortRes.success) setCohorts(cohortRes.cohorts as CohortRecord[]);
+          if (syllabiRes.success) setSyllabi(syllabiRes.syllabi as SyllabusItem[]);
+          if (workloadRes.success) setWorkloads(workloadRes.workloads as FacultyWorkloadRecord[]);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load academic records:", err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isDemoMode, archetype]);
+
+  const handleCreateCohort = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCohortName.trim()) return;
 
-    const newRecord: CohortRecord = {
-      id: `c-${Date.now().toString().slice(-4)}`,
-      name: newCohortName,
-      division: newDivision || "Section A",
-      capacity: newCapacity,
-      enrolled: 0,
-      inchargeFaculty: newIncharge || "Assigned Faculty",
-      roomNo: "Room 101",
-      archetype,
-    };
+    if (isDemoMode) {
+      const newRecord: CohortRecord = {
+        id: `c-${cohorts.length + 101}`,
+        name: newCohortName,
+        division: newDivision || "Section A",
+        capacity: newCapacity,
+        enrolled: 0,
+        inchargeFaculty: newIncharge || "Assigned Faculty",
+        roomNo: `Room ${200 + cohorts.length}`,
+        archetype,
+      };
 
-    setCohorts([newRecord, ...cohorts]);
-    setIsAddCohortModal(false);
-    setNewCohortName("");
-    setNewDivision("");
-    triggerToast(`Added new ${terms.cohortUnit}: ${newRecord.name} (${newRecord.division})`);
+      setCohorts([newRecord, ...cohorts]);
+      setIsAddCohortModal(false);
+      setNewCohortName("");
+      setNewDivision("");
+      setNewIncharge("");
+      triggerToast(`Added new ${terms.cohortUnit}: ${newRecord.name} (${newRecord.division})`);
+      return;
+    }
+
+    const res = await createAcademicCohortAction({
+      className: newCohortName,
+      sectionName: newDivision || "Section A",
+      capacity: newCapacity,
+    });
+
+    if (res.success) {
+      setIsAddCohortModal(false);
+      setNewCohortName("");
+      setNewDivision("");
+      setNewIncharge("");
+      triggerToast(`Created new ${terms.cohortUnit}: ${newCohortName} in PostgreSQL`);
+      refreshAcademics();
+    } else {
+      alert(res.error || "Failed to create academic cohort");
+    }
   };
 
   const handleAssignSubstitution = () => {
@@ -169,12 +212,12 @@ export default function AcademicsView({ archetype }: AcademicsViewProps) {
   };
 
   // Filter for active archetype
-  const activeCohorts = cohorts.filter((c) => c.archetype === archetype);
-  const activeSyllabi = syllabi.filter((s) => s.archetype === archetype);
-  const activeWorkloads = workloads.filter((w) => w.archetype === archetype);
+  const activeCohorts = cohorts.filter((c) => !c.archetype || c.archetype === archetype);
+  const activeSyllabi = syllabi.filter((s) => !s.archetype || s.archetype === archetype);
+  const activeWorkloads = workloads.filter((w) => !w.archetype || w.archetype === archetype);
 
   const displayCohorts = activeCohorts.length > 0 ? activeCohorts : cohorts.slice(0, 4);
-  const displaySyllabi = activeSyllabi.length > 0 ? activeSyllabi : syllabi.slice(0, 3);
+  const displaySyllabi = activeSyllabi.length > 0 ? activeSyllabi : syllabi.slice(0, 5);
   const displayWorkloads = activeWorkloads.length > 0 ? activeWorkloads : workloads.slice(0, 3);
 
   // Dynamic Day Schedule Slots based on archetype
@@ -241,6 +284,11 @@ export default function AcademicsView({ archetype }: AcademicsViewProps) {
             <span className="text-xs px-2.5 py-0.5 rounded-full font-sans font-bold bg-blue-50 text-blue-800 border border-blue-200">
               {terms.gradingSystem}
             </span>
+            {!isDemoMode && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-emerald-50 text-emerald-800 border border-emerald-200">
+                PostgreSQL Live
+              </span>
+            )}
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
             {archetype === "K12_SCHOOL" && "Class/Section capacities, NCERT & CBSE syllabus schemes, weekly timetables, and teacher proxy substitution."}
@@ -271,6 +319,12 @@ export default function AcademicsView({ archetype }: AcademicsViewProps) {
           </button>
         </div>
       </div>
+
+      {isLoading && (
+        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-center text-xs text-slate-500 animate-pulse">
+          Synchronizing institutional curriculum, cohorts, and faculty workload from database...
+        </div>
+      )}
 
       {/* ══════════════════════════════════════════════════════════════════════
           SUB-TAB 3: MASTER TIMETABLE MATRIX
@@ -474,7 +528,7 @@ export default function AcademicsView({ archetype }: AcademicsViewProps) {
       {/* ══════════════════════════════════════════════════════════════════════
           DEFAULT SUB-TAB: COHORTS & DIVISIONS GRID
       ══════════════════════════════════════════════════════════════════════ */}
-      {(!isTimetableTab && !isWorkloadTab && !isSyllabiTab) && (
+      {!isTimetableTab && !isWorkloadTab && !isSyllabiTab && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {displayCohorts.map((item) => {
             const occupancyPct = Math.round((item.enrolled / item.capacity) * 100);
@@ -497,7 +551,10 @@ export default function AcademicsView({ archetype }: AcademicsViewProps) {
 
                 <div className="space-y-1.5 text-xs">
                   <div className="flex items-center justify-between text-slate-600 text-[11px]">
-                    <span>Headcount Capacity</span>
+                    <span className="flex items-center gap-1">
+                      <Users className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Headcount Capacity</span>
+                    </span>
                     <strong className="font-mono text-slate-900 font-bold">
                       {item.enrolled} / {item.capacity} ({occupancyPct}%)
                     </strong>
@@ -509,7 +566,7 @@ export default function AcademicsView({ archetype }: AcademicsViewProps) {
                       className={`h-full rounded-full transition-all ${
                         occupancyPct > 90 ? "bg-amber-500" : "bg-emerald-600"
                       }`}
-                      style={{ width: `${occupancyPct}%` }}
+                      style={{ width: `${Math.min(occupancyPct, 100)}%` }}
                     />
                   </div>
 
@@ -607,7 +664,7 @@ export default function AcademicsView({ archetype }: AcademicsViewProps) {
                 <button
                   type="button"
                   onClick={() => setIsAddCohortModal(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs cursor-pointer hover:bg-slate-50"
                 >
                   Cancel
                 </button>
@@ -690,7 +747,7 @@ export default function AcademicsView({ archetype }: AcademicsViewProps) {
               <button
                 type="button"
                 onClick={() => setIsSubstitutionModal(false)}
-                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs cursor-pointer hover:bg-slate-50"
               >
                 Cancel
               </button>

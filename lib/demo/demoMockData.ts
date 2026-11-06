@@ -683,4 +683,87 @@ export const DEMO_ADMISSIONS: DemoAdmissionCandidate[] = [
   },
 ];
 
+export interface DemoCohortRecord {
+  id: string;
+  name: string;
+  division: string;
+  capacity: number;
+  enrolled: number;
+  inchargeFaculty: string;
+  roomNo: string;
+  archetype: InstitutionalArchetype;
+}
+
+export interface DemoSyllabusItem {
+  id: string;
+  code: string;
+  title: string;
+  creditsOrMarks: string;
+  type: "Theory" | "Practical" | "Elective" | "Audit";
+  facultyAssigned: string;
+  archetype: InstitutionalArchetype;
+}
+
+export interface DemoFacultyWorkloadRecord {
+  id: string;
+  name: string;
+  designation: string;
+  departmentOrSubject: string;
+  lectureHoursWeekly: number;
+  practicalOrDoubtHours: number;
+  maxTargetHours: number;
+  archetype: InstitutionalArchetype;
+  status: "Balanced" | "Overloaded" | "Available";
+}
+
+export const DEMO_COHORTS: DemoCohortRecord[] = [
+  // School
+  { id: "c-1", name: "Class 10", division: "Section A", capacity: 42, enrolled: 40, inchargeFaculty: "Mrs. Sunita Sharma", roomNo: "Room 204", archetype: "K12_SCHOOL" },
+  { id: "c-2", name: "Class 10", division: "Section B", capacity: 42, enrolled: 41, inchargeFaculty: "Mr. Rajesh Varma", roomNo: "Room 205", archetype: "K12_SCHOOL" },
+  { id: "c-3", name: "Class 11 Science", division: "Section PCMB", capacity: 35, enrolled: 34, inchargeFaculty: "Dr. K. Raman", roomNo: "Lab Wing 3", archetype: "K12_SCHOOL" },
+  { id: "c-4", name: "Class 9", division: "Section A", capacity: 45, enrolled: 43, inchargeFaculty: "Mrs. Priya Das", roomNo: "Room 102", archetype: "K12_SCHOOL" },
+  // College
+  { id: "c-201", name: "B.Tech Computer Science", division: "Sem IV - Div A", capacity: 60, enrolled: 58, inchargeFaculty: "Prof. S. Sen", roomNo: "CS Hall 1", archetype: "DEGREE_COLLEGE" },
+  { id: "c-202", name: "B.Tech Electronics & Comm", division: "Sem VI - Div A", capacity: 60, enrolled: 54, inchargeFaculty: "Dr. M. Iyer", roomNo: "ECE Block 2", archetype: "DEGREE_COLLEGE" },
+  { id: "c-203", name: "B.Com (Honors)", division: "Sem II - Div B", capacity: 70, enrolled: 68, inchargeFaculty: "Prof. A. Desai", roomNo: "Commerce 301", archetype: "DEGREE_COLLEGE" },
+  // University
+  { id: "c-301", name: "School of Computing & AI", division: "M.Tech AI - Sem II", capacity: 30, enrolled: 28, inchargeFaculty: "Prof. V. Nambiar (HOD)", roomNo: "PG Lab 4", archetype: "UNIVERSITY" },
+  { id: "c-302", name: "Faculty of Legal Studies", division: "B.A. LL.B - Sem VI", capacity: 50, enrolled: 47, inchargeFaculty: "Dr. K. Swamy", roomNo: "Moot Court 1", archetype: "UNIVERSITY" },
+  // Coaching
+  { id: "c-401", name: "Rankers Super-30", division: "JEE Advanced 2027", capacity: 30, enrolled: 30, inchargeFaculty: "Er. Nitin Verma (IITB)", roomNo: "Center Hall Alpha", archetype: "COACHING_ACADEMY" },
+  { id: "c-402", name: "Champions Intensive", division: "NEET Repeaters 2026", capacity: 45, enrolled: 44, inchargeFaculty: "Dr. Anjali Rao (AIIMS)", roomNo: "Bio-Arena 1", archetype: "COACHING_ACADEMY" },
+];
+
+export const DEMO_SYLLABI: DemoSyllabusItem[] = [
+  // School
+  { id: "s-1", code: "CBSE-041", title: "Class 10 Mathematics", creditsOrMarks: "Theory 80 + Internal 20", type: "Theory", facultyAssigned: "Mrs. Sunita Sharma", archetype: "K12_SCHOOL" },
+  { id: "s-2", code: "CBSE-086", title: "Class 10 General Science (PCM)", creditsOrMarks: "Theory 80 + Lab 20", type: "Practical", facultyAssigned: "Dr. K. Raman", archetype: "K12_SCHOOL" },
+  { id: "s-3", code: "CBSE-184", title: "English Language & Literature", creditsOrMarks: "Theory 80 + Oral 20", type: "Theory", facultyAssigned: "Mrs. Priya Das", archetype: "K12_SCHOOL" },
+  // College
+  { id: "s-201", code: "CS-401", title: "Data Structures & Algorithms", creditsOrMarks: "4 Credits (UGC CBCS)", type: "Theory", facultyAssigned: "Prof. S. Sen", archetype: "DEGREE_COLLEGE" },
+  { id: "s-202", code: "CS-402L", title: "Database Management Lab (PostgreSQL)", creditsOrMarks: "2 Credits (Practical)", type: "Practical", facultyAssigned: "Dr. M. Iyer", archetype: "DEGREE_COLLEGE" },
+  { id: "s-203", code: "AUD-101", title: "Constitution of India & Cyber Ethics", creditsOrMarks: "Mandatory Audit (Pass/Fail)", type: "Audit", facultyAssigned: "Prof. A. Desai", archetype: "DEGREE_COLLEGE" },
+  // University
+  { id: "s-301", code: "NEP-CSC601", title: "Advanced Distributed Deep Learning", creditsOrMarks: "4 Credits (ABC Digilocker)", type: "Theory", facultyAssigned: "Prof. V. Nambiar", archetype: "UNIVERSITY" },
+  { id: "s-302", code: "NEP-OE302", title: "Interdisciplinary: Computational Law", creditsOrMarks: "3 Credits (Multi-Disciplinary)", type: "Elective", facultyAssigned: "Dr. K. Swamy", archetype: "UNIVERSITY" },
+  // Coaching
+  { id: "s-401", code: "DPP-JEE-PH", title: "Physics: Rotational Dynamics & Optics", creditsOrMarks: "120 MCQs / Week (+4/-1)", type: "Theory", facultyAssigned: "Er. Nitin Verma", archetype: "COACHING_ACADEMY" },
+  { id: "s-402", code: "DPP-NEET-BIO", title: "Biology: Human Genetics & Cell Biology", creditsOrMarks: "180 MCQs / Week", type: "Practical", facultyAssigned: "Dr. Anjali Rao", archetype: "COACHING_ACADEMY" },
+];
+
+export const DEMO_FACULTY_WORKLOAD: DemoFacultyWorkloadRecord[] = [
+  // School
+  { id: "fw-1", name: "Mrs. Sunita Sharma", designation: "PGT Mathematics", departmentOrSubject: "Mathematics", lectureHoursWeekly: 18, practicalOrDoubtHours: 4, maxTargetHours: 22, archetype: "K12_SCHOOL", status: "Balanced" },
+  { id: "fw-2", name: "Dr. K. Raman", designation: "PGT Physics & Science Head", departmentOrSubject: "Physics", lectureHoursWeekly: 16, practicalOrDoubtHours: 8, maxTargetHours: 24, archetype: "K12_SCHOOL", status: "Balanced" },
+  { id: "fw-3", name: "Mrs. Priya Das", designation: "TGT English", departmentOrSubject: "Languages", lectureHoursWeekly: 12, practicalOrDoubtHours: 2, maxTargetHours: 20, archetype: "K12_SCHOOL", status: "Available" },
+  // College
+  { id: "fw-201", name: "Prof. S. Sen", designation: "Associate Professor & HOD", departmentOrSubject: "Computer Science", lectureHoursWeekly: 14, practicalOrDoubtHours: 6, maxTargetHours: 18, archetype: "DEGREE_COLLEGE", status: "Overloaded" },
+  { id: "fw-202", name: "Dr. M. Iyer", designation: "Assistant Professor", departmentOrSubject: "Information Tech", lectureHoursWeekly: 12, practicalOrDoubtHours: 6, maxTargetHours: 18, archetype: "DEGREE_COLLEGE", status: "Balanced" },
+  // University
+  { id: "fw-301", name: "Prof. V. Nambiar", designation: "Dean & Research Chair", departmentOrSubject: "Artificial Intelligence", lectureHoursWeekly: 8, practicalOrDoubtHours: 12, maxTargetHours: 16, archetype: "UNIVERSITY", status: "Balanced" },
+  // Coaching
+  { id: "fw-401", name: "Er. Nitin Verma (IITB)", designation: "Senior Master Faculty", departmentOrSubject: "Advanced Physics", lectureHoursWeekly: 20, practicalOrDoubtHours: 10, maxTargetHours: 28, archetype: "COACHING_ACADEMY", status: "Overloaded" },
+  { id: "fw-402", name: "Dr. Anjali Rao (AIIMS)", designation: "Head of Biology", departmentOrSubject: "Botany & Zoology", lectureHoursWeekly: 18, practicalOrDoubtHours: 8, maxTargetHours: 26, archetype: "COACHING_ACADEMY", status: "Balanced" },
+];
+
 
