@@ -1,6 +1,6 @@
 "use server";
 
-import { query } from "@/lib/db";
+import { query, getClient } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
 export interface RealAdmissionCandidate {
@@ -280,16 +280,19 @@ export async function enrollApplicantAsStudentAction(candidateId: string): Promi
   invoiceNo?: string;
   error?: string;
 }> {
+  const client = await getClient();
   try {
-    const tenantRes = await query<{ id: string }>(
+    const tenantRes = await client.query<{ id: string }>(
       `SELECT id FROM tenants WHERE slug = $1 LIMIT 1`,
       ["apexacademy"]
     );
     if (tenantRes.rows.length === 0) return { success: false, error: "Tenant not found" };
     const tenantId = tenantRes.rows[0].id;
 
-    // 1. Fetch candidate
-    const candRes = await query<{
+    await client.query("BEGIN");
+
+    // 1. Fetch candidate with row lock to prevent double-enrollment race condition
+    const candRes = await client.query<{
       id: string;
       application_no: string;
       first_name: string;
@@ -306,14 +309,19 @@ export async function enrollApplicantAsStudentAction(candidateId: string): Promi
       `SELECT id, application_no, first_name, last_name, guardian_name, guardian_phone, 
               email, gender, to_char(dob, 'YYYY-MM-DD') AS dob, is_rte_quota, status, enrolled_student_id
        FROM admission_applications
-       WHERE id = $1 AND tenant_id = $2`,
+       WHERE id = $1 AND tenant_id = $2
+       FOR UPDATE`,
       [candidateId, tenantId]
     );
 
-    if (candRes.rows.length === 0) return { success: false, error: "Candidate not found" };
+    if (candRes.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return { success: false, error: "Candidate not found" };
+    }
     const cand = candRes.rows[0];
 
     if (cand.enrolled_student_id) {
+      await client.query("ROLLBACK");
       return {
         success: false,
         error: "Candidate is already enrolled with student ID: " + cand.enrolled_student_id,
@@ -321,18 +329,19 @@ export async function enrollApplicantAsStudentAction(candidateId: string): Promi
     }
 
     // 2. Locate default section (e.g. Class 10 Section A)
-    const secRes = await query<{ id: string }>(
+    const secRes = await client.query<{ id: string }>(
       `SELECT id FROM sections WHERE tenant_id = $1 LIMIT 1`,
       [tenantId]
     );
     if (secRes.rows.length === 0) {
+      await client.query("ROLLBACK");
       return { success: false, error: "No academic class section found in institution" };
     }
     const sectionId = secRes.rows[0].id;
 
     // 3. Generate sequential Admission No
-    const nextRollRes = await query<{ max_roll: number; total_students: number }>(
-      `SELECT COALESCE(MAX(roll_no), 0) AS max_roll, COUNT(*)::int AS total_students 
+    const nextRollRes = await client.query<{ max_roll: number }>(
+      `SELECT COALESCE(MAX(roll_no), 0) AS max_roll 
        FROM students 
        WHERE tenant_id = $1`,
       [tenantId]
@@ -341,7 +350,7 @@ export async function enrollApplicantAsStudentAction(candidateId: string): Promi
     const admissionNo = `SCH/2026/0${String(490 + nextRoll).slice(-4)}`;
 
     // 4. Insert Student
-    const stuRes = await query<{ id: string }>(
+    const stuRes = await client.query<{ id: string }>(
       `INSERT INTO students (
         tenant_id, section_id, admission_no, roll_no, first_name, last_name,
         dob, gender, category, is_rte_quota, emergency_phone, guardian_name,
@@ -370,23 +379,33 @@ export async function enrollApplicantAsStudentAction(candidateId: string): Promi
     const studentId = stuRes.rows[0].id;
 
     // 5. Update Admission Application as Admitted
-    await query(
+    await client.query(
       `UPDATE admission_applications
        SET status = 'ADMITTED', enrolled_student_id = $1, updated_at = CURRENT_TIMESTAMP
        WHERE id = $2 AND tenant_id = $3`,
       [studentId, candidateId, tenantId]
     );
 
-    // 6. Generate Admission Fee Invoice
-    const invCountRes = await query<{ count: string }>(
+    // 6. Look up dynamic fee structure
+    const feeStructRes = await client.query<{ amount: string }>(
+      `SELECT amount FROM fee_structures 
+       WHERE tenant_id = $1 AND is_active = TRUE 
+       ORDER BY created_at DESC 
+       LIMIT 1`,
+      [tenantId]
+    );
+    const dynamicAmount = feeStructRes.rows.length > 0 ? Number(feeStructRes.rows[0].amount) : 15000;
+    const initialTuitionFee = cand.is_rte_quota ? 0 : dynamicAmount;
+
+    // 7. Generate Admission Fee Invoice
+    const invCountRes = await client.query<{ count: string }>(
       `SELECT COUNT(*)::text AS count FROM invoices WHERE tenant_id = $1`,
       [tenantId]
     );
     const invSeq = parseInt(invCountRes.rows[0]?.count || "0", 10) + 1;
     const invoiceNo = `INV/2026/${String(invSeq).padStart(3, "0")}`;
-    const initialTuitionFee = cand.is_rte_quota ? 0 : 24500;
 
-    await query(
+    await client.query(
       `INSERT INTO invoices (
         tenant_id, student_id, invoice_no, title, amount, paid_amount,
         due_date, status, created_at, updated_at
@@ -399,8 +418,8 @@ export async function enrollApplicantAsStudentAction(candidateId: string): Promi
       [tenantId, studentId, invoiceNo, initialTuitionFee]
     );
 
-    // 7. Log in Audit Trail
-    await query(
+    // 8. Log in Audit Trail
+    await client.query(
       `INSERT INTO audit_logs (tenant_id, action, entity, entity_id, new_values, created_at)
        VALUES ($1, 'APPLICANT_ENROLLED_AS_STUDENT', 'STUDENT', $2, $3::jsonb, CURRENT_TIMESTAMP)`,
       [
@@ -410,10 +429,13 @@ export async function enrollApplicantAsStudentAction(candidateId: string): Promi
           candidate_id: candidateId,
           admission_no: admissionNo,
           invoice_no: invoiceNo,
+          initial_fee: initialTuitionFee,
           name: `${cand.first_name} ${cand.last_name}`,
         }),
       ]
     );
+
+    await client.query("COMMIT");
 
     revalidatePath("/admin");
     return {
@@ -423,11 +445,14 @@ export async function enrollApplicantAsStudentAction(candidateId: string): Promi
       invoiceNo,
     };
   } catch (error) {
+    await client.query("ROLLBACK");
     console.error("Failed to enroll applicant:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to enroll applicant",
     };
+  } finally {
+    client.release();
   }
 }
 

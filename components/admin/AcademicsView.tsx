@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Plus,
   CheckCircle2,
@@ -9,6 +9,7 @@ import {
   Shuffle,
   Briefcase,
   Users,
+  Search,
 } from "lucide-react";
 import { InstitutionalArchetype, ARCHETYPES } from "@/lib/terminology";
 import { useAdmin } from "@/lib/admin/adminContext";
@@ -90,6 +91,7 @@ export default function AcademicsView({ archetype }: AcademicsViewProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDay, setSelectedDay] = useState("Monday");
   const [toastMessage, setToastMessage] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Modals
   const [isAddCohortModal, setIsAddCohortModal] = useState(false);
@@ -216,9 +218,32 @@ export default function AcademicsView({ archetype }: AcademicsViewProps) {
   const activeSyllabi = syllabi.filter((s) => !s.archetype || s.archetype === archetype);
   const activeWorkloads = workloads.filter((w) => !w.archetype || w.archetype === archetype);
 
-  const displayCohorts = activeCohorts.length > 0 ? activeCohorts : cohorts.slice(0, 4);
-  const displaySyllabi = activeSyllabi.length > 0 ? activeSyllabi : syllabi.slice(0, 5);
-  const displayWorkloads = activeWorkloads.length > 0 ? activeWorkloads : workloads.slice(0, 3);
+  const baseCohorts = activeCohorts.length > 0 ? activeCohorts : (isDemoMode ? cohorts.slice(0, 4) : cohorts);
+  const baseSyllabi = activeSyllabi.length > 0 ? activeSyllabi : (isDemoMode ? syllabi.slice(0, 5) : syllabi);
+  const displayWorkloads = activeWorkloads.length > 0 ? activeWorkloads : (isDemoMode ? workloads.slice(0, 3) : workloads);
+
+  // Search Filter for Cohorts and Syllabi
+  const displayCohorts = useMemo(() => {
+    if (!searchQuery.trim()) return baseCohorts;
+    const q = searchQuery.toLowerCase().trim();
+    return baseCohorts.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        c.division.toLowerCase().includes(q) ||
+        c.inchargeFaculty.toLowerCase().includes(q)
+    );
+  }, [baseCohorts, searchQuery]);
+
+  const displaySyllabi = useMemo(() => {
+    if (!searchQuery.trim()) return baseSyllabi;
+    const q = searchQuery.toLowerCase().trim();
+    return baseSyllabi.filter(
+      (s) =>
+        s.title.toLowerCase().includes(q) ||
+        s.code.toLowerCase().includes(q) ||
+        s.facultyAssigned.toLowerCase().includes(q)
+    );
+  }, [baseSyllabi, searchQuery]);
 
   // Dynamic Day Schedule Slots based on archetype
   const getDaySchedule = (): TimetableSlot[] => {
@@ -318,7 +343,17 @@ export default function AcademicsView({ archetype }: AcademicsViewProps) {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder={`Search ${terms.cohortUnit} or subjects...`}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8 pr-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-1 focus:ring-blue-500 w-44 sm:w-56"
+            />
+          </div>
           <button
             type="button"
             onClick={() => setIsSubstitutionModal(true)}

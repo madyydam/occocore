@@ -248,6 +248,36 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
     }
   };
 
+  const handleExportCsv = () => {
+    if (candidates.length === 0) {
+      alert("No candidate records available to export.");
+      return;
+    }
+    const headers = ["ID", "Name", "Guardian Name", "Phone", "Email", "Program", "Merit Score", "Numeric Score", "Quota", "Status", "Applied Date"];
+    const rows = candidates.map((c) => [
+      c.id,
+      `"${c.name.replace(/"/g, '""')}"`,
+      `"${c.guardianName.replace(/"/g, '""')}"`,
+      `"${c.phone}"`,
+      `"${c.email}"`,
+      `"${c.program.replace(/"/g, '""')}"`,
+      `"${c.meritScore}"`,
+      c.numericScore,
+      `"${c.quotaType}"`,
+      c.status,
+      `"${c.appliedDate}"`,
+    ]);
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `admissions_candidates_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    triggerToast("Exported candidate records to CSV");
+  };
+
   // 1-Click Complete Admission & Enroll as Student
   const handleEnrollStudent = async (candidate: AdmissionCandidateItem) => {
     if (isDemoMode) {
@@ -416,6 +446,14 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            className="py-2.5 px-3.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs hover:bg-slate-50 transition-all active:scale-98 cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-500" />
+            <span>Export CSV</span>
+          </button>
           <button
             type="button"
             onClick={() => setIsAddModalOpen(true)}

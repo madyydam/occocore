@@ -1,6 +1,6 @@
 "use server";
 
-import { query } from "@/lib/db";
+import { query, getClient } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
 export interface RealFeeInvoice {
@@ -186,27 +186,39 @@ export async function recordFeePaymentAction(payload: {
   transactionRef?: string;
   notes?: string;
 }) {
+  const client = await getClient();
   try {
-    const tenantRes = await query<{ id: string }>(
+    const tenantRes = await client.query<{ id: string }>(
       `SELECT id FROM tenants WHERE slug = $1 LIMIT 1`,
       ["apexacademy"]
     );
     if (tenantRes.rows.length === 0) return { success: false, error: "Tenant not found" };
     const tenantId = tenantRes.rows[0].id;
 
-    // Fetch the target invoice
-    const invRes = await query<{ id: string; amount: string; paid_amount: string; student_id: string }>(
-      `SELECT id, amount, paid_amount, student_id FROM invoices WHERE id = $1 AND tenant_id = $2 LIMIT 1`,
+    await client.query("BEGIN");
+
+    // Fetch the target invoice with row lock to avoid double-crediting
+    const invRes = await client.query<{ id: string; amount: string; paid_amount: string; student_id: string }>(
+      `SELECT id, amount, paid_amount, student_id FROM invoices WHERE id = $1 AND tenant_id = $2 FOR UPDATE`,
       [payload.invoiceId, tenantId]
     );
-    if (invRes.rows.length === 0) return { success: false, error: "Invoice not found" };
+    if (invRes.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return { success: false, error: "Invoice not found" };
+    }
     const inv = invRes.rows[0];
 
-    const receiptNo = `RCP/${new Date().getFullYear()}/${String(Math.floor(1000 + Math.random() * 9000))}`;
+    // Atomic sequential receipt number generation
+    const rcpCountRes = await client.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM receipts WHERE tenant_id = $1`,
+      [tenantId]
+    );
+    const receiptSeq = parseInt(rcpCountRes.rows[0]?.count || "0", 10) + 1;
+    const receiptNo = `RCP/${new Date().getFullYear()}/${String(receiptSeq).padStart(4, "0")}`;
     const transactionRef = payload.transactionRef || `UPI/NPCI/${Date.now().toString().slice(-8)}`;
 
     // 1. Insert into receipts table
-    const rcpRes = await query<{ id: string }>(
+    const rcpRes = await client.query<{ id: string }>(
       `INSERT INTO receipts (
           tenant_id,
           invoice_id,
@@ -236,7 +248,7 @@ export async function recordFeePaymentAction(payload: {
     const totalAmount = Number(inv.amount);
     const newStatus = newPaidAmount >= totalAmount ? "PAID" : "PARTIAL";
 
-    await query(
+    await client.query(
       `UPDATE invoices
        SET paid_amount = $1,
            status = $2,
@@ -246,7 +258,7 @@ export async function recordFeePaymentAction(payload: {
     );
 
     // 3. Log to audit trail
-    await query(
+    await client.query(
       `INSERT INTO audit_logs (
           tenant_id,
           action,
@@ -269,6 +281,8 @@ export async function recordFeePaymentAction(payload: {
       ]
     );
 
+    await client.query("COMMIT");
+
     try {
       revalidatePath("/admin");
     } catch {
@@ -283,8 +297,11 @@ export async function recordFeePaymentAction(payload: {
       receiptId: rcpRes.rows[0].id,
     };
   } catch (error) {
+    await client.query("ROLLBACK");
     console.error("Failed to record fee payment in PostgreSQL:", error);
     return { success: false, error: error instanceof Error ? error.message : "Failed to record payment" };
+  } finally {
+    client.release();
   }
 }
 

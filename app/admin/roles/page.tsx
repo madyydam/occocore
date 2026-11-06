@@ -38,8 +38,10 @@ export default function AdminRolesPage() {
   const [roles, setRoles] = useState<Record<string, RoleConfig>>({ ...ROLE_DEFINITIONS });
   const [selectedRoleKey, setSelectedRoleKey] = useState<string>("ADMIN");
 
-  // Local state for user accounts & PINs
-  const [userAccounts, setUserAccounts] = useState<ManagedUserAccount[]>([...INITIAL_USER_ACCOUNTS]);
+  // Local state for user accounts & PINs (Strictly zero mock leak in Real Mode)
+  const [userAccounts, setUserAccounts] = useState<ManagedUserAccount[]>(() =>
+    isDemoMode ? [...INITIAL_USER_ACCOUNTS] : []
+  );
   const [userSearchQuery, setUserSearchQuery] = useState("");
 
   // Sync users with PostgreSQL in Real Mode
@@ -48,7 +50,7 @@ export default function AdminRolesPage() {
     let isMounted = true;
     getUsersList()
       .then((users) => {
-        if (!isMounted || users.length === 0) return;
+        if (!isMounted) return;
         setUserAccounts(
           users.map((u) => ({
             id: u.id,

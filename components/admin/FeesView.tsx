@@ -12,6 +12,7 @@ import {
   Layers,
   Printer,
   Search,
+  Download,
 } from "lucide-react";
 import { InstitutionalArchetype, ARCHETYPES } from "@/lib/terminology";
 import { useAdmin } from "@/lib/admin/adminContext";
@@ -203,6 +204,35 @@ export default function FeesView({ archetype }: FeesViewProps) {
     }
   };
 
+  const handleExportFeeRegister = () => {
+    if (invoices.length === 0) {
+      alert("No fee invoices available to export.");
+      return;
+    }
+    const headers = ["Invoice No", "Student Name", "Admission No", "Cohort", "Fee Heads", "Amount (INR)", "Paid Amount (INR)", "Due Date", "Status", "Guardian Phone"];
+    const rows = invoices.map((inv) => [
+      inv.invoiceNo,
+      `"${inv.studentName.replace(/"/g, '""')}"`,
+      `"${inv.studentId}"`,
+      `"${inv.cohort.replace(/"/g, '""')}"`,
+      `"${inv.heads.replace(/"/g, '""')}"`,
+      inv.amount,
+      inv.paidAmount || 0,
+      `"${inv.dueDate}"`,
+      inv.status,
+      `"${inv.guardianPhone}"`,
+    ]);
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `fee_ledger_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    triggerToast("Exported fee ledger to CSV");
+  };
+
   // Filter for archetype in demo mode; in real mode show all tenant invoices
   const activeInvoices = isDemoMode
     ? invoices.filter((i) => i.archetype === archetype)
@@ -289,15 +319,25 @@ export default function FeesView({ archetype }: FeesViewProps) {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsUpiModal(true)}
-          style={{ backgroundColor: theme.primary }}
-          className="py-2.5 px-4 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-98 cursor-pointer shrink-0 hover:opacity-90"
-        >
-          <QrCode className="w-4 h-4 text-emerald-300" />
-          <span>Generate Dynamic UPI QR</span>
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={handleExportFeeRegister}
+            className="py-2.5 px-3.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs hover:bg-slate-50 transition-all active:scale-98 cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-500" />
+            <span>Export CSV</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsUpiModal(true)}
+            style={{ backgroundColor: theme.primary }}
+            className="py-2.5 px-4 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-98 cursor-pointer hover:opacity-90"
+          >
+            <QrCode className="w-4 h-4 text-emerald-300" />
+            <span>Generate Dynamic UPI QR</span>
+          </button>
+        </div>
       </div>
 
       {/* KPI Metric Pods */}

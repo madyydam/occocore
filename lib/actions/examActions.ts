@@ -407,9 +407,9 @@ export async function getRealHallTicketsAction(): Promise<{ success: boolean; ha
     const hallTickets: RealHallTicketRecord[] = res.rows.map((row) => {
       const present = Number(row.present_count);
       const total = Number(row.total_count);
-      // If attendance records exist, calculate real %; otherwise default to 88.5%
-      const attendancePct = total > 0 ? Number(((present / total) * 100).toFixed(1)) : 88.5;
-      const eligible = attendancePct >= 75.0;
+      // Strictly real attendance calculation: 0.0% if no attendance records logged yet
+      const attendancePct = total > 0 ? Number(((present / total) * 100).toFixed(1)) : 0.0;
+      const eligible = total > 0 && attendancePct >= 75.0;
 
       return {
         id: row.id,
@@ -418,8 +418,8 @@ export async function getRealHallTicketsAction(): Promise<{ success: boolean; ha
         cohort: `${row.class_name} - ${row.section_name}`,
         attendancePct,
         eligible,
-        rollNoOrSeatNo: String(101000 + (row.roll_no || 1)),
-        centerCode: "CBSE-CTR-8901",
+        rollNoOrSeatNo: row.roll_no ? `SEAT-${String(row.roll_no).padStart(3, "0")}` : `SEAT-${row.admission_no.slice(-3)}`,
+        centerCode: `EXAM-CTR-${(row.class_name || "MAIN").replace(/\s+/g, "").toUpperCase()}`,
       };
     });
 

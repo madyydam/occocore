@@ -235,6 +235,31 @@ export default function ExamsView({ archetype }: ExamsViewProps) {
     : hallTickets;
   const displayHallTickets = activeHallTickets.length > 0 ? activeHallTickets : hallTickets;
 
+  const handleExportBroadsheetCsv = () => {
+    if (displayRecords.length === 0) {
+      alert("No examination marks records available to export.");
+      return;
+    }
+    const headers = ["Student Name", "Roll / Admission No", "Cohort", "Marks / Score", "Grade / Rank", "Result Status"];
+    const rows = displayRecords.map((r) => [
+      `"${r.studentName.replace(/"/g, '""')}"`,
+      `"${r.studentId}"`,
+      `"${r.cohort.replace(/"/g, '""')}"`,
+      `"${r.totalMarksOrScore}"`,
+      `"${r.gradeOrSgpaOrRank}"`,
+      r.status,
+    ]);
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `exam_broadsheet_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    triggerToast("Exported consolidated examination broadsheet to CSV");
+  };
+
   // KPI Calculations from real records
   const metrics = useMemo(() => {
     if (baseRecords.length === 0) {
@@ -311,7 +336,7 @@ export default function ExamsView({ archetype }: ExamsViewProps) {
 
           <button
             type="button"
-            onClick={() => triggerToast("Exporting consolidated tabulation broadsheet (.xlsx / PDF).")}
+            onClick={handleExportBroadsheetCsv}
             style={{ backgroundColor: theme.primary }}
             className="py-2.5 px-4 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-98 cursor-pointer shrink-0 hover:opacity-90"
           >
