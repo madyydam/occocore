@@ -345,3 +345,43 @@ The Owner / Admin Portal implements a high-craft, dual-navigation administrative
 - **Objective**: Sub-second keyboard navigation and instant data discovery across large institutional directories.
 - **Specification**:
   - Real-time debounced filtering across Cohorts, Syllabi, Admissions Inquiries, and Invoices.
+
+---
+
+## 12. PRD 12: Dedicated Student Portal (`/student`)
+
+### 12.1 Objective & Architecture
+- **Enterprise Benchmarks**: Modeled after Tier-1 Higher-Ed & K-12 systems (PowerSchool, Ellucian Banner, Canvas Student, TCS iON).
+- **Zero-Mock Policy**: 100% of student profile, attendance logs, fee invoices, receipts, examination scores, and timetables are queried live from PostgreSQL (`occocore_db`) via `studentPortalActions.ts`.
+- **Responsive Standard**: Mobile-first bottom navigation dock with seamless desktop sidebar transitions.
+
+### 12.2 Functional Pillars
+1. **Dashboard & Daily Overview**:
+   - Institutional banner, student registration number (PRN/Roll No), current class/section, and academic year.
+   - Live KPI cards: Attendance Percentage, Outstanding Fee Dues, Enrolled Courses count, and Pending Leave Requests.
+   - Today's Class Schedule ticker and recent emergency broadcast notices.
+
+2. **Attendance Diary & Self-Service Leave Engine**:
+   - Real calculated attendance percentage derived from `attendance_records` (`COUNT(status='PRESENT') / COUNT(*)`).
+   - Dynamic statutory compliance indicator (75% minimum threshold warning/safe state).
+   - 30-day chronological attendance ledger with status badges (Present, Absent, Late, Excused).
+   - Interactive Leave Application drawer inserting atomically into `leave_requests` table with start/end date validation and reason fields.
+
+3. **Academics & Dynamic Timetable**:
+   - Interactive day-of-week timetable browser (Monday through Saturday).
+   - Real-time slot breakdown: Period timing, subject title, assigned faculty, and room/lab designation.
+
+4. **Fee Invoicing & NPCI Dynamic UPI Checkout**:
+   - Live fee invoice ledger querying `invoices` where student matches current user.
+   - Outstanding balance alert banner with immediate 1-click payment CTA.
+   - **Dynamic NPCI UPI QR Generator**: Generates `upi://pay?pa=...&am=...&tr=...` links for instant scan-and-pay via BHIM, Google Pay, PhonePe, and Paytm.
+   - Official Fee Receipts history with instantaneous A4 view & print modal for tax/reimbursement documentation.
+
+5. **Marksheet & Official Progress Report Card**:
+   - Live examination marks breakdown queried from `marks`, `exams`, and `subjects` tables.
+   - Subject-wise scores, maximum marks, earned letter grades, and total percentage calculation.
+   - Built-in A4 Holistic Progress Card print preview with CBSE/NEP statutory alignment.
+
+6. **Broadcast Notices & Institutional Circulars**:
+   - Priority-tagged institutional notices (Emergency, Examination, General, Holiday).
+   - Full publication date, author attribution, and formatted message body.

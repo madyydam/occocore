@@ -340,12 +340,30 @@ export default function LoginPage() {
                 </div>
                 <div className="pt-1 flex items-center justify-between">
                   <span className="text-[10px] text-emerald-700">Session unlocked with DPDPA 2023 compliance.</span>
-                  <Link
-                    href="/admin/roles"
-                    className="px-3 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold text-[11px] transition-colors"
-                  >
-                    Open Role Manager →
-                  </Link>
+                  {activeTab === "student" ? (
+                    <Link
+                      href="/student"
+                      className="px-3.5 py-1.5 bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg font-bold text-[11px] transition-colors shadow-sm inline-flex items-center gap-1.5"
+                    >
+                      <span>Enter Student Portal</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  ) : activeTab === "super_admin" ? (
+                    <Link
+                      href="/super-admin"
+                      className="px-3.5 py-1.5 bg-red-700 hover:bg-red-800 text-white rounded-lg font-bold text-[11px] transition-colors shadow-sm inline-flex items-center gap-1.5"
+                    >
+                      <span>Enter Super Admin Portal</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  ) : (
+                    <Link
+                      href="/admin/roles"
+                      className="px-3 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold text-[11px] transition-colors"
+                    >
+                      Open Role Manager →
+                    </Link>
+                  )}
                 </div>
               </div>
             )}
