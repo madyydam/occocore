@@ -49,8 +49,8 @@ export async function getAcademicCohortsAction(archetype?: string): Promise<{
     if (tenantRes.rows.length === 0) return { success: false, cohorts: [] };
     const tenantId = tenantRes.rows[0].id;
 
-    // Fetch cohorts by joining sections, classes, and students
-    let res = await query<{
+    // Fetch cohorts by joining sections, classes, and real students
+    const res = await query<{
       section_id: string;
       class_name: string;
       section_name: string;
@@ -72,61 +72,14 @@ export async function getAcademicCohortsAction(archetype?: string): Promise<{
       [tenantId]
     );
 
-    // If no cohorts exist, seed initial classes and sections idempotently
-    if (res.rows.length === 0) {
-      const yearRes = await query<{ id: string }>(
-        `SELECT id FROM academic_years WHERE tenant_id = $1 LIMIT 1`,
-        [tenantId]
-      );
-      const yearId = yearRes.rows[0]?.id || null;
-
-      const clsRes = await query<{ id: string }>(
-        `INSERT INTO classes (tenant_id, academic_year_id, name, numeric_level)
-         VALUES ($1, $2, 'Class 10', 10)
-         RETURNING id`,
-        [tenantId, yearId]
-      );
-      const classId = clsRes.rows[0].id;
-
-      await query(
-        `INSERT INTO sections (tenant_id, class_id, name, capacity)
-         VALUES 
-          ($1, $2, 'Section A', 42),
-          ($1, $2, 'Section B', 42)`,
-        [tenantId, classId]
-      );
-
-      res = await query<{
-        section_id: string;
-        class_name: string;
-        section_name: string;
-        capacity: number;
-        enrolled_count: string;
-      }>(
-        `SELECT 
-          sec.id AS section_id,
-          c.name AS class_name,
-          sec.name AS section_name,
-          sec.capacity,
-          COUNT(s.id)::text AS enrolled_count
-         FROM sections sec
-         JOIN classes c ON sec.class_id = c.id
-         LEFT JOIN students s ON s.section_id = sec.id AND s.tenant_id = sec.tenant_id AND s.is_active = TRUE
-         WHERE sec.tenant_id = $1
-         GROUP BY sec.id, c.name, c.numeric_level, sec.name, sec.capacity
-         ORDER BY c.numeric_level ASC, sec.name ASC`,
-        [tenantId]
-      );
-    }
-
-    const cohorts: RealCohortRecord[] = res.rows.map((r, idx) => ({
+    const cohorts: RealCohortRecord[] = res.rows.map((r) => ({
       id: r.section_id,
       name: r.class_name,
       division: r.section_name,
       capacity: r.capacity || 40,
       enrolled: parseInt(r.enrolled_count || "0", 10),
-      inchargeFaculty: idx % 2 === 0 ? "Mrs. Sunita Sharma" : "Mr. Rajesh Varma",
-      roomNo: `Room ${204 + idx}`,
+      inchargeFaculty: "Unassigned",
+      roomNo: "Assigned per Schedule",
       archetype: archetype || "K12_SCHOOL",
     }));
 
@@ -237,13 +190,13 @@ export async function getAcademicSyllabiAction(archetype?: string): Promise<{
       [tenantId]
     );
 
-    const facultyList = [
-      "Mrs. Sunita Sharma",
-      "Dr. K. Raman",
-      "Dr. M. Iyer",
-      "Mrs. Priya Das",
-      "Prof. S. Sen",
-    ];
+    // Query real faculty users
+    const facultyRes = await query<{ id: string; first_name: string; last_name: string }>(
+      `SELECT id, first_name, last_name FROM users WHERE tenant_id = $1 AND role IN ('TEACHER', 'ADMIN') ORDER BY first_name ASC`,
+      [tenantId]
+    );
+
+    const facultyList = facultyRes.rows.map((f) => `${f.first_name} ${f.last_name}`);
 
     const syllabi: RealSyllabusItem[] = res.rows.map((r, i) => {
       let type: "Theory" | "Practical" | "Elective" | "Audit" = "Theory";
@@ -255,7 +208,7 @@ export async function getAcademicSyllabiAction(archetype?: string): Promise<{
         title: r.name,
         creditsOrMarks: `${r.credits} Credits • ${r.is_theory ? "Theory" : ""}${r.is_lab ? " + Lab" : ""}`,
         type,
-        facultyAssigned: facultyList[i % facultyList.length],
+        facultyAssigned: facultyList.length > 0 ? facultyList[i % facultyList.length] : "Unassigned",
         archetype: archetype || "K12_SCHOOL",
       };
     });
@@ -284,7 +237,7 @@ export async function getFacultyWorkloadAction(archetype?: string): Promise<{
     if (tenantRes.rows.length === 0) return { success: false, workloads: [] };
     const tenantId = tenantRes.rows[0].id;
 
-    // Fetch users with role TEACHER or ADMIN
+    // Fetch users with role TEACHER or ADMIN from PostgreSQL
     const res = await query<{
       id: string;
       first_name: string;
@@ -298,58 +251,25 @@ export async function getFacultyWorkloadAction(archetype?: string): Promise<{
       [tenantId]
     );
 
-    const defaultFaculty = [
-      {
-        id: "fw-1",
-        name: "Mrs. Sunita Sharma",
-        designation: "PGT Mathematics & Academic Coordinator",
-        departmentOrSubject: "Mathematics",
-        lectureHoursWeekly: 18,
-        practicalOrDoubtHours: 4,
-        maxTargetHours: 22,
-        status: "Balanced" as const,
-      },
-      {
-        id: "fw-2",
-        name: "Dr. K. Raman",
-        designation: "PGT Physics & Science Department Head",
-        departmentOrSubject: "Physics",
-        lectureHoursWeekly: 16,
-        practicalOrDoubtHours: 8,
-        maxTargetHours: 24,
-        status: "Balanced" as const,
-      },
-      {
-        id: "fw-3",
-        name: "Mrs. Priya Das",
-        designation: "TGT English Language & Literature",
-        departmentOrSubject: "Languages",
-        lectureHoursWeekly: 12,
-        practicalOrDoubtHours: 2,
-        maxTargetHours: 20,
-        status: "Available" as const,
-      },
-    ];
-
+    // If no faculty exist, return empty array
     if (res.rows.length === 0) {
       return {
         success: true,
-        workloads: defaultFaculty.map((f) => ({ ...f, archetype: archetype || "K12_SCHOOL" })),
+        workloads: [],
       };
     }
 
-    const workloads: RealFacultyWorkloadRecord[] = res.rows.map((u, i) => {
-      const match = defaultFaculty[i % defaultFaculty.length];
+    const workloads: RealFacultyWorkloadRecord[] = res.rows.map((u) => {
       return {
         id: u.id,
         name: `${u.first_name} ${u.last_name}`,
-        designation: u.role === "ADMIN" ? "Principal & Senior Academician" : match.designation,
-        departmentOrSubject: match.departmentOrSubject,
-        lectureHoursWeekly: match.lectureHoursWeekly,
-        practicalOrDoubtHours: match.practicalOrDoubtHours,
-        maxTargetHours: match.maxTargetHours,
+        designation: u.role === "ADMIN" ? "Principal & Senior Academician" : "Faculty Member",
+        departmentOrSubject: "Academics",
+        lectureHoursWeekly: 0,
+        practicalOrDoubtHours: 0,
+        maxTargetHours: 22,
         archetype: archetype || "K12_SCHOOL",
-        status: match.status,
+        status: "Available",
       };
     });
 

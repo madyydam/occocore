@@ -40,7 +40,7 @@ export async function getBroadcastsAction(archetype?: string): Promise<{
     if (tenantRes.rows.length === 0) return { success: false, broadcasts: [] };
     const tenantId = tenantRes.rows[0].id;
 
-    let res = await query<{
+    const res = await query<{
       id: string;
       title: string;
       channel: string;
@@ -58,41 +58,6 @@ export async function getBroadcastsAction(archetype?: string): Promise<{
        ORDER BY created_at DESC`,
       [tenantId]
     );
-
-    // If no broadcasts exist, seed standard circulars idempotently
-    if (res.rows.length === 0) {
-      await query(
-        `INSERT INTO broadcast_messages (
-          tenant_id, title, channel, target_audience, recipients_count, delivery_rate, content
-        ) VALUES 
-        ($1, 'Parent-Teacher Conference (PTC) Schedule Announcement', 'WhatsApp & SMS',
-         'All Parents & Guardians', 48, '99.4%',
-         'Dear Parents, Term 1 Parent-Teacher Conferences are scheduled for Saturday 9:00 AM. Please book your 15-minute slot through the parent portal.'),
-        ($1, 'Winter Uniform & School Timings Update', 'WhatsApp Only',
-         'Senior & Junior Wing Parents', 48, '99.8%',
-         'Notice: Mandatory switch to winter blazer and sweater effective Monday. Morning bus pickups will commence 10 minutes earlier.')`,
-        [tenantId]
-      );
-
-      res = await query<{
-        id: string;
-        title: string;
-        channel: string;
-        target_audience: string;
-        recipients_count: number;
-        delivery_rate: string;
-        content: string;
-        created_at: string;
-      }>(
-        `SELECT 
-          id, title, channel, target_audience, recipients_count, delivery_rate, content,
-          to_char(created_at, 'DD Mon YYYY • HH12:MI AM') AS created_at
-         FROM broadcast_messages
-         WHERE tenant_id = $1
-         ORDER BY created_at DESC`,
-        [tenantId]
-      );
-    }
 
     const broadcasts: RealBroadcastRecord[] = res.rows.map((r) => ({
       id: r.id,
@@ -234,3 +199,4 @@ export async function getRealDltSmsLogsAction(): Promise<{
     };
   }
 }
+

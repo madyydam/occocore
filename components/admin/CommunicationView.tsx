@@ -178,12 +178,15 @@ export default function CommunicationView({ archetype }: CommunicationViewProps)
     }
   };
 
-  // Filter for active archetype
-  const activeBroadcasts = broadcasts.filter((b) => !b.archetype || b.archetype === archetype);
-  const displayBroadcasts = activeBroadcasts.length > 0 ? activeBroadcasts : broadcasts.slice(0, 3);
+  // Filter for active broadcasts
+  const displayBroadcasts = broadcasts;
 
-  const activeTemplates = DEMO_WHATSAPP_TEMPLATES.filter((t) => t.archetype === archetype);
-  const displayTemplates = activeTemplates.length > 0 ? activeTemplates : DEMO_WHATSAPP_TEMPLATES.slice(0, 2);
+  const activeTemplates = isDemoMode
+    ? DEMO_WHATSAPP_TEMPLATES.filter((t) => t.archetype === archetype)
+    : [];
+  const displayTemplates = isDemoMode
+    ? (activeTemplates.length > 0 ? activeTemplates : DEMO_WHATSAPP_TEMPLATES.slice(0, 2))
+    : [];
 
   const isWhatsappTab = activeSubTab === "whatsapp_pushes";
   const isDltTab = activeSubTab === "sms_dlt_logs";

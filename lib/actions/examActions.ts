@@ -73,7 +73,7 @@ export async function getExamsAction(): Promise<{ success: boolean; exams: RealE
     const tenantId = tenantRes.rows[0].id;
 
     // Check existing exams
-    let res = await query<{
+    const res = await query<{
       id: string;
       title: string;
       start_date: string;
@@ -86,31 +86,6 @@ export async function getExamsAction(): Promise<{ success: boolean; exams: RealE
        ORDER BY start_date ASC`,
       [tenantId]
     );
-
-    // If no exams exist yet, seed standard institutional exam cycles idempotently
-    if (res.rows.length === 0) {
-      await query(
-        `INSERT INTO exams (tenant_id, title, start_date, end_date, is_locked)
-         VALUES
-          ($1, 'Term 1 Mid-Term Examination 2026-27', '2026-11-15'::date, '2026-11-25'::date, FALSE),
-          ($1, 'Term 2 Annual Board Assessment 2026-27', '2027-03-01'::date, '2027-03-15'::date, FALSE)`,
-        [tenantId]
-      );
-
-      res = await query<{
-        id: string;
-        title: string;
-        start_date: string;
-        end_date: string;
-        is_locked: boolean;
-      }>(
-        `SELECT id, title, to_char(start_date, 'YYYY-MM-DD') AS start_date, to_char(end_date, 'YYYY-MM-DD') AS end_date, is_locked
-         FROM exams
-         WHERE tenant_id = $1
-         ORDER BY start_date ASC`,
-        [tenantId]
-      );
-    }
 
     const exams: RealExamItem[] = res.rows.map((row) => ({
       id: row.id,
@@ -264,27 +239,23 @@ export async function getExamBroadsheetAction(examId?: string): Promise<{ succes
             maxScore: mark.maxScore,
           };
         } else {
-          // If unrecorded, seed with realistic standard initial scores for first run
-          const defaultScore = Math.floor(75 + ((st.roll_no || 1) * 3) % 22);
-          totalObtained += defaultScore;
-          totalMax += 100;
-          const grade = calculateGrade(defaultScore);
           return {
             subjectId: sub.id,
             subject: `${sub.name} (${sub.code || "041"})`,
-            score: `${defaultScore} / 100`,
-            grade,
-            numericScore: defaultScore,
+            score: "Pending Entry",
+            grade: "-",
+            numericScore: 0,
             maxScore: 100,
           };
         }
       });
 
       const percentage = totalMax > 0 ? (totalObtained / totalMax) * 100 : 0;
-      const overallGrade = calculateGrade(percentage);
+      const overallGrade = totalMax > 0 ? calculateGrade(percentage) : "-";
       let status: "Passed" | "Qualified" | "Distinction" | "Remedial" = "Passed";
 
-      if (percentage >= 85) status = "Distinction";
+      if (totalMax === 0) status = "Remedial";
+      else if (percentage >= 85) status = "Distinction";
       else if (percentage >= 33) status = "Passed";
       else status = "Remedial";
 
@@ -480,18 +451,22 @@ export async function getRealExamSchedulesAction(): Promise<{ success: boolean; 
       [tenantId]
     );
 
-    const dates = ["18 Nov 2026", "21 Nov 2026", "24 Nov 2026", "27 Nov 2026", "30 Nov 2026"];
-    const invigilators = ["Mrs. Sunita Sharma", "Dr. K. Raman", "Mr. Amit Verma", "Mrs. Deepa Nair", "Dr. S. Kulkarni"];
+    // Query real faculty users for invigilation assignment
+    const facultyRes = await query<{ first_name: string; last_name: string }>(
+      `SELECT first_name, last_name FROM users WHERE tenant_id = $1 AND role IN ('TEACHER', 'ADMIN') ORDER BY first_name ASC`,
+      [tenantId]
+    );
+    const facultyNames = facultyRes.rows.map((f) => `${f.first_name} ${f.last_name}`);
 
-    const schedules: RealExamScheduleItem[] = subjectsRes.rows.slice(0, 5).map((sub, i) => ({
+    const schedules: RealExamScheduleItem[] = subjectsRes.rows.map((sub, i) => ({
       id: sub.id,
-      examTitle: "Term 1 Board Pattern Examination",
+      examTitle: "Scheduled Assessment",
       subjectCode: sub.code || `SUB-0${i + 1}`,
       subjectName: sub.name,
-      date: dates[i % dates.length],
+      date: "Scheduled per date sheet",
       timeSlot: "09:30 AM - 12:30 PM",
-      hallNo: "Main Examination Hall A & B",
-      chiefInvigilator: invigilators[i % invigilators.length],
+      hallNo: "Designated Examination Hall",
+      chiefInvigilator: facultyNames.length > 0 ? facultyNames[i % facultyNames.length] : "Unassigned Invigilator",
     }));
 
     return { success: true, schedules };

@@ -271,3 +271,4 @@ export async function verifyTenantDomainAction(data: {
     return { success: false, isVerified: false, error: String(error) };
   }
 }
+

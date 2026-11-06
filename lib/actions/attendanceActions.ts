@@ -89,25 +89,45 @@ export async function getAttendanceRosterAction(dateStr: string, sessionStr: str
       [tenantId, dateStr, sessionStr]
     );
 
+    // Fetch real aggregate attendance counts per student from database
+    const statsRes = await query<{
+      student_id: string;
+      present_count: string;
+      total_count: string;
+    }>(
+      `SELECT student_id,
+              COUNT(*) FILTER (WHERE code IN ('P', 'L', 'HD', 'OD'))::text AS present_count,
+              COUNT(*)::text AS total_count
+       FROM attendance_records
+       WHERE tenant_id = $1
+       GROUP BY student_id`,
+      [tenantId]
+    );
+
     const recordMap = new Map(recordsRes.rows.map((r) => [r.student_id, r]));
+    const statsMap = new Map(statsRes.rows.map((st) => [st.student_id, st]));
 
     const roster = studentsRes.rows.map((s) => {
       const rec = recordMap.get(s.id);
+      const stStats = statsMap.get(s.id);
+      const pres = parseInt(stStats?.present_count || "0", 10);
+      const tot = parseInt(stStats?.total_count || "0", 10);
+
       return {
         id: s.id,
         rollNo: s.roll_no || 0,
         studentId: s.admission_no,
         name: `${s.first_name} ${s.last_name}`,
         guardianName: s.guardian_name || "Parent/Guardian",
-        guardianPhone: s.emergency_phone || "9876543210",
+        guardianPhone: s.emergency_phone || "Unrecorded",
         todayCode: rec ? rec.code : "P",
         todaySource: ((rec?.source as "Manual Teacher" | "Biometric" | "RFID Turnstile" | "Approved Leave") || "Manual Teacher"),
-        timeLogged: rec ? new Date(rec.updated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "08:15 AM",
-        monthPresentDays: 22,
-        monthTotalDays: 24,
-        yearPresentDays: 135,
-        yearTotalDays: 142,
-        lastFiveDays: ["P", "P", "P", "L", rec ? rec.code : "P"],
+        timeLogged: rec ? new Date(rec.updated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Unmarked",
+        monthPresentDays: pres,
+        monthTotalDays: tot > 0 ? tot : 1,
+        yearPresentDays: pres,
+        yearTotalDays: tot > 0 ? tot : 1,
+        lastFiveDays: [rec ? rec.code : "P"],
         reasonNote: rec?.reason || undefined,
         archetype: "K12_SCHOOL" as const,
       };

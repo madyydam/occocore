@@ -27,9 +27,7 @@ export default function EnrollStudentModal({ isOpen, onClose, onSuccess }: Enrol
   });
 
   // Bulk Import State
-  const [rawText, setRawText] = useState(
-    "1, SCH/2026/0501, Aarav, Sharma, MALE, 9845497084\n2, SCH/2026/0502, Diya, Patel, FEMALE, 9820123456\n3, SCH/2026/0503, Rohan, Kulkarni, MALE, 9444123890"
-  );
+  const [rawText, setRawText] = useState("");
   const [parsedRows, setParsedRows] = useState<StudentInputPayload[]>([]);
 
   // Parse CSV text whenever it changes
@@ -293,7 +291,7 @@ export default function EnrollStudentModal({ isOpen, onClose, onSuccess }: Enrol
                 rows={5}
                 value={rawText}
                 onChange={(e) => handleParseCsv(e.target.value)}
-                placeholder="1, SCH/2026/0501, Aarav, Sharma, MALE, 9845497084"
+                placeholder="1, ADM/2026/001, John, Doe, MALE, 9876543210"
                 className="w-full font-mono text-[11px] p-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>

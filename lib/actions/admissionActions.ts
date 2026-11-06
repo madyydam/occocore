@@ -36,7 +36,7 @@ export async function getAdmissionCandidatesAction(archetype?: string): Promise<
     const tenantId = tenantRes.rows[0].id;
 
     // Check existing candidates
-    let res = await query<{
+    const res = await query<{
       id: string;
       application_no: string;
       first_name: string;
@@ -65,68 +65,6 @@ export async function getAdmissionCandidatesAction(archetype?: string): Promise<
        ORDER BY created_at DESC`,
       [tenantId]
     );
-
-    // If no applications exist in DB, seed initial real applicants into PostgreSQL
-    if (res.rows.length === 0) {
-      await query(
-        `INSERT INTO admission_applications (
-          tenant_id, application_no, first_name, last_name, guardian_name, guardian_phone,
-          email, program, merit_score, numeric_score, quota_type, is_rte_quota,
-          documents_verified, documents, notes, status
-        ) VALUES 
-        ($1, 'APP/2026/0101', 'Raghvendra', 'Mukhopadhyay', 'Sunil Mukhopadhyay', '+91 98454 97084',
-         'ragh.m@family.org', 'Class 11 - Science (PCMB)', '94.2% (Class 10 CBSE)', 94.2, 'General Merit', FALSE,
-         TRUE, '[{"title":"Class 10 CBSE Board Marksheet","verified":true,"type":"Academic"},{"title":"Transfer Certificate (TC)","verified":true,"type":"Statutory"},{"title":"Birth Certificate & DPDPA Consent","verified":true,"type":"Legal"}]'::jsonb,
-         'Applied for Senior Secondary Science stream. Board marksheet and transfer certificate submitted.', 'PENDING'),
-        
-        ($1, 'APP/2026/0102', 'Vikramaditya', 'Roy', 'Anil Roy', '+91 99887 76655',
-         'anil.roy@workmail.in', 'Grade 4 - Primary Wing', 'RTE 25% EWS Allotment', 99.0, 'RTE 25% Free Seat', TRUE,
-         TRUE, '[{"title":"State RTE Allotment Letter","verified":true,"type":"Govt Quota"},{"title":"Tehsildar EWS Income Certificate","verified":true,"type":"Legal"},{"title":"Aadhaar Card of Child & Guardian","verified":true,"type":"ID Proof"}]'::jsonb,
-         'State Education Dept RTE portal allotment #RTE-2026-9014. Zero tuition fee assigned.', 'CONFIRMED'),
-        
-        ($1, 'APP/2026/0103', 'Diya', 'Nambiar', 'S. Nambiar', '+91 98201 44556',
-         'diya.n@outlook.com', 'Class 10 - Section A', '92.5% in Class 9', 92.5, 'General Merit', FALSE,
-         FALSE, '[{"title":"Class 9 Progress Card","verified":true,"type":"Academic"},{"title":"Conduct & Character Certificate","verified":false,"type":"Compliance"}]'::jsonb,
-         'Direct transfer. Waiting for original character certificate endorsement.', 'PENDING'),
-
-        ($1, 'APP/2026/0104', 'Tanvi', 'Kulkarni', 'Madhav Kulkarni', '+91 98331 22334',
-         'madhav.k@corp.in', 'Class 10 - Section A', '89.4% in Class 9', 89.4, 'Staff Ward Quota', FALSE,
-         TRUE, '[{"title":"Previous Grade Report","verified":true,"type":"Academic"},{"title":"Staff Identification Proof","verified":true,"type":"Institutional"}]'::jsonb,
-         'Faculty ward concession applicable per HR policy.', 'CONFIRMED')
-        `,
-        [tenantId]
-      );
-
-      res = await query<{
-        id: string;
-        application_no: string;
-        first_name: string;
-        last_name: string;
-        guardian_name: string;
-        guardian_phone: string;
-        email: string;
-        program: string;
-        merit_score: string;
-        numeric_score: string;
-        quota_type: string;
-        documents_verified: boolean;
-        documents: { title: string; verified: boolean; type: string }[];
-        notes: string;
-        status: string;
-        enrolled_student_id: string | null;
-        created_at: string;
-      }>(
-        `SELECT 
-          id, application_no, first_name, last_name, guardian_name, guardian_phone, 
-          email, program, merit_score, numeric_score, quota_type, documents_verified, 
-          documents, notes, status, enrolled_student_id,
-          to_char(created_at, 'DD Mon YYYY • HH12:MI AM') AS created_at
-         FROM admission_applications
-         WHERE tenant_id = $1
-         ORDER BY created_at DESC`,
-        [tenantId]
-      );
-    }
 
     const candidates: RealAdmissionCandidate[] = res.rows.map((r) => {
       let mappedStatus: "Pending" | "Confirmed" | "Admitted" | "Waitlisted" | "Rejected" = "Pending";

@@ -95,8 +95,8 @@ export default function AcademicsView({ archetype }: AcademicsViewProps) {
   const [isAddCohortModal, setIsAddCohortModal] = useState(false);
   const [isSubstitutionModal, setIsSubstitutionModal] = useState(false);
   const [substitutionTargetPeriod, setSubstitutionTargetPeriod] = useState<number>(3);
-  const [absentTeacherName, setAbsentTeacherName] = useState("Mrs. Sunita Sharma");
-  const [substituteTeacherName, setSubstituteTeacherName] = useState("Mrs. Priya Das");
+  const [absentTeacherName, setAbsentTeacherName] = useState(() => (isDemoMode ? "Mrs. Sunita Sharma" : ""));
+  const [substituteTeacherName, setSubstituteTeacherName] = useState(() => (isDemoMode ? "Mrs. Priya Das" : ""));
 
   // Add Cohort Form
   const [newCohortName, setNewCohortName] = useState("");
@@ -222,6 +222,26 @@ export default function AcademicsView({ archetype }: AcademicsViewProps) {
 
   // Dynamic Day Schedule Slots based on archetype
   const getDaySchedule = (): TimetableSlot[] => {
+    if (!isDemoMode) {
+      if (syllabi.length === 0) return [];
+      const times = [
+        "08:30 - 09:15",
+        "09:15 - 10:00",
+        "10:15 - 11:00",
+        "11:00 - 11:45",
+        "12:15 - 01:00",
+        "01:00 - 01:45",
+      ];
+      return syllabi.slice(0, 6).map((sub, idx) => ({
+        period: idx + 1,
+        time: times[idx] || "08:30 - 09:15",
+        subject: `${sub.title} (${sub.code})`,
+        faculty: sub.facultyAssigned || "Unassigned",
+        room: `Room ${201 + idx}`,
+        isLab: sub.type === "Practical",
+      }));
+    }
+
     if (archetype === "K12_SCHOOL") {
       return [
         { period: 1, time: "08:30 - 09:15", subject: "Mathematics (041)", faculty: "Mrs. Sunita Sharma", room: "Room 204" },
@@ -363,7 +383,12 @@ export default function AcademicsView({ archetype }: AcademicsViewProps) {
           </div>
 
           <div className="divide-y divide-slate-100">
-            {scheduleSlots.map((slot) => (
+            {scheduleSlots.length === 0 ? (
+              <div className="py-12 text-center text-slate-400 text-xs font-medium">
+                No timetable schedule generated yet. Configure courses and syllabi in the curriculum tab to initialize master timetable slots.
+              </div>
+            ) : (
+              scheduleSlots.map((slot) => (
               <div
                 key={slot.period}
                 className="py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 hover:bg-slate-50 px-3 rounded-2xl transition-colors"
@@ -406,7 +431,7 @@ export default function AcademicsView({ archetype }: AcademicsViewProps) {
                   </button>
                 </div>
               </div>
-            ))}
+            )))}
           </div>
         </div>
       )}
