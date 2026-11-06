@@ -124,10 +124,10 @@ export async function getAttendanceRosterAction(dateStr: string, sessionStr: str
         todaySource: ((rec?.source as "Manual Teacher" | "Biometric" | "RFID Turnstile" | "Approved Leave") || "Manual Teacher"),
         timeLogged: rec ? new Date(rec.updated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Unmarked",
         monthPresentDays: pres,
-        monthTotalDays: tot > 0 ? tot : 1,
+        monthTotalDays: tot,
         yearPresentDays: pres,
-        yearTotalDays: tot > 0 ? tot : 1,
-        lastFiveDays: [rec ? rec.code : "P"],
+        yearTotalDays: tot,
+        lastFiveDays: rec ? [rec.code] : [],
         reasonNote: rec?.reason || undefined,
         archetype: "K12_SCHOOL" as const,
       };
@@ -412,10 +412,10 @@ export async function getMonthlyMusterAction(year: number, month: number) {
 
       for (let d = 1; d <= daysInMonth; d++) {
         const mark = dailyMarks[d];
-        if (mark === "P" || mark === "OD") presentCount += 1.0;
+        if (mark === "P" || mark === "OD" || mark === "LC") presentCount += 1.0;
         else if (mark === "L") presentCount += 1.0;
         else if (mark === "HD") presentCount += 0.5;
-        else if (mark === "A" || mark === "LC") absentCount += 1.0;
+        else if (mark === "A") absentCount += 1.0;
       }
 
       const totalMarkedDays = presentCount + absentCount;

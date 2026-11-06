@@ -126,17 +126,17 @@ export async function createAdmissionCandidateAction(payload: {
     // Split name
     const parts = payload.name.trim().split(" ");
     const firstName = parts[0];
-    const lastName = parts.slice(1).join(" ") || "Student";
+    const lastName = parts.slice(1).join(" ");
 
     // Generate Application No
     const countRes = await query<{ count: string }>(
       `SELECT COUNT(*)::text AS count FROM admission_applications WHERE tenant_id = $1`,
       [tenantId]
     );
-    const nextNum = parseInt(countRes.rows[0]?.count || "0", 10) + 101;
+    const nextNum = parseInt(countRes.rows[0]?.count || "0", 10) + 1;
     const applicationNo = `APP/2026/${String(nextNum).padStart(4, "0")}`;
 
-    const numScore = parseFloat(payload.meritScore.replace(/[^0-9.]/g, "")) || 85.0;
+    const numScore = parseFloat(payload.meritScore.replace(/[^0-9.]/g, "")) || 0.0;
     const isRte = payload.quotaType.toLowerCase().includes("rte");
 
     const defaultDocs = [

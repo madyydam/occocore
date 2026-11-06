@@ -254,7 +254,7 @@ export async function getExamBroadsheetAction(examId?: string): Promise<{ succes
       const overallGrade = totalMax > 0 ? calculateGrade(percentage) : "-";
       let status: "Passed" | "Qualified" | "Distinction" | "Remedial" = "Passed";
 
-      if (totalMax === 0) status = "Remedial";
+      if (totalMax === 0) status = "Qualified";
       else if (percentage >= 85) status = "Distinction";
       else if (percentage >= 33) status = "Passed";
       else status = "Remedial";
@@ -392,7 +392,11 @@ export async function getRealHallTicketsAction(): Promise<{ success: boolean; ha
     }>(
       `SELECT s.id, s.admission_no, s.roll_no, s.first_name, s.last_name,
               c.name AS class_name, sec.name AS section_name,
-              COUNT(CASE WHEN ar.code IN ('P', 'OD', 'L') THEN 1 END) AS present_count,
+              COALESCE(SUM(CASE 
+                WHEN ar.code IN ('P', 'OD', 'L', 'LC') THEN 1.0 
+                WHEN ar.code = 'HD' THEN 0.5 
+                ELSE 0.0 
+              END), 0) AS present_count,
               COUNT(ar.id) AS total_count
        FROM students s
        JOIN sections sec ON s.section_id = sec.id

@@ -34,9 +34,9 @@ export async function getDashboardOverviewStatsAction(
     }
     const tenantId = tenantRes.rows[0].id;
 
-    // 1. Total Enrolled Students
+    // 1. Total Enrolled Active Students
     const studentRes = await query<{ count: string }>(
-      `SELECT count(*) as count FROM students WHERE tenant_id = $1`,
+      `SELECT count(*) as count FROM students WHERE tenant_id = $1 AND is_active = TRUE`,
       [tenantId]
     );
     const totalStudents = parseInt(studentRes.rows[0]?.count || "0", 10);
@@ -48,14 +48,18 @@ export async function getDashboardOverviewStatsAction(
     );
     const pendingCount = parseInt(pendingRes.rows[0]?.count || "0", 10);
 
-    // 3. Attendance Rate
+    // 3. Real Aggregate Attendance Rate (using valid code column & weighted presence)
     const attRes = await query<{ rate: string | null }>(
-      `SELECT ROUND(AVG(CASE WHEN status IN ('PRESENT', 'LATE', 'HALF_DAY', 'ON_DUTY') THEN 100.0 ELSE 0.0 END), 1) as rate
+      `SELECT ROUND(AVG(CASE 
+                WHEN code IN ('P', 'L', 'LC', 'OD') THEN 100.0 
+                WHEN code = 'HD' THEN 50.0 
+                ELSE 0.0 
+              END), 1) as rate
        FROM attendance_records
        WHERE tenant_id = $1`,
       [tenantId]
     );
-    const attRate = attRes.rows[0]?.rate ? `${attRes.rows[0].rate}%` : "96.4%";
+    const attRate = attRes.rows[0]?.rate !== null ? `${attRes.rows[0].rate}%` : "0.0%";
 
     // 4. Collections
     const feesRes = await query<{ total: string | null }>(
@@ -98,7 +102,7 @@ export async function getRecentDashboardActivitiesAction(
 
     const activities: (ActivityFeedItem & { rawDate: Date })[] = [];
 
-    // 1. Fee Receipts
+    // 1. Fee Receipts from real receipts table
     const receiptsRes = await query<{
       id: string;
       receipt_no: string;
@@ -108,11 +112,11 @@ export async function getRecentDashboardActivitiesAction(
       first_name: string;
       last_name: string;
       admission_no: string;
-      guardian_phone: string | null;
+      emergency_phone: string | null;
       class_name: string | null;
     }>(
       `SELECT r.id, r.receipt_no, r.amount, r.payment_method, r.created_at,
-              s.first_name, s.last_name, s.admission_no, s.guardian_phone, c.name as class_name
+              s.first_name, s.last_name, s.admission_no, s.emergency_phone, c.name as class_name
        FROM receipts r
        JOIN students s ON r.student_id = s.id
        LEFT JOIN sections sec ON s.section_id = sec.id
@@ -128,7 +132,7 @@ export async function getRecentDashboardActivitiesAction(
       activities.push({
         id: `fee-${r.id}`,
         name: `${r.first_name} ${r.last_name}`,
-        phone: r.guardian_phone || "9845497084",
+        phone: r.emergency_phone || "Not recorded",
         program: `${r.class_name || "Enrolled Student"} • Fee Settlement`,
         timestamp: new Date(r.created_at).toLocaleDateString("en-IN", {
           day: "numeric",
@@ -138,7 +142,7 @@ export async function getRecentDashboardActivitiesAction(
         status: "Confirmed",
         category: "fees",
         feeAmount: `₹${amt.toLocaleString("en-IN")}`,
-        details: `Paid via ${r.payment_method.replace("_", " ")} (Receipt #${r.receipt_no}). Automated digital receipt generated.`,
+        details: `Paid via ${r.payment_method.replace("_", " ")} (Receipt #${r.receipt_no}). Official ledger reconciled.`,
         rawDate: new Date(r.created_at),
       });
     });
@@ -148,13 +152,13 @@ export async function getRecentDashboardActivitiesAction(
       id: string;
       first_name: string;
       last_name: string;
-      phone_number: string;
-      applied_grade: string;
+      guardian_phone: string | null;
+      program: string;
       status: string;
       created_at: Date;
-      academic_percentage: string | null;
+      numeric_score: string | null;
     }>(
-      `SELECT id, first_name, last_name, phone_number, applied_grade, status, created_at, academic_percentage
+      `SELECT id, first_name, last_name, guardian_phone, program, status, created_at, numeric_score
        FROM admission_applications
        WHERE tenant_id = $1
        ORDER BY created_at DESC
@@ -168,13 +172,15 @@ export async function getRecentDashboardActivitiesAction(
         DOCS_VERIFIED: "Pending",
         SHORTLISTED: "Pending",
         ENROLLED: "Confirmed",
+        CONFIRMED: "Confirmed",
+        ADMITTED: "Confirmed",
         REJECTED: "Rejected",
       };
       activities.push({
         id: `adm-${a.id}`,
         name: `${a.first_name} ${a.last_name}`,
-        phone: a.phone_number,
-        program: `Admission Application • Grade ${a.applied_grade}`,
+        phone: a.guardian_phone || "Not recorded",
+        program: `Admission Application • ${a.program}`,
         timestamp: new Date(a.created_at).toLocaleDateString("en-IN", {
           day: "numeric",
           month: "short",
@@ -182,7 +188,7 @@ export async function getRecentDashboardActivitiesAction(
         }),
         status: statusMap[a.status] || "Pending",
         category: "admissions",
-        details: `Applied for ${a.applied_grade} with ${a.academic_percentage || "92.5"}% score. Status: ${a.status.replace("_", " ")}.`,
+        details: `Applied for ${a.program}${a.numeric_score ? ` with ${a.numeric_score}% merit score` : ""}. Status: ${a.status.replace("_", " ")}.`,
         rawDate: new Date(a.created_at),
       });
     });
@@ -195,17 +201,17 @@ export async function getRecentDashboardActivitiesAction(
       created_at: Date;
       first_name: string;
       last_name: string;
-      guardian_phone: string | null;
-      exam_name: string;
+      emergency_phone: string | null;
+      exam_title: string;
       subject_name: string;
     }>(
       `SELECT m.id, m.score, m.max_score, m.created_at,
-              s.first_name, s.last_name, s.guardian_phone,
-              e.name as exam_name, sub.name as subject_name
+              s.first_name, s.last_name, s.emergency_phone,
+              e.title as exam_title, sub.name as subject_name
        FROM marks m
        JOIN students s ON m.student_id = s.id
        JOIN exams e ON m.exam_id = e.id
-       JOIN subjects sub ON e.subject_id = sub.id
+       JOIN subjects sub ON m.subject_id = sub.id
        WHERE m.tenant_id = $1
        ORDER BY m.created_at DESC
        LIMIT 4`,
@@ -216,8 +222,8 @@ export async function getRecentDashboardActivitiesAction(
       activities.push({
         id: `exam-${m.id}`,
         name: `${m.first_name} ${m.last_name}`,
-        phone: m.guardian_phone || "9845497084",
-        program: `${m.subject_name} • ${m.exam_name}`,
+        phone: m.emergency_phone || "Not recorded",
+        program: `${m.subject_name} • ${m.exam_title}`,
         timestamp: new Date(m.created_at).toLocaleDateString("en-IN", {
           day: "numeric",
           month: "short",

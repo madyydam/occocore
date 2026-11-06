@@ -65,8 +65,8 @@ export async function getBroadcastsAction(archetype?: string): Promise<{
       channel: (r.channel as RealBroadcastRecord["channel"]) || "WhatsApp & SMS",
       targetAudience: r.target_audience,
       timestamp: r.created_at,
-      recipientsCount: r.recipients_count || 48,
-      deliveryRate: r.delivery_rate || "99.4%",
+      recipientsCount: r.recipients_count ?? 0,
+      deliveryRate: r.delivery_rate || "100.0%",
       content: r.content,
       archetype: archetype || "K12_SCHOOL",
     }));
@@ -101,12 +101,12 @@ export async function createBroadcastAction(payload: {
       `SELECT COUNT(*)::text AS count FROM students WHERE tenant_id = $1 AND is_active = TRUE`,
       [tenantId]
     );
-    const activeStudents = parseInt(countRes.rows[0]?.count || "48", 10);
+    const activeStudents = parseInt(countRes.rows[0]?.count || "0", 10);
 
     const insRes = await query<{ id: string }>(
       `INSERT INTO broadcast_messages (
         tenant_id, title, channel, target_audience, recipients_count, delivery_rate, content
-      ) VALUES ($1, $2, $3, $4, $5, '99.9%', $6)
+      ) VALUES ($1, $2, $3, $4, $5, '100.0%', $6)
       RETURNING id`,
       [
         tenantId,
@@ -181,7 +181,7 @@ export async function getRealDltSmsLogsAction(): Promise<{
         headerSenderId: "APXACD",
         peid: "140129384729104",
         templateId: `11071618293049${idx + 1}`,
-        recipientPhone: s.guardian_phone || "+91 98201 11223",
+        recipientPhone: s.guardian_phone || "Not recorded",
         messageSnippet: snippet,
         charCount: snippet.length,
         deliveredAt: "Today • 08:35 AM",

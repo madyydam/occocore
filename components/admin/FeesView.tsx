@@ -122,9 +122,13 @@ export default function FeesView({ archetype }: FeesViewProps) {
 
   // Real WhatsApp notification launcher with pre-filled fee invoice template
   const dispatchWhatsAppReminder = (name: string, amt: number, phone?: string, cohort?: string) => {
-    const targetPhone = (phone || "9876543210").replace(/\D/g, "");
+    if (!phone || phone === "Not recorded" || phone === "Unrecorded") {
+      triggerToast(`No registered guardian contact on file for ${name}.`);
+      return;
+    }
+    const targetPhone = phone.replace(/\D/g, "");
     const msg = encodeURIComponent(
-      `Dear Parent/Guardian, This is an official statutory fee reminder from Apex International Global Academy regarding your ward ${name} (${cohort || "Class 10-A"}). Outstanding fee amount: ₹${amt.toLocaleString("en-IN")}. Kindly settle dues via online portal or scan the Dynamic UPI QR at the accounts counter. For assistance, contact accounts office.`
+      `Dear Parent/Guardian, This is an official statutory fee reminder from Apex International Global Academy regarding your ward ${name} (${cohort || "Enrolled Student"}). Outstanding fee amount: ₹${amt.toLocaleString("en-IN")}. Kindly settle dues via online portal or scan the Dynamic UPI QR at the accounts counter. For assistance, contact accounts office.`
     );
     window.open(`https://wa.me/${targetPhone}?text=${msg}`, "_blank");
     triggerToast(`Opened WhatsApp fee reminder for ${name} (${targetPhone}).`);

@@ -122,7 +122,8 @@ export async function createAcademicCohortAction(payload: {
         [tenantId]
       );
       const yearId = yearRes.rows[0]?.id || null;
-      const numLevel = parseInt(payload.className.replace(/[^0-9]/g, ""), 10) || 10;
+      const parsedLevel = parseInt(payload.className.replace(/[^0-9]/g, ""), 10);
+      const numLevel = isNaN(parsedLevel) ? 1 : parsedLevel;
 
       const insClass = await query<{ id: string }>(
         `INSERT INTO classes (tenant_id, academic_year_id, name, numeric_level)

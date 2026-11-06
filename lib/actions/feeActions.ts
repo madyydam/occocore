@@ -128,7 +128,7 @@ export async function getFeeInvoicesAction(): Promise<{ success: boolean; invoic
               year: "numeric",
             })
           : undefined,
-        guardianPhone: row.emergency_phone || "9876543210",
+        guardianPhone: row.emergency_phone || "Not recorded",
         receiptNo: row.receipt_no || undefined,
         transactionRef: row.transaction_ref || undefined,
       };
@@ -319,7 +319,13 @@ export async function createFeeInvoiceAction(payload: {
     if (tenantRes.rows.length === 0) return { success: false, error: "Tenant not found" };
     const tenantId = tenantRes.rows[0].id;
 
-    const invoiceNo = `INV/${new Date().getFullYear()}/${String(Math.floor(100 + Math.random() * 900))}`;
+    const year = new Date().getFullYear();
+    const countRes = await query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM invoices WHERE tenant_id = $1`,
+      [tenantId]
+    );
+    const nextSeq = parseInt(countRes.rows[0].count, 10) + 1;
+    const invoiceNo = `INV/${year}/${String(nextSeq).padStart(3, "0")}`;
 
     const res = await query<{ id: string }>(
       `INSERT INTO invoices (
