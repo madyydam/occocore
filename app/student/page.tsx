@@ -24,7 +24,10 @@ import {
 import {
   getStudentDashboardAction,
   submitStudentLeaveAction,
+  payStudentInvoiceUpiAction,
   StudentDashboardPayload,
+  StudentInvoiceItem,
+  StudentReceiptItem,
 } from "@/lib/actions/studentPortalActions";
 
 export default function StudentPortalPage() {
@@ -35,15 +38,28 @@ export default function StudentPortalPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<StudentDashboardPayload | null>(null);
+  const [selectedStudentId, setSelectedStudentId] = useState<string>("");
   const [toastMessage, setToastMessage] = useState("");
 
-  // Leave Modal
+  // Leave Modal State
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
   const [leaveType, setLeaveType] = useState("Medical Leave");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [leaveReason, setLeaveReason] = useState("");
   const [isSubmittingLeave, setIsSubmittingLeave] = useState(false);
+
+  // Pay UPI Modal State
+  const [selectedInvoiceForPay, setSelectedInvoiceForPay] = useState<StudentInvoiceItem | null>(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
+  // Receipt Modal State
+  const [selectedReceiptForView, setSelectedReceiptForView] = useState<StudentReceiptItem | null>(null);
+
+  const triggerToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(""), 4000);
+  };
 
   const handleOpenLeaveModal = () => {
     const today = new Date().toISOString().slice(0, 10);
@@ -52,26 +68,22 @@ export default function StudentPortalPage() {
     setIsLeaveModalOpen(true);
   };
 
-  // Pay UPI Modal
-  const [selectedInvoiceForPay, setSelectedInvoiceForPay] = useState<{
-    invoiceNo: string;
-    title: string;
-    amount: number;
-    upiLink: string;
-  } | null>(null);
-
-  // Receipt Modal
-  const [selectedReceiptForView, setSelectedReceiptForView] = useState<{
-    receiptNo: string;
-    amount: number;
-    paymentMethod: string;
-    transactionRef: string;
-    paidAt: string;
-  } | null>(null);
-
-  const triggerToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(""), 3500);
+  const refreshDashboard = async (targetId?: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await getStudentDashboardAction(targetId);
+      if (res.success && res.data) {
+        setData(res.data);
+        setSelectedStudentId(res.data.student.id);
+      } else {
+        setError(res.error || "Failed to load student portal data.");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load student portal data.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -82,6 +94,7 @@ export default function StudentPortalPage() {
         if (!isMounted) return;
         if (res.success && res.data) {
           setData(res.data);
+          setSelectedStudentId(res.data.student.id);
         } else {
           setError(res.error || "Failed to load student portal data.");
         }
@@ -100,9 +113,27 @@ export default function StudentPortalPage() {
     };
   }, []);
 
+  const handleSwitchStudent = (id: string) => {
+    setSelectedStudentId(id);
+    refreshDashboard(id);
+  };
+
   const handleApplyLeave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!data?.student.id || !leaveReason.trim()) return;
+    if (!data?.student.id) return;
+
+    if (!startDate || !endDate) {
+      alert("Please select both start and end dates.");
+      return;
+    }
+    if (endDate < startDate) {
+      alert("Leave end date cannot be earlier than start date.");
+      return;
+    }
+    if (leaveReason.trim().length < 5) {
+      alert("Please provide a valid leave reason (at least 5 characters).");
+      return;
+    }
 
     setIsSubmittingLeave(true);
     const res = await submitStudentLeaveAction({
@@ -117,13 +148,34 @@ export default function StudentPortalPage() {
     if (res.success) {
       setIsLeaveModalOpen(false);
       setLeaveReason("");
-      triggerToast("Leave application submitted successfully. Dispatched to Class Teacher for approval.");
+      triggerToast("Leave application submitted successfully. Recorded in official muster.");
+      refreshDashboard(data.student.id);
     } else {
       alert(res.error || "Failed to submit leave application.");
     }
   };
 
-  if (isLoading) {
+  const handleInstantSettleUpi = async () => {
+    if (!data?.student.id || !selectedInvoiceForPay) return;
+
+    setIsProcessingPayment(true);
+    const res = await payStudentInvoiceUpiAction({
+      studentId: data.student.id,
+      invoiceId: selectedInvoiceForPay.id,
+      amount: selectedInvoiceForPay.remainingAmount,
+    });
+    setIsProcessingPayment(false);
+
+    if (res.success) {
+      setSelectedInvoiceForPay(null);
+      triggerToast(`UPI Payment settled successfully! Official Receipt ${res.receiptNo} generated.`);
+      refreshDashboard(data.student.id);
+    } else {
+      alert(res.error || "Failed to settle payment.");
+    }
+  };
+
+  if (isLoading && !data) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 space-y-4">
         <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center animate-pulse">
@@ -157,10 +209,10 @@ export default function StudentPortalPage() {
     );
   }
 
-  const { student, attendance, fees, exams, notices, todaySchedule } = data;
+  const { student, attendance, fees, exams, notices, todaySchedule, availableStudents } = data;
 
   return (
-    <div className="min-h-screen flex flex-col justify-between">
+    <div className="min-h-screen flex flex-col justify-between bg-slate-50">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-6 right-6 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-2xl shadow-xl border border-slate-800 text-xs flex items-center gap-2 animate-in slide-in-from-top">
@@ -191,8 +243,29 @@ export default function StudentPortalPage() {
             </div>
           </div>
 
-          {/* Student Dossier Badge */}
-          <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-2xl border border-slate-200 text-xs">
+          {/* Student Dossier Badge & Interactive Profile Switcher */}
+          <div className="flex flex-wrap items-center gap-3 bg-slate-50 p-2 rounded-2xl border border-slate-200 text-xs">
+            {/* Student Switcher Dropdown */}
+            {availableStudents && availableStudents.length > 1 && (
+              <div className="flex items-center gap-1.5 pr-2 border-r border-slate-200">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider hidden md:inline">
+                  Student:
+                </label>
+                <select
+                  value={selectedStudentId}
+                  onChange={(e) => handleSwitchStudent(e.target.value)}
+                  className="bg-white border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-600 cursor-pointer"
+                  title="Switch between active institutional students"
+                >
+                  {availableStudents.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} (Roll {s.rollNo ?? "N/A"} • {s.className})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div className="w-8 h-8 rounded-xl bg-emerald-700 text-white font-bold flex items-center justify-center text-xs">
               {student.firstName[0]}
               {student.lastName[0]}
@@ -206,10 +279,10 @@ export default function StudentPortalPage() {
               </span>
             </div>
 
-            <div className="h-6 w-px bg-slate-200 mx-1" />
+            <div className="h-6 w-px bg-slate-200 mx-1 hidden sm:block" />
 
             <div className="flex items-center gap-2">
-              <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+              <span className="hidden lg:inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
                 <ShieldCheck className="w-3 h-3 text-emerald-600" />
                 <span>PIN Verified</span>
               </span>
@@ -263,13 +336,17 @@ export default function StudentPortalPage() {
             <button
               type="button"
               onClick={() => setActiveTab("fees")}
-              className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 ${
+              className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
                 activeTab === "fees"
                   ? "bg-slate-900 text-white shadow-xs"
                   : "text-slate-600 hover:bg-slate-100"
               }`}
             >
-              💳 Fees &amp; UPI Payments
+              <CreditCard className="w-3.5 h-3.5" />
+              <span>Fees &amp; UPI Pay</span>
+              {fees.hasOutstanding && (
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              )}
             </button>
             <button
               type="button"
@@ -291,132 +368,202 @@ export default function StudentPortalPage() {
                   : "text-slate-600 hover:bg-slate-100"
               }`}
             >
-              📢 Notice Board
+              📢 Circulars ({notices.length})
             </button>
           </div>
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6">
+      {/* Main Container Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex-1 w-full space-y-6">
         {/* ══════════════════════════════════════════════════════════════════════
             TAB 1: TODAY OVERVIEW
         ══════════════════════════════════════════════════════════════════════ */}
         {activeTab === "overview" && (
           <div className="space-y-6 animate-in fade-in">
-            {/* KPI Pods */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-              {/* 1. Attendance Metric */}
-              <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/90 shadow-xs space-y-2">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Session Attendance
-                </span>
-                <div className="flex items-baseline gap-2">
-                  <span className={`text-2xl sm:text-3xl font-black ${
-                    attendance.isSafe ? "text-emerald-700" : "text-amber-700"
-                  }`}>
-                    {attendance.percentage}%
-                  </span>
-                  <span className="text-xs text-slate-500 font-mono">
-                    ({attendance.presentCount}/{attendance.totalCount} Days)
-                  </span>
+            {/* Outstanding Fee Alert Banner if dues exist */}
+            {fees.hasOutstanding && (
+              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 shrink-0">
+                    <CreditCard className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm">Tuition &amp; Term Fee Dues Pending</h3>
+                    <p className="text-xs text-amber-800">
+                      You have an outstanding institutional balance of{" "}
+                      <strong>₹{fees.totalDue.toLocaleString("en-IN")}</strong>. Settle via dynamic UPI QR code.
+                    </p>
+                  </div>
                 </div>
-                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${
-                      attendance.isSafe ? "bg-emerald-600" : "bg-amber-500"
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("fees")}
+                  className="py-2 px-4 rounded-xl bg-amber-700 hover:bg-amber-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer transition-all shrink-0"
+                >
+                  <QrCode className="w-3.5 h-3.5" />
+                  <span>Review &amp; Pay Dues</span>
+                </button>
+              </div>
+            )}
+
+            {/* Top 4 KPI Metric Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  <span>Attendance</span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] ${
+                      attendance.isSafe ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
                     }`}
-                    style={{ width: `${Math.min(attendance.percentage, 100)}%` }}
-                  />
+                  >
+                    {attendance.isSafe ? "Safe (≥75%)" : "Shortfall"}
+                  </span>
                 </div>
-                <span className={`text-[10px] font-bold block ${
-                  attendance.isSafe ? "text-emerald-600" : "text-amber-600"
-                }`}>
-                  {attendance.isSafe ? "✓ Above Statutory 75% Threshold" : "⚠ Shortfall Alert: Attend Upcoming Classes"}
-                </span>
+                <div className="text-2xl font-black text-slate-900 font-mono">
+                  {attendance.percentage}%
+                </div>
+                <div className="text-[11px] text-slate-500">
+                  {attendance.presentCount} of {attendance.totalCount} active session days
+                </div>
               </div>
 
-              {/* 2. Fee Dues Metric */}
-              <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/90 shadow-xs space-y-2">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Outstanding Dues
-                </span>
-                <span className={`text-2xl sm:text-3xl font-black block font-sans ${
-                  fees.hasOutstanding ? "text-red-700" : "text-emerald-700"
-                }`}>
+              <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  <span>Fee Ledger</span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] ${
+                      fees.hasOutstanding ? "bg-red-100 text-red-800" : "bg-emerald-100 text-emerald-800"
+                    }`}
+                  >
+                    {fees.hasOutstanding ? "Dues Pending" : "Settled"}
+                  </span>
+                </div>
+                <div className="text-2xl font-black text-slate-900 font-mono">
                   ₹{fees.totalDue.toLocaleString("en-IN")}
-                </span>
-                <span className="text-[10px] text-slate-500 block">
-                  {fees.hasOutstanding
-                    ? "Term Invoices Pending Clearance"
-                    : "✓ All Tuition Dues Cleared"}
-                </span>
+                </div>
+                <div className="text-[11px] text-slate-500">
+                  Total Paid: ₹{fees.totalPaid.toLocaleString("en-IN")}
+                </div>
               </div>
 
-              {/* 3. Next Class Metric */}
-              <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/90 shadow-xs space-y-2">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Current / Next Class
-                </span>
-                <strong className="text-sm sm:text-base font-black text-slate-900 block truncate">
-                  {todaySchedule[0]?.subject || "Mathematics"}
-                </strong>
-                <span className="text-[10px] text-blue-700 font-mono font-bold block">
-                  {todaySchedule[0]?.room || "Room 204"} • {todaySchedule[0]?.time || "08:30 AM"}
-                </span>
-              </div>
-
-              {/* 4. Examination GPA Metric */}
-              <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/90 shadow-xs space-y-2">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Academic Performance
-                </span>
-                <span className="text-xl sm:text-2xl font-black text-slate-900 block">
+              <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  <span>Assessment</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] bg-blue-100 text-blue-800">
+                    {exams.status}
+                  </span>
+                </div>
+                <div className="text-2xl font-black text-slate-900 font-mono">
                   {exams.percentage}
-                </span>
-                <span className="text-[10px] text-emerald-700 font-bold block">
-                  {exams.grade}
-                </span>
+                </div>
+                <div className="text-[11px] text-slate-500">
+                  Total Score: {exams.totalScore}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  <span>Leave Desk</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] bg-purple-100 text-purple-800">
+                    {attendance.leaveRequests.length} Filed
+                  </span>
+                </div>
+                <div className="text-2xl font-black text-slate-900 font-mono">
+                  {attendance.leaveRequests.filter((l) => l.status === "Approved").length} Days
+                </div>
+                <div className="text-[11px] text-slate-500">
+                  Approved Condonation Days
+                </div>
               </div>
             </div>
 
-            {/* 2-Column Operational Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Column 1: Today's Class Schedule (2 cols wide) */}
-              <div className="lg:col-span-2 bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
+            {/* National Student Digital ID Card (NEP 2020 / MoE APAAR standard) */}
+            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-800 text-white font-serif text-xl font-black flex items-center justify-center shadow-md">
+                  {student.firstName[0]}
+                  {student.lastName[0]}
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-bold text-slate-900">
+                      {student.firstName} {student.lastName}
+                    </h2>
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-slate-100 text-slate-700 rounded border border-slate-200">
+                      Roll #{student.rollNo ?? "N/A"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    {student.className} • {student.sectionName} • Category: {student.category} • Blood Group: {student.bloodGroup}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-600 font-mono pt-0.5">
+                    <span className="bg-blue-50 text-blue-800 px-2 py-0.5 rounded border border-blue-200">
+                      APAAR ID: {student.apaarId}
+                    </span>
+                    <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
+                      PRN: {student.prn}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleOpenLeaveModal}
+                  className="py-2.5 px-4 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-all"
+                >
+                  <CalendarDays className="w-4 h-4 text-emerald-700" />
+                  <span>Apply Leave</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("academics")}
+                  className="py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-all"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  <span>View Timetable</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Split Schedule & Notice Feed */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Column 1: Today's Schedule */}
+              <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                   <h3 className="font-bold text-slate-900 text-sm font-serif flex items-center gap-2">
                     <BookOpen className="w-4 h-4 text-emerald-700" />
-                    <span>Today&apos;s Class Schedule &amp; Timetable</span>
+                    <span>Today&apos;s Class Schedule</span>
                   </h3>
-                  <span className="text-xs text-slate-400 font-mono">
-                    {student.cohort} • Mon-Sat Roster
+                  <span className="text-[11px] font-mono text-slate-400">
+                    {new Date().toLocaleDateString("en-IN", { weekday: "long" })}
                   </span>
                 </div>
 
-                <div className="divide-y divide-slate-100">
+                <div className="space-y-2.5">
                   {todaySchedule.length === 0 ? (
                     <div className="py-8 text-center text-slate-400 text-xs">
-                      No class timetable scheduled for today.
+                      No periods scheduled for today.
                     </div>
                   ) : (
                     todaySchedule.map((slot) => (
                       <div
                         key={slot.period}
-                        className="py-3 px-2 flex items-center justify-between hover:bg-slate-50 rounded-xl transition-colors text-xs"
+                        className="p-3 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-3 text-xs"
                       >
                         <div className="flex items-center gap-3">
-                          <span className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 font-bold flex items-center justify-center font-mono text-[11px]">
+                          <span className="w-7 h-7 rounded-lg bg-white border border-slate-200 font-mono font-bold text-slate-700 flex items-center justify-center text-xs">
                             P{slot.period}
                           </span>
                           <div>
                             <span className="font-bold text-slate-900 block">{slot.subject}</span>
-                            <span className="text-[10px] text-slate-400 font-mono">{slot.code} • {slot.faculty}</span>
+                            <span className="text-[10px] text-slate-500 font-mono">{slot.code} • {slot.faculty}</span>
                           </div>
                         </div>
-
                         <div className="text-right">
-                          <span className="font-mono font-bold text-slate-700 block">{slot.time}</span>
+                          <span className="font-mono text-slate-600 block">{slot.time}</span>
                           <span className="text-[10px] text-emerald-700 font-semibold">{slot.room}</span>
                         </div>
                       </div>
@@ -430,7 +577,7 @@ export default function StudentPortalPage() {
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                   <h3 className="font-bold text-slate-900 text-sm font-serif flex items-center gap-2">
                     <Bell className="w-4 h-4 text-blue-700" />
-                    <span>Notice Board</span>
+                    <span>Official Circulars</span>
                   </h3>
                   <button
                     type="button"
@@ -444,7 +591,7 @@ export default function StudentPortalPage() {
                 <div className="space-y-3">
                   {notices.length === 0 ? (
                     <div className="py-8 text-center text-slate-400 text-xs">
-                      No recent circulars broadcast.
+                      No official circulars broadcast today.
                     </div>
                   ) : (
                     notices.map((n) => (
@@ -472,7 +619,7 @@ export default function StudentPortalPage() {
             TAB 2: ATTENDANCE & LEAVES
         ══════════════════════════════════════════════════════════════════════ */}
         {activeTab === "attendance" && (
-          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-5 animate-in fade-in">
+          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-6 animate-in fade-in">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
               <div>
                 <h3 className="font-bold text-slate-900 text-sm font-serif flex items-center gap-2">
@@ -512,7 +659,7 @@ export default function StudentPortalPage() {
               </div>
               <div className="flex items-center gap-2 text-xs font-mono font-bold">
                 <span className="px-2.5 py-1 bg-white rounded-lg border">Present: {attendance.presentCount}</span>
-                <span className="px-2.5 py-1 bg-white rounded-lg border">Absent: {attendance.totalCount - attendance.presentCount}</span>
+                <span className="px-2.5 py-1 bg-white rounded-lg border">Absent: {Math.max(0, attendance.totalCount - Math.floor(attendance.presentCount))}</span>
               </div>
             </div>
 
@@ -524,15 +671,16 @@ export default function StudentPortalPage() {
                   <thead>
                     <tr className="border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-wider bg-slate-50/50">
                       <th className="py-2.5 px-4">Date</th>
+                      <th className="py-2.5 px-4">Session</th>
                       <th className="py-2.5 px-4">Status Code</th>
-                      <th className="py-2.5 px-4">Time Recorded</th>
+                      <th className="py-2.5 px-4">Source</th>
                       <th className="py-2.5 px-4">Remarks &amp; Audit Trail</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {attendance.recentLogs.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="py-8 text-center text-slate-400">
+                        <td colSpan={5} className="py-8 text-center text-slate-400">
                           No attendance records logged for this student yet.
                         </td>
                       </tr>
@@ -540,22 +688,85 @@ export default function StudentPortalPage() {
                       attendance.recentLogs.map((log, idx) => (
                         <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
                           <td className="py-3 px-4 font-mono font-bold text-slate-900">{log.date}</td>
+                          <td className="py-3 px-4 font-mono text-slate-600">{log.session}</td>
                           <td className="py-3 px-4">
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                               log.code === "P" ? "bg-emerald-100 text-emerald-800" :
                               log.code === "L" ? "bg-amber-100 text-amber-800" :
-                              log.code === "ML" ? "bg-blue-100 text-blue-800" :
+                              log.code === "LC" ? "bg-teal-100 text-teal-800" :
+                              log.code === "HD" ? "bg-purple-100 text-purple-800" :
+                              log.code === "OD" ? "bg-blue-100 text-blue-800" :
                               "bg-red-100 text-red-800"
                             }`}>
                               {log.code === "P" && "Present (P)"}
-                              {log.code === "L" && "Late (L)"}
-                              {log.code === "ML" && "Medical Leave (ML)"}
+                              {log.code === "L" && "Late Arrival (L)"}
+                              {log.code === "LC" && "Medical Cleared (LC)"}
+                              {log.code === "HD" && "Half Day (HD)"}
+                              {log.code === "OD" && "On Duty (OD)"}
                               {log.code === "A" && "Absent (A)"}
-                              {!["P", "L", "ML", "A"].includes(log.code) && log.code}
+                              {!["P", "L", "LC", "HD", "OD", "A"].includes(log.code) && log.code}
                             </span>
                           </td>
-                          <td className="py-3 px-4 font-mono text-slate-600">{log.timeIn}</td>
-                          <td className="py-3 px-4 text-slate-600">{log.remarks}</td>
+                          <td className="py-3 px-4 font-mono text-slate-500">{log.source}</td>
+                          <td className="py-3 px-4 text-slate-600">{log.reason}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Real Leave Applications History */}
+            <div className="space-y-3 pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                  <CalendarDays className="w-3.5 h-3.5 text-emerald-700" />
+                  <span>My Leave Applications &amp; Status</span>
+                </h4>
+                <span className="text-[10px] text-slate-400 font-mono">
+                  {attendance.leaveRequests.length} Application{attendance.leaveRequests.length === 1 ? "" : "s"} Filed
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-wider bg-slate-50/50">
+                      <th className="py-2.5 px-4">Leave Type</th>
+                      <th className="py-2.5 px-4">Duration &amp; Dates</th>
+                      <th className="py-2.5 px-4">Reason</th>
+                      <th className="py-2.5 px-4">Applied On</th>
+                      <th className="py-2.5 px-4 text-right">Approval Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {attendance.leaveRequests.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="py-6 text-center text-slate-400">
+                          No leave applications filed for this academic term.
+                        </td>
+                      </tr>
+                    ) : (
+                      attendance.leaveRequests.map((lr) => (
+                        <tr key={lr.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="py-3 px-4 font-bold text-slate-900">{lr.type}</td>
+                          <td className="py-3 px-4 font-mono text-slate-700">
+                            {lr.startDate} → {lr.endDate} ({lr.daysCount} Day{lr.daysCount === 1 ? "" : "s"})
+                          </td>
+                          <td className="py-3 px-4 text-slate-600 max-w-xs truncate" title={lr.reason}>
+                            {lr.reason}
+                          </td>
+                          <td className="py-3 px-4 font-mono text-slate-500">{lr.appliedOn}</td>
+                          <td className="py-3 px-4 text-right">
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                              lr.status === "Approved" ? "bg-emerald-100 text-emerald-800" :
+                              lr.status === "Rejected" ? "bg-red-100 text-red-800" :
+                              "bg-amber-100 text-amber-800"
+                            }`}>
+                              {lr.status}
+                            </span>
+                          </td>
                         </tr>
                       ))
                     )}
@@ -570,46 +781,56 @@ export default function StudentPortalPage() {
             TAB 3: ACADEMICS & TIMETABLE
         ══════════════════════════════════════════════════════════════════════ */}
         {activeTab === "academics" && (
-          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-5 animate-in fade-in">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-6 animate-in fade-in">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
               <div>
                 <h3 className="font-bold text-slate-900 text-sm font-serif flex items-center gap-2">
                   <BookOpen className="w-4 h-4 text-emerald-700" />
-                  <span>Enrolled Curriculum, Courses &amp; Weekly Timetable</span>
+                  <span>Curriculum &amp; Weekly Timetable</span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Assigned subjects, credits scheme, and period timetable for {student.cohort}.
+                  Class: <strong>{student.className}</strong> • Section: <strong>{student.sectionName}</strong>
                 </p>
+              </div>
+
+              <div className="flex items-center gap-1.5 text-xs font-bold">
+                <span className="px-3 py-1 bg-emerald-50 text-emerald-800 rounded-lg border border-emerald-200">
+                  Room 204
+                </span>
+                <span className="px-3 py-1 bg-blue-50 text-blue-800 rounded-lg border border-blue-200">
+                  {todaySchedule.length} Periods Scheduled
+                </span>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {todaySchedule.map((sub) => (
-                <div
-                  key={sub.code}
-                  className="p-5 rounded-2xl border border-slate-200 bg-white hover:border-emerald-300 hover:shadow-xs transition-all space-y-2.5"
-                >
-                  <div className="flex justify-between items-start">
-                    <span className="font-mono font-bold text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">
-                      {sub.code}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-mono font-bold">
-                      Period {sub.period}
-                    </span>
-                  </div>
-                  <h4 className="font-bold text-slate-900 text-sm">{sub.subject}</h4>
-                  <div className="text-xs text-slate-500 space-y-0.5 pt-1 border-t border-slate-100">
-                    <div className="flex justify-between">
-                      <span>Room:</span>
-                      <strong className="text-slate-800">{sub.room}</strong>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Assigned Faculty:</span>
-                      <strong className="text-slate-800">{sub.faculty}</strong>
-                    </div>
-                  </div>
+              {todaySchedule.length === 0 ? (
+                <div className="col-span-full py-12 text-center text-slate-400 text-xs">
+                  No courses or schedule entries configured for this class cohort.
                 </div>
-              ))}
+              ) : (
+                todaySchedule.map((slot) => (
+                  <div
+                    key={slot.period}
+                    className="p-4 rounded-2xl border border-slate-200 bg-white hover:border-emerald-500 transition-all space-y-2 shadow-2xs"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 font-mono font-bold text-[10px] border border-emerald-200">
+                        Period {slot.period}
+                      </span>
+                      <span className="text-xs font-mono text-slate-500">{slot.time}</span>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-slate-900 text-sm">{slot.subject}</h4>
+                      <span className="text-[11px] text-slate-500 font-mono block">Code: {slot.code}</span>
+                    </div>
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
+                      <span>Faculty: {slot.faculty}</span>
+                      <strong className="text-slate-900">{slot.room}</strong>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}
@@ -618,15 +839,15 @@ export default function StudentPortalPage() {
             TAB 4: FEES & UPI PAYMENTS
         ══════════════════════════════════════════════════════════════════════ */}
         {activeTab === "fees" && (
-          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-5 animate-in fade-in">
+          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-6 animate-in fade-in">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
               <div>
                 <h3 className="font-bold text-slate-900 text-sm font-serif flex items-center gap-2">
                   <CreditCard className="w-4 h-4 text-emerald-700" />
-                  <span>Fee Ledger &amp; Instant Dynamic UPI Payments</span>
+                  <span>Institutional Fee Ledgers &amp; UPI Checkout</span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Official invoices, term fee dues, dynamic BharatPe/NPCI UPI QR payments, and verified receipts.
+                  Instant settlement via UPI QR, bank transfer receipts, and official tax documentation.
                 </p>
               </div>
 
@@ -655,7 +876,7 @@ export default function StudentPortalPage() {
                       <th className="py-2.5 px-4">Invoice No</th>
                       <th className="py-2.5 px-4">Particulars / Fee Head</th>
                       <th className="py-2.5 px-4">Total Amount</th>
-                      <th className="py-2.5 px-4">Paid / Due</th>
+                      <th className="py-2.5 px-4">Paid / Balance Due</th>
                       <th className="py-2.5 px-4">Due Date</th>
                       <th className="py-2.5 px-4">Status</th>
                       <th className="py-2.5 px-4 text-right">Actions</th>
@@ -678,14 +899,15 @@ export default function StudentPortalPage() {
                           </td>
                           <td className="py-3 px-4 font-mono">
                             <span className="text-emerald-700 font-bold">₹{inv.paidAmount.toLocaleString("en-IN")}</span> /{" "}
-                            <span className="text-red-700 font-bold">₹{(inv.amount - inv.paidAmount).toLocaleString("en-IN")}</span>
+                            <span className="text-red-700 font-bold">₹{inv.remainingAmount.toLocaleString("en-IN")}</span>
                           </td>
                           <td className="py-3 px-4 font-mono text-slate-600">{inv.dueDate}</td>
                           <td className="py-3 px-4">
                             <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                               inv.status === "Paid" ? "bg-emerald-100 text-emerald-800" :
                               inv.status === "Partial" ? "bg-blue-100 text-blue-800" :
-                              "bg-red-100 text-red-800"
+                              inv.status === "Overdue" ? "bg-red-100 text-red-800" :
+                              "bg-amber-100 text-amber-800"
                             }`}>
                               {inv.status}
                             </span>
@@ -704,8 +926,8 @@ export default function StudentPortalPage() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  const r = fees.receipts[0];
-                                  if (r) setSelectedReceiptForView(r);
+                                  const matched = fees.receipts.find((r) => r.invoiceId === inv.id) || fees.receipts[0];
+                                  if (matched) setSelectedReceiptForView(matched);
                                   else triggerToast(`Receipt for ${inv.invoiceNo} is archived in office.`);
                                 }}
                                 className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-xs inline-flex items-center gap-1 cursor-pointer"
@@ -714,6 +936,60 @@ export default function StudentPortalPage() {
                                 <span>View Receipt</span>
                               </button>
                             )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Official Receipts History */}
+            <div className="space-y-3 pt-4 border-t border-slate-100">
+              <h4 className="font-bold text-slate-900 text-xs">Payment Receipts History</h4>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-wider bg-slate-50/50">
+                      <th className="py-2.5 px-4">Receipt No</th>
+                      <th className="py-2.5 px-4">Amount Paid</th>
+                      <th className="py-2.5 px-4">Payment Method</th>
+                      <th className="py-2.5 px-4">Txn Reference</th>
+                      <th className="py-2.5 px-4">Date &amp; Time</th>
+                      <th className="py-2.5 px-4 text-right">Download</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {fees.receipts.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-6 text-center text-slate-400">
+                          No payment receipts on file for this student yet.
+                        </td>
+                      </tr>
+                    ) : (
+                      fees.receipts.map((rcp) => (
+                        <tr key={rcp.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="py-3 px-4 font-mono font-bold text-emerald-800">{rcp.receiptNo}</td>
+                          <td className="py-3 px-4 font-mono font-bold text-slate-900">
+                            ₹{rcp.amount.toLocaleString("en-IN")}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 font-mono text-[10px]">
+                              {rcp.paymentMethod}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 font-mono text-slate-600">{rcp.transactionRef}</td>
+                          <td className="py-3 px-4 font-mono text-slate-600">{rcp.paidAt}</td>
+                          <td className="py-3 px-4 text-right">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedReceiptForView(rcp)}
+                              className="px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer"
+                            >
+                              <Printer className="w-3 h-3 text-slate-500" />
+                              <span>Print</span>
+                            </button>
                           </td>
                         </tr>
                       ))
@@ -741,189 +1017,199 @@ export default function StudentPortalPage() {
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  window.print();
-                  triggerToast("Triggered official progress card printing.");
-                }}
-                className="py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-xs cursor-pointer transition-all shrink-0"
-              >
-                <Printer className="w-4 h-4" />
-                <span>Print Official Marksheet (A4)</span>
-              </button>
+              {exams.isPublished && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.print();
+                    triggerToast("Triggered official progress card printing.");
+                  }}
+                  className="py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-xs cursor-pointer transition-all shrink-0"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>Print Official Card</span>
+                </button>
+              )}
             </div>
 
-            {/* Official Printable Report Card Frame */}
-            <div className="p-8 border-4 border-double border-slate-800 rounded-xl bg-amber-50/10 space-y-5 font-serif text-slate-900 print-report-card-paper">
-              {/* Institution Header */}
-              <div className="text-center space-y-1 pb-4 border-b-2 border-slate-900">
-                <span className="text-[10px] tracking-widest font-sans font-bold uppercase text-slate-500 block">
-                  Affiliated to Central / State Educational Board · School Code: 40892
-                </span>
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-950 uppercase tracking-tight">
-                  {student.tenantName}
-                </h2>
-                <p className="text-xs font-sans text-slate-600">
-                  Continuous Assessment Record · Holistic Progress Card (HPC)
+            {!exams.isPublished ? (
+              <div className="p-8 rounded-3xl bg-slate-50 border border-slate-200 text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center mx-auto">
+                  <Award className="w-6 h-6 text-amber-700" />
+                </div>
+                <h4 className="font-bold text-slate-900 text-sm font-serif">Assessment in Progress • Marksheet Awaiting Publication</h4>
+                <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                  Evaluations for {exams.examTitle} are currently being compiled and moderated by the examination board.
+                  Once approved by the Academic Dean, your subject-wise scores, letter grades, and statutory Holistic Progress Card (HPC) will be published here.
                 </p>
-                <div className="pt-1">
-                  <span className="inline-block px-3 py-0.5 bg-slate-900 text-white font-sans font-bold text-xs uppercase tracking-widest rounded-sm">
-                    {exams.examTitle}
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-50 rounded-full border border-amber-200 text-amber-900 text-xs font-mono font-bold">
+                  <span>Hall Ticket: {exams.hallTicketSeatNo}</span>
+                  <span>•</span>
+                  <span>Evaluation Status: In Progress</span>
+                </div>
+              </div>
+            ) : (
+              /* Official A4 Report Card Container */
+              <div className="border border-slate-300 rounded-2xl p-6 sm:p-8 bg-white space-y-6 text-slate-900 shadow-sm print:border-none print:shadow-none print:p-0">
+                {/* School Header */}
+                <div className="text-center pb-4 border-b-2 border-slate-900 space-y-1">
+                  <span className="text-[10px] tracking-widest font-mono text-slate-500 uppercase">
+                    Central Board of Secondary Education • Affiliation Code: 1130842
                   </span>
+                  <h2 className="text-xl sm:text-2xl font-black font-serif uppercase tracking-tight text-slate-900">
+                    {student.tenantName}
+                  </h2>
+                  <p className="text-xs text-slate-600">
+                    Holistic Progress Card (HPC) • Academic Session 2026-27
+                  </p>
                 </div>
-              </div>
 
-              {/* Scholar Bio-data Row */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 font-sans text-xs border-b border-slate-300 pb-3">
-                <div>
-                  <span className="text-slate-400 block text-[10px] uppercase font-bold">Scholar Name</span>
-                  <strong className="text-slate-950 font-serif text-sm">{student.firstName} {student.lastName}</strong>
+                {/* Student & Examination Details Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold block uppercase">Student Name</span>
+                    <strong className="text-slate-900 font-serif">{student.firstName} {student.lastName}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold block uppercase">Admission / Roll No</span>
+                    <strong className="font-mono text-slate-900">{student.admissionNo} • #{student.rollNo ?? "N/A"}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold block uppercase">Class &amp; Section</span>
+                    <strong className="text-slate-900">{student.cohort}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold block uppercase">Seat Number</span>
+                    <strong className="font-mono text-blue-700">{exams.hallTicketSeatNo}</strong>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px] uppercase font-bold">Admission / Scholar No</span>
-                  <strong className="text-slate-950 font-mono">{student.admissionNo}</strong>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px] uppercase font-bold">Class &amp; Section</span>
-                  <strong className="text-slate-950">{student.cohort}</strong>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px] uppercase font-bold">Exam Seat ID</span>
-                  <strong className="text-slate-950 font-mono">{exams.hallTicketSeatNo}</strong>
-                </div>
-              </div>
 
-              {/* Part 1: Scholastic Table */}
-              <div className="space-y-2 font-sans">
-                <h4 className="font-bold text-xs text-slate-800 uppercase tracking-wider">
-                  Part 1: Scholastic Subject Evaluation
-                </h4>
-                <div className="overflow-x-auto border border-slate-300 rounded-lg overflow-hidden">
-                  <table className="w-full text-left border-collapse text-xs">
+                {/* Scholastic Subject Scores Table */}
+                <div className="space-y-2">
+                  <h4 className="font-black text-xs uppercase tracking-wider text-slate-700">
+                    Part 1: Scholastic Subject Performance
+                  </h4>
+                  <table className="w-full text-left border-collapse text-xs border border-slate-300">
                     <thead>
-                      <tr className="bg-slate-100 text-[11px] font-bold text-slate-700 uppercase border-b border-slate-300">
-                        <th className="py-2.5 px-3">Subject Code</th>
-                        <th className="py-2.5 px-3">Curriculum Subject Title</th>
-                        <th className="py-2.5 px-3 text-center">Marks Obtained</th>
-                        <th className="py-2.5 px-3 text-center">Max Marks</th>
-                        <th className="py-2.5 px-3 text-right">Letter Grade</th>
+                      <tr className="bg-slate-100 border-b border-slate-300 text-[11px] font-bold">
+                        <th className="py-2.5 px-3 border-r border-slate-300">Code</th>
+                        <th className="py-2.5 px-3 border-r border-slate-300">Subject Description</th>
+                        <th className="py-2.5 px-3 border-r border-slate-300 text-right">Max Marks</th>
+                        <th className="py-2.5 px-3 border-r border-slate-300 text-right">Marks Obtained</th>
+                        <th className="py-2.5 px-3 text-right">CBSE Grade</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200">
-                      {exams.subjects.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="py-6 text-center text-slate-400">
-                            Evaluation scores pending publication by Exam Controller.
-                          </td>
+                      {exams.subjects.map((s, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50/50">
+                          <td className="py-2.5 px-3 border-r border-slate-200 font-mono font-bold text-slate-700">{s.code}</td>
+                          <td className="py-2.5 px-3 border-r border-slate-200 font-bold text-slate-900">{s.name}</td>
+                          <td className="py-2.5 px-3 border-r border-slate-200 text-right font-mono">{s.maxScore}</td>
+                          <td className="py-2.5 px-3 border-r border-slate-200 text-right font-mono font-bold text-slate-900">{s.score}</td>
+                          <td className="py-2.5 px-3 text-right font-bold text-emerald-800">{s.grade}</td>
                         </tr>
-                      ) : (
-                        exams.subjects.map((sub) => (
-                          <tr key={sub.code} className="hover:bg-slate-50/50">
-                            <td className="py-2.5 px-3 font-mono font-bold text-slate-700">{sub.code}</td>
-                            <td className="py-2.5 px-3 font-semibold text-slate-900">{sub.name}</td>
-                            <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-900">{sub.score}</td>
-                            <td className="py-2.5 px-3 text-center font-mono text-slate-500">{sub.maxScore}</td>
-                            <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-800">{sub.grade}</td>
-                          </tr>
-                        ))
-                      )}
+                      ))}
                     </tbody>
+                    <tfoot>
+                      <tr className="bg-slate-50 font-bold border-t-2 border-slate-900 text-xs">
+                        <td colSpan={2} className="py-2.5 px-3 border-r border-slate-300 uppercase">
+                          Aggregate Total &amp; Cumulative Percentage
+                        </td>
+                        <td className="py-2.5 px-3 border-r border-slate-300 text-right font-mono">500</td>
+                        <td className="py-2.5 px-3 border-r border-slate-300 text-right font-mono font-black text-slate-900">
+                          {exams.totalScore}
+                        </td>
+                        <td className="py-2.5 px-3 text-right text-emerald-800 font-black">
+                          {exams.percentage} ({exams.grade})
+                        </td>
+                      </tr>
+                    </tfoot>
                   </table>
                 </div>
-              </div>
 
-              {/* Part 2: Co-Scholastic & Life Skills */}
-              <div className="pt-2 border-t border-slate-200 font-sans space-y-2">
-                <h4 className="font-bold text-xs text-slate-800 uppercase tracking-wider">
-                  Part 2: Co-Scholastic &amp; Life Skills
-                </h4>
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  <div className="p-2 rounded-lg border border-slate-200 bg-white">
-                    <span className="text-slate-500 block text-[10px]">Work Education / Skill</span>
-                    <strong className="text-emerald-800 font-bold">Grade A (Exemplary)</strong>
+                {/* NEP Co-Scholastic & Life Skills */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                  <div className="p-3 rounded-xl border border-slate-200 bg-slate-50 text-xs space-y-1">
+                    <span className="font-bold block text-slate-700">Work Education / CS</span>
+                    <span className="text-[11px] text-slate-500 block">Digital Literacy &amp; Problem Solving</span>
+                    <span className="font-mono font-bold text-emerald-700 text-xs">Grade: A1</span>
                   </div>
-                  <div className="p-2 rounded-lg border border-slate-200 bg-white">
-                    <span className="text-slate-500 block text-[10px]">Art &amp; Aesthetic Skills</span>
-                    <strong className="text-emerald-800 font-bold">Grade A (Exemplary)</strong>
+                  <div className="p-3 rounded-xl border border-slate-200 bg-slate-50 text-xs space-y-1">
+                    <span className="font-bold block text-slate-700">Art / Music Education</span>
+                    <span className="text-[11px] text-slate-500 block">Creative Expression &amp; Aesthetics</span>
+                    <span className="font-mono font-bold text-emerald-700 text-xs">Grade: A2</span>
                   </div>
-                  <div className="p-2 rounded-lg border border-slate-200 bg-white">
-                    <span className="text-slate-500 block text-[10px]">Health &amp; Physical Fitness</span>
-                    <strong className="text-emerald-800 font-bold">Grade A (Exemplary)</strong>
+                  <div className="p-3 rounded-xl border border-slate-200 bg-slate-50 text-xs space-y-1">
+                    <span className="font-bold block text-slate-700">Health &amp; Physical Education</span>
+                    <span className="text-[11px] text-slate-500 block">Physical Fitness &amp; Team Sports</span>
+                    <span className="font-mono font-bold text-emerald-700 text-xs">Grade: A1</span>
                   </div>
                 </div>
-              </div>
 
-              {/* Grand Total & Signatures */}
-              <div className="pt-3 border-t-2 border-slate-900 font-sans flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                <div>
-                  <span className="text-slate-500 block text-[10px] uppercase font-bold">Overall Aggregate Performance</span>
-                  <span className="text-base font-black text-slate-900">
-                    {exams.percentage} • <span className="text-emerald-700">{exams.grade}</span>
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-500 block text-[10px] uppercase font-bold">Session Attendance Seal</span>
-                  <span className="font-mono font-bold text-slate-800">{attendance.percentage}% Presence</span>
-                </div>
-              </div>
+                {/* Principal Signature & Verification Seal */}
+                <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-slate-500 border-t border-slate-200">
+                  <div className="flex items-center gap-3">
+                    <QrCode className="w-12 h-12 text-slate-800" />
+                    <div>
+                      <span className="font-mono text-[10px] text-slate-600 block">Digitally Verified via OCCO Core</span>
+                      <span className="font-mono text-[9px] text-slate-400 block">Hash: SHA256-CBSE-{student.admissionNo}</span>
+                    </div>
+                  </div>
 
-              <div className="pt-8 flex justify-between font-sans text-xs text-slate-700 text-center">
-                <div>
-                  <div className="border-t border-slate-900 w-28 pt-1 font-bold">Class Teacher</div>
-                </div>
-                <div>
-                  <div className="border-t border-slate-900 w-28 pt-1 font-bold">Exam Controller</div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <QrCode className="w-6 h-6 text-slate-700 mb-0.5" />
-                  <div className="border-t border-slate-900 w-32 pt-1 font-bold text-slate-950">Principal Seal</div>
+                  <div className="text-center sm:text-right space-y-1">
+                    <div className="w-36 h-0.5 bg-slate-400 mx-auto sm:ml-auto mb-1" />
+                    <span className="font-bold text-slate-900 block font-serif">Controller of Examinations</span>
+                    <span className="text-[10px] text-slate-500 block">Principal Seal &amp; Institutional Authority</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
         {/* ══════════════════════════════════════════════════════════════════════
-            TAB 6: NOTICE BOARD
+            TAB 6: NOTICES & CIRCULARS
         ══════════════════════════════════════════════════════════════════════ */}
         {activeTab === "notices" && (
-          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-5 animate-in fade-in">
-            <div className="pb-3 border-b border-slate-100">
-              <h3 className="font-bold text-slate-900 text-sm font-serif flex items-center gap-2">
-                <Bell className="w-4 h-4 text-blue-700" />
-                <span>Institutional Notice Board &amp; Official Broadcasts</span>
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Official circulars, holiday announcements, and emergency notices from principal desk.
-              </p>
+          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-6 animate-in fade-in">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="font-bold text-slate-900 text-sm font-serif flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-blue-700" />
+                  <span>Institutional Circulars &amp; Direct Broadcasts</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Official notices, statutory holiday schedules, and event circulars from Administration.
+                </p>
+              </div>
+              <span className="px-3 py-1 bg-blue-50 text-blue-800 rounded-lg text-xs font-mono font-bold border border-blue-200">
+                {notices.length} Notice{notices.length === 1 ? "" : "s"} Published
+              </span>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
               {notices.length === 0 ? (
                 <div className="py-12 text-center text-slate-400 text-xs">
-                  No active circulars on the notice board.
+                  No official circulars have been published by the administration today. All statutory holidays and urgent circulars will appear here.
                 </div>
               ) : (
                 notices.map((n) => (
                   <div
                     key={n.id}
-                    className="p-5 rounded-2xl border border-slate-200 bg-white hover:border-blue-300 transition-colors space-y-2 text-xs"
+                    className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 hover:border-blue-400 transition-all text-xs"
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-slate-900 text-sm">{n.title}</span>
-                      <span className="font-mono text-[10px] text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md border">
-                        {n.date}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 text-[10px] font-mono font-bold">
+                          {n.channel}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-mono">{n.date}</span>
+                      </div>
                     </div>
-                    <p className="text-slate-700 leading-relaxed text-xs">
+                    <p className="text-slate-600 leading-relaxed text-xs">
                       {n.message}
                     </p>
-                    <div className="pt-2 flex items-center gap-2 text-[10px] font-mono text-slate-400">
-                      <span>Broadcast Channel: {n.channel}</span>
-                      <span>•</span>
-                      <span>Verified Notice</span>
-                    </div>
                   </div>
                 ))
               )}
@@ -936,12 +1222,12 @@ export default function StudentPortalPage() {
           MODAL: APPLY FOR LEAVE
       ══════════════════════════════════════════════════════════════════════ */}
       {isLeaveModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <CalendarDays className="w-5 h-5 text-emerald-700" />
-                <h3 className="font-bold text-slate-900 text-sm">Submit Leave Application</h3>
+                <h3 className="font-bold text-slate-900 text-sm font-serif">Apply for Student Leave</h3>
               </div>
               <button
                 type="button"
@@ -952,69 +1238,71 @@ export default function StudentPortalPage() {
               </button>
             </div>
 
-            <form onSubmit={handleApplyLeave} className="space-y-3 text-xs">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Leave Category</label>
+            <form onSubmit={handleApplyLeave} className="space-y-4 text-xs">
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700 block text-[11px]">Leave Category</label>
                 <select
                   value={leaveType}
                   onChange={(e) => setLeaveType(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 text-slate-900 bg-white cursor-pointer"
                 >
-                  <option value="Medical Leave">Medical Leave (Doctor certificate recommended)</option>
-                  <option value="Casual Leave">Casual / Personal Family Leave</option>
-                  <option value="On-Duty (OD) Event">On-Duty (Sports / External Competition)</option>
+                  <option value="Medical Leave">Medical Leave (Doctor Rest / Illness)</option>
+                  <option value="Casual / Personal Leave">Casual / Domestic Urgency</option>
+                  <option value="On-Duty (Sports / External Competition)">On-Duty (Sports / External Competition)</option>
+                  <option value="Bereavement Leave">Bereavement Leave</option>
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Start Date</label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 block text-[11px]">Start Date</label>
                   <input
                     type="date"
+                    required
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 font-mono text-slate-900"
                   />
                 </div>
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">End Date</label>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 block text-[11px]">End Date</label>
                   <input
                     type="date"
+                    required
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 font-mono text-slate-900"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Reason for Absence *</label>
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700 block text-[11px]">Detailed Reason</label>
                 <textarea
-                  value={leaveReason}
-                  onChange={(e) => setLeaveReason(e.target.value)}
                   required
                   rows={3}
-                  placeholder="State the reason clearly for class teacher records..."
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+                  value={leaveReason}
+                  onChange={(e) => setLeaveReason(e.target.value)}
+                  placeholder="Provide clinical or domestic details for institutional approval..."
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 text-slate-900 resize-none text-xs"
                 />
               </div>
 
-              <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+              <div className="pt-2 flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setIsLeaveModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 cursor-pointer"
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 cursor-pointer text-xs"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingLeave}
-                  className="px-4 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs shadow-xs cursor-pointer disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold cursor-pointer disabled:opacity-50 text-xs"
                 >
-                  {isSubmittingLeave ? "Submitting..." : "Submit to Teacher"}
+                  {isSubmittingLeave ? "Submitting to DB..." : "Submit Application"}
                 </button>
               </div>
             </form>
@@ -1023,14 +1311,14 @@ export default function StudentPortalPage() {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════
-          MODAL: INSTANT DYNAMIC UPI QR PAYMENT
+          MODAL: INSTANT DYNAMIC UPI QR PAYMENT & SETTLEMENT
       ══════════════════════════════════════════════════════════════════════ */}
       {selectedInvoiceForPay && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200 space-y-4 text-center">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 text-left">
               <div>
-                <h3 className="font-bold text-slate-900 text-sm">Instant Fee Payment</h3>
+                <h3 className="font-bold text-slate-900 text-sm">Instant Fee Settlement</h3>
                 <span className="text-[11px] text-slate-500 font-mono">{selectedInvoiceForPay.invoiceNo}</span>
               </div>
               <button
@@ -1045,7 +1333,10 @@ export default function StudentPortalPage() {
             <div className="space-y-1">
               <span className="text-xs text-slate-500 block">{selectedInvoiceForPay.title}</span>
               <span className="text-2xl font-black text-slate-900 block font-mono">
-                ₹{selectedInvoiceForPay.amount.toLocaleString("en-IN")}
+                ₹{selectedInvoiceForPay.remainingAmount.toLocaleString("en-IN")}
+              </span>
+              <span className="text-[10px] text-slate-400 block">
+                Total: ₹{selectedInvoiceForPay.amount.toLocaleString("en-IN")} • Already Paid: ₹{selectedInvoiceForPay.paidAmount.toLocaleString("en-IN")}
               </span>
             </div>
 
@@ -1059,24 +1350,31 @@ export default function StudentPortalPage() {
               </span>
             </div>
 
-            {/* UPI Deep-link for mobile browsers */}
+            {/* UPI Deep-link & Instant Settlement Simulation */}
             <div className="space-y-2 pt-1">
-              <a
-                href={selectedInvoiceForPay.upiLink}
-                className="w-full py-2.5 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
-              >
-                <span>Open UPI App to Pay</span>
-                <ChevronRight className="w-4 h-4" />
-              </a>
+              {selectedInvoiceForPay.upiLink && (
+                <a
+                  href={selectedInvoiceForPay.upiLink}
+                  className="w-full py-2.5 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+                >
+                  <span>Open UPI App to Pay</span>
+                  <ChevronRight className="w-4 h-4" />
+                </a>
+              )}
               <button
                 type="button"
-                onClick={() => {
-                  setSelectedInvoiceForPay(null);
-                  triggerToast("Payment submitted for automated bank reconciliation.");
-                }}
-                className="w-full py-2 text-slate-500 hover:text-slate-800 text-xs font-semibold cursor-pointer"
+                disabled={isProcessingPayment}
+                onClick={handleInstantSettleUpi}
+                className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer disabled:opacity-50"
               >
-                I Have Completed the Payment
+                {isProcessingPayment ? (
+                  <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>Confirm &amp; Settle in PostgreSQL</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -1118,49 +1416,49 @@ export default function StudentPortalPage() {
               </div>
               <div className="flex justify-between border-b pb-1.5">
                 <span className="text-slate-500">Amount Paid:</span>
-                <strong className="text-emerald-700 font-mono text-sm">₹{selectedReceiptForView.amount.toLocaleString("en-IN")}</strong>
+                <strong className="text-emerald-700 font-mono text-sm">
+                  ₹{selectedReceiptForView.amount.toLocaleString("en-IN")}
+                </strong>
               </div>
               <div className="flex justify-between border-b pb-1.5">
                 <span className="text-slate-500">Payment Mode:</span>
-                <span className="font-semibold text-slate-800">{selectedReceiptForView.paymentMethod}</span>
+                <span className="font-mono text-slate-700 font-bold">{selectedReceiptForView.paymentMethod}</span>
               </div>
               <div className="flex justify-between border-b pb-1.5">
-                <span className="text-slate-500">NPCI / Bank Ref:</span>
-                <span className="font-mono text-slate-600 text-[11px]">{selectedReceiptForView.transactionRef}</span>
+                <span className="text-slate-500">Transaction Ref:</span>
+                <span className="font-mono text-slate-600">{selectedReceiptForView.transactionRef}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Paid On:</span>
-                <span className="font-mono text-slate-800">{selectedReceiptForView.paidAt}</span>
+              <div className="flex justify-between border-b pb-1.5">
+                <span className="text-slate-500">Settled On:</span>
+                <span className="font-mono text-slate-600">{selectedReceiptForView.paidAt}</span>
+              </div>
+              <div className="flex justify-between pt-1">
+                <span className="text-slate-500">Remarks:</span>
+                <span className="text-slate-700 italic">{selectedReceiptForView.notes}</span>
               </div>
             </div>
 
-            <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setSelectedReceiptForView(null)}
-                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 cursor-pointer"
-              >
-                Close
-              </button>
+            <div className="pt-2 flex items-center justify-between">
+              <span className="text-[10px] text-slate-400 font-mono">Digitally signed &amp; tax deductible.</span>
               <button
                 type="button"
                 onClick={() => {
                   window.print();
-                  triggerToast(`Triggered print for Receipt ${selectedReceiptForView.receiptNo}`);
+                  triggerToast("Receipt sent to system printer.");
                 }}
-                className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
+                className="py-2 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
               >
-                <Printer className="w-4 h-4" />
-                <span>Print Official Receipt</span>
+                <Printer className="w-3.5 h-3.5" />
+                <span>Print Official Copy</span>
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Footer Bar */}
-      <footer className="border-t border-slate-200/80 bg-white py-4 px-4 sm:px-6 text-center text-xs text-slate-400 font-mono">
-        {student.tenantName} · Student Portal · OCCO Core Engine · 3-Tier PIN Authentication Active
+      {/* Footer */}
+      <footer className="border-t border-slate-200/90 bg-white py-3 px-4 sm:px-6 text-center text-[10px] text-slate-400 font-sans">
+        OCCO Core Institutional OS • Student Self-Service Portal. DPDPA 2023 &amp; CBSE Affiliation Compliant.
       </footer>
     </div>
   );
