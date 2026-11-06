@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Search,
   Plus,
@@ -15,241 +15,71 @@ import {
   Download,
   Award,
   Layers,
+  GraduationCap,
+  MessageCircle,
+  Printer,
+  FileCheck2,
 } from "lucide-react";
 import { InstitutionalArchetype, ARCHETYPES } from "@/lib/terminology";
 import { useAdmin } from "@/lib/admin/adminContext";
+import { DEMO_ADMISSIONS } from "@/lib/demo/demoMockData";
+import {
+  getAdmissionCandidatesAction,
+  createAdmissionCandidateAction,
+  toggleAdmissionDocumentVerificationAction,
+  updateAdmissionStatusAction,
+  enrollApplicantAsStudentAction,
+  deleteAdmissionCandidateAction,
+} from "@/lib/actions/admissionActions";
 
-export interface AdmissionCandidate {
+export interface AdmissionCandidateItem {
   id: string;
   name: string;
   guardianName: string;
   phone: string;
   email: string;
   program: string;
-  archetype: InstitutionalArchetype;
+  archetype: string;
   appliedDate: string;
-  status: "Pending" | "Confirmed" | "Waitlisted" | "Rejected";
+  status: "Pending" | "Confirmed" | "Admitted" | "Waitlisted" | "Rejected";
   meritScore: string;
   numericScore: number;
   quotaType: string;
   documentsVerified: boolean;
   notes: string;
+  enrolledStudentId?: string;
   documents: { title: string; verified: boolean; type: string }[];
 }
-
-const SAMPLE_ADMISSIONS: AdmissionCandidate[] = [
-  // School
-  {
-    id: "adm-101",
-    name: "Raghvendra Mukhopadhyay",
-    guardianName: "Sunil Mukhopadhyay",
-    phone: "9845497084",
-    email: "ragh.m@family.org",
-    program: "Class 11 - Science (PCMB)",
-    archetype: "K12_SCHOOL",
-    appliedDate: "3 Nov 2026 • 12:00",
-    status: "Pending",
-    meritScore: "94.2% (Class 10 CBSE)",
-    numericScore: 94.2,
-    quotaType: "General Merit",
-    documentsVerified: true,
-    notes: "Applied for Senior Secondary Science stream. Board marksheet and transfer certificate submitted.",
-    documents: [
-      { title: "Class 10 CBSE Board Marksheet", verified: true, type: "Academic" },
-      { title: "Transfer Certificate (TC)", verified: true, type: "Statutory" },
-      { title: "Birth Certificate & DPDPA Consent", verified: true, type: "Legal" },
-    ],
-  },
-  {
-    id: "adm-102",
-    name: "Vikramaditya Roy",
-    guardianName: "Anil Roy",
-    phone: "9988776655",
-    email: "anil.roy@workmail.in",
-    program: "Grade 4 - Primary Wing",
-    archetype: "K12_SCHOOL",
-    appliedDate: "Today • 09:15 AM",
-    status: "Confirmed",
-    meritScore: "RTE 25% EWS Allotment",
-    numericScore: 99.0,
-    quotaType: "RTE 25% Free Seat",
-    documentsVerified: true,
-    notes: "State Education Dept RTE portal allotment #RTE-2026-9014. Zero tuition fee assigned.",
-    documents: [
-      { title: "State RTE Allotment Letter", verified: true, type: "Govt Quota" },
-      { title: "Tehsildar EWS Income Certificate", verified: true, type: "Legal" },
-      { title: "Aadhaar Card of Child & Guardian", verified: true, type: "ID Proof" },
-    ],
-  },
-  {
-    id: "adm-103",
-    name: "Ananya Deshmukh",
-    guardianName: "Sanjay Deshmukh",
-    phone: "9123456780",
-    email: "sanjay.deshmukh@mail.com",
-    program: "Class 9 - Section A",
-    archetype: "K12_SCHOOL",
-    appliedDate: "Yesterday • 02:00 PM",
-    status: "Confirmed",
-    meritScore: "91.5% in Class 8",
-    numericScore: 91.5,
-    quotaType: "General Merit",
-    documentsVerified: true,
-    notes: "Direct transfer from ICSE Board school. Equivalence verified.",
-    documents: [
-      { title: "Class 8 Progress Report", verified: true, type: "Academic" },
-      { title: "Medical Fitness Certificate", verified: true, type: "Health" },
-    ],
-  },
-  // College
-  {
-    id: "adm-201",
-    name: "Aaditya Singhania",
-    guardianName: "Rajesh Singhania",
-    phone: "9820123456",
-    email: "aaditya.singh@campus.in",
-    program: "B.Tech Computer Science & AI (Sem I)",
-    archetype: "DEGREE_COLLEGE",
-    appliedDate: "2 Nov 2026 • 03:30 PM",
-    status: "Confirmed",
-    meritScore: "98.4 Percentile (MHT-CET / JEE)",
-    numericScore: 98.4,
-    quotaType: "State CAP Merit Quota",
-    documentsVerified: true,
-    notes: "Round 1 CAP allotment. First semester tuition fee paid via Dynamic UPI QR.",
-    documents: [
-      { title: "MHT-CET / JEE Scorecard", verified: true, type: "Entrance" },
-      { title: "Higher Secondary (12th) Marksheet", verified: true, type: "Academic" },
-      { title: "State Domicile & Nationality Certificate", verified: true, type: "Statutory" },
-    ],
-  },
-  {
-    id: "adm-202",
-    name: "Meera Krishnan",
-    guardianName: "S. Krishnan",
-    phone: "9444123890",
-    email: "meera.k@gmail.com",
-    program: "B.Sc Biotechnology & Genetics (Sem I)",
-    archetype: "DEGREE_COLLEGE",
-    appliedDate: "Yesterday • 11:20 AM",
-    status: "Pending",
-    meritScore: "91.8% in Higher Secondary",
-    numericScore: 91.8,
-    quotaType: "Institutional Merit",
-    documentsVerified: false,
-    notes: "Lab safety undertaking pending verification. Migration certificate submitted.",
-    documents: [
-      { title: "12th Science Marksheet (PCB)", verified: true, type: "Academic" },
-      { title: "Lab Safety & Biosafety Declaration", verified: false, type: "Compliance" },
-      { title: "Migration Certificate", verified: true, type: "Statutory" },
-    ],
-  },
-  // University
-  {
-    id: "adm-301",
-    name: "Dr. Siddharth Sen",
-    guardianName: "Self-Sponsored",
-    phone: "9811443322",
-    email: "s.sen@research.ac.in",
-    program: "Ph.D. in Distributed Systems & AI",
-    archetype: "UNIVERSITY",
-    appliedDate: "1 Nov 2026 • 05:00 PM",
-    status: "Pending",
-    meritScore: "UGC-NET JRF (AIR 42)",
-    numericScore: 99.2,
-    quotaType: "National Research Fellowship",
-    documentsVerified: true,
-    notes: "Research synopsis approved by Departmental Doctoral Committee. Guide assigned.",
-    documents: [
-      { title: "UGC-NET JRF Award Letter", verified: true, type: "Fellowship" },
-      { title: "Postgraduate Degree (M.Tech) Transcript", verified: true, type: "Academic" },
-      { title: "APAAR / DigiLocker National ID", verified: true, type: "Govt ID" },
-    ],
-  },
-  {
-    id: "adm-302",
-    name: "Tanya Senapati",
-    guardianName: "Prof. K. Senapati",
-    phone: "9711223344",
-    email: "tanya.s@uni.ac.in",
-    program: "School of Legal Studies (LL.M)",
-    archetype: "UNIVERSITY",
-    appliedDate: "Today • 11:00 AM",
-    status: "Confirmed",
-    meritScore: "CUET-PG Score 284/300",
-    numericScore: 94.6,
-    quotaType: "Central CUET Quota",
-    documentsVerified: true,
-    notes: "NEP 2020 Digilocker Academic Bank of Credits (ABC) ID linked: 8941-2094-1192.",
-    documents: [
-      { title: "CUET-PG Official Rank Card", verified: true, type: "Entrance" },
-      { title: "B.A. LL.B Degree Certificate", verified: true, type: "Academic" },
-      { title: "DigiLocker ABC Verification Token", verified: true, type: "NEP 2020" },
-    ],
-  },
-  // Coaching
-  {
-    id: "adm-401",
-    name: "Harshwardhan Patil",
-    guardianName: "Mahesh Patil",
-    phone: "9766554433",
-    email: "harsh.patil@testprep.in",
-    program: "Rankers Super-30 (JEE Advanced 2027)",
-    archetype: "COACHING_ACADEMY",
-    appliedDate: "Today • 10:00 AM",
-    status: "Confirmed",
-    meritScore: "Score 96/100 (DAT AIR 4)",
-    numericScore: 96.0,
-    quotaType: "75% Scholarship Waiver",
-    documentsVerified: true,
-    notes: "Rank 4 in Diagnostic Admission Test. Assigned to Morning Batch A1.",
-    documents: [
-      { title: "DAT Test Hall Ticket & Score Record", verified: true, type: "Diagnostic" },
-      { title: "Class 10 School Marksheet", verified: true, type: "Academic" },
-      { title: "Guardian Post-Dated Cheque / Mandate", verified: true, type: "Fee Agreement" },
-    ],
-  },
-  {
-    id: "adm-402",
-    name: "Roshni Deshpande",
-    guardianName: "Dr. S. Deshpande",
-    phone: "9977881122",
-    email: "roshni.d@testprep.in",
-    program: "Champions Intensive (NEET 2026)",
-    archetype: "COACHING_ACADEMY",
-    appliedDate: "Yesterday • 05:00 PM",
-    status: "Pending",
-    meritScore: "Score 88/100 (DAT Tier 2)",
-    numericScore: 88.0,
-    quotaType: "50% Scholarship Waiver",
-    documentsVerified: false,
-    notes: "Awaiting parent consultation and batch timing confirmation.",
-    documents: [
-      { title: "Diagnostic Admission Test OMR Sheet", verified: true, type: "Diagnostic" },
-      { title: "Parent Undertaking for Attendance", verified: false, type: "Policy" },
-    ],
-  },
-];
 
 interface AdmissionsViewProps {
   archetype: InstitutionalArchetype;
 }
 
 export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
-  const { activeSubTab, theme } = useAdmin();
+  const { activeSubTab, theme, isDemoMode, institutionName } = useAdmin();
   const archetypeConfig = ARCHETYPES[archetype] || ARCHETYPES.K12_SCHOOL;
   const terms = archetypeConfig.terms;
 
-  const [candidates, setCandidates] = useState<AdmissionCandidate[]>(SAMPLE_ADMISSIONS);
+  const [candidates, setCandidates] = useState<AdmissionCandidateItem[]>(() =>
+    isDemoMode ? (DEMO_ADMISSIONS as AdmissionCandidateItem[]) : []
+  );
+  const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All statuses");
   const [sortOrder, setSortOrder] = useState<"Newest first" | "Highest Merit">("Newest first");
   const [toastMessage, setToastMessage] = useState("");
 
   // Modals
-  const [inspectModalCandidate, setInspectModalCandidate] = useState<AdmissionCandidate | null>(null);
+  const [inspectModalCandidate, setInspectModalCandidate] = useState<AdmissionCandidateItem | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [allotmentModalCandidate, setAllotmentModalCandidate] = useState<AdmissionCandidate | null>(null);
+  const [allotmentModalCandidate, setAllotmentModalCandidate] = useState<AdmissionCandidateItem | null>(null);
+  const [enrolledSuccessData, setEnrolledSuccessData] = useState<{
+    candidateName: string;
+    studentId: string;
+    admissionNo: string;
+    invoiceNo: string;
+    phone: string;
+  } | null>(null);
 
   // New Admission Form State
   const [newName, setNewName] = useState("");
@@ -260,94 +90,275 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
     archetype === "K12_SCHOOL"
       ? "Class 10 - Section A"
       : archetype === "DEGREE_COLLEGE"
-      ? "B.Tech Computer Science"
+      ? "B.Tech Computer Science & AI"
       : archetype === "UNIVERSITY"
       ? "School of Computing & AI"
       : "Rankers Batch JEE 2027"
   );
   const [newScore, setNewScore] = useState("92.5%");
   const [newQuota, setNewQuota] = useState("General Merit");
+  const [newNotes, setNewNotes] = useState("");
 
   const triggerToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(""), 3500);
   };
 
-  const handleConfirm = (id: string, name: string) => {
-    setCandidates((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, status: "Confirmed" } : c))
-    );
-    triggerToast(`Approved and confirmed admission for ${name}`);
-  };
+  const refreshCandidates = useCallback(() => {
+    if (isDemoMode) {
+      setCandidates(DEMO_ADMISSIONS as AdmissionCandidateItem[]);
+      return;
+    }
 
-  const handleReject = (id: string, name: string) => {
-    setCandidates((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, status: "Rejected" } : c))
-    );
-    triggerToast(`Application flagged and rejected for ${name}`);
-  };
-
-  const handleDelete = (id: string, name: string) => {
-    setCandidates((prev) => prev.filter((c) => c.id !== id));
-    triggerToast(`Archived application dossier for ${name}`);
-  };
-
-  const toggleDocumentVerification = (candidateId: string, docIndex: number) => {
-    setCandidates((prev) =>
-      prev.map((c) => {
-        if (c.id !== candidateId) return c;
-        const updatedDocs = [...c.documents];
-        updatedDocs[docIndex] = {
-          ...updatedDocs[docIndex],
-          verified: !updatedDocs[docIndex].verified,
-        };
-        const allVerified = updatedDocs.every((d) => d.verified);
-        return { ...c, documents: updatedDocs, documentsVerified: allVerified };
+    setIsLoading(true);
+    getAdmissionCandidatesAction(archetype)
+      .then((res) => {
+        if (res.success) {
+          setCandidates(res.candidates as AdmissionCandidateItem[]);
+        } else {
+          setCandidates([]);
+        }
       })
-    );
-    triggerToast("Updated statutory document verification status.");
+      .catch((err) => {
+        console.error("Failed to load admissions from DB:", err);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, [isDemoMode, archetype]);
+
+  useEffect(() => {
+    if (isDemoMode) return;
+    let isMounted = true;
+    getAdmissionCandidatesAction(archetype)
+      .then((res) => {
+        if (isMounted) {
+          if (res.success) {
+            setCandidates(res.candidates as AdmissionCandidateItem[]);
+          } else {
+            setCandidates([]);
+          }
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load admissions from DB:", err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isDemoMode, archetype]);
+
+  // Handle Quick Status Updates
+  const handleConfirm = async (id: string, name: string) => {
+    if (isDemoMode) {
+      setCandidates((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, status: "Confirmed" } : c))
+      );
+      triggerToast(`Approved and confirmed admission for ${name}`);
+      return;
+    }
+
+    const res = await updateAdmissionStatusAction(id, "CONFIRMED");
+    if (res.success) {
+      setCandidates((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, status: "Confirmed" } : c))
+      );
+      triggerToast(`Approved and confirmed admission for ${name}`);
+    } else {
+      alert(res.error || "Failed to update admission status");
+    }
   };
 
-  const handleCreateAdmission = (e: React.FormEvent) => {
+  const handleReject = async (id: string, name: string) => {
+    if (isDemoMode) {
+      setCandidates((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, status: "Rejected" } : c))
+      );
+      triggerToast(`Application flagged and rejected for ${name}`);
+      return;
+    }
+
+    const res = await updateAdmissionStatusAction(id, "REJECTED");
+    if (res.success) {
+      setCandidates((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, status: "Rejected" } : c))
+      );
+      triggerToast(`Application flagged and rejected for ${name}`);
+    } else {
+      alert(res.error || "Failed to update admission status");
+    }
+  };
+
+  const handleDelete = async (id: string, name: string) => {
+    if (isDemoMode) {
+      setCandidates((prev) => prev.filter((c) => c.id !== id));
+      triggerToast(`Archived application dossier for ${name}`);
+      return;
+    }
+
+    const res = await deleteAdmissionCandidateAction(id);
+    if (res.success) {
+      setCandidates((prev) => prev.filter((c) => c.id !== id));
+      triggerToast(`Archived application dossier for ${name}`);
+    } else {
+      alert(res.error || "Failed to archive candidate");
+    }
+  };
+
+  // Toggle Document Verification
+  const toggleDocumentVerification = async (candidateId: string, docIndex: number) => {
+    if (isDemoMode) {
+      setCandidates((prev) =>
+        prev.map((c) => {
+          if (c.id !== candidateId) return c;
+          const updatedDocs = [...c.documents];
+          updatedDocs[docIndex] = {
+            ...updatedDocs[docIndex],
+            verified: !updatedDocs[docIndex].verified,
+          };
+          const allVerified = updatedDocs.every((d) => d.verified);
+          return { ...c, documents: updatedDocs, documentsVerified: allVerified };
+        })
+      );
+      triggerToast("Updated statutory document verification status.");
+      return;
+    }
+
+    const res = await toggleAdmissionDocumentVerificationAction(candidateId, docIndex);
+    if (res.success) {
+      setCandidates((prev) =>
+        prev.map((c) => {
+          if (c.id !== candidateId) return c;
+          const updatedDocs = [...c.documents];
+          updatedDocs[docIndex] = {
+            ...updatedDocs[docIndex],
+            verified: !updatedDocs[docIndex].verified,
+          };
+          return {
+            ...c,
+            documents: updatedDocs,
+            documentsVerified: Boolean(res.documentsVerified),
+          };
+        })
+      );
+      triggerToast("Updated statutory document verification status in PostgreSQL.");
+    } else {
+      alert(res.error || "Failed to update document verification");
+    }
+  };
+
+  // 1-Click Complete Admission & Enroll as Student
+  const handleEnrollStudent = async (candidate: AdmissionCandidateItem) => {
+    if (isDemoMode) {
+      const demoAdmNo = `SCH/2026/0${490 + (candidates.length % 50)}`;
+      const demoInvNo = `INV/2026/0${10 + (candidates.length % 80)}`;
+      setCandidates((prev) =>
+        prev.map((c) => (c.id === candidate.id ? { ...c, status: "Admitted" } : c))
+      );
+      setInspectModalCandidate(null);
+      setEnrolledSuccessData({
+        candidateName: candidate.name,
+        studentId: candidate.id,
+        admissionNo: demoAdmNo,
+        invoiceNo: demoInvNo,
+        phone: candidate.phone,
+      });
+      triggerToast(`Enrolled ${candidate.name} as active student!`);
+      return;
+    }
+
+    const res = await enrollApplicantAsStudentAction(candidate.id);
+    if (res.success && res.studentId && res.admissionNo) {
+      setCandidates((prev) =>
+        prev.map((c) =>
+          c.id === candidate.id
+            ? { ...c, status: "Admitted", enrolledStudentId: res.studentId }
+            : c
+        )
+      );
+      setInspectModalCandidate(null);
+      setEnrolledSuccessData({
+        candidateName: candidate.name,
+        studentId: res.studentId,
+        admissionNo: res.admissionNo,
+        invoiceNo: res.invoiceNo || "INV/2026/001",
+        phone: candidate.phone,
+      });
+      triggerToast(`Officially admitted and enrolled ${candidate.name}!`);
+    } else {
+      alert(res.error || "Failed to enroll applicant");
+    }
+  };
+
+  // Create Admission Candidate Form
+  const handleCreateAdmission = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim() || !newPhone.trim()) {
       alert("Please provide the candidate name and primary contact phone.");
       return;
     }
 
-    const newCandidate: AdmissionCandidate = {
-      id: `adm-${Date.now().toString().slice(-4)}`,
+    if (isDemoMode) {
+      const newCandidate: AdmissionCandidateItem = {
+        id: `adm-${candidates.length + 101}`,
+        name: newName,
+        guardianName: newGuardian || "Primary Guardian",
+        phone: newPhone,
+        email: newEmail || "applicant@student.org",
+        program: newProgram,
+        archetype,
+        appliedDate: "Today • Just now",
+        status: "Pending",
+        meritScore: newScore,
+        numericScore: parseFloat(newScore) || 90.0,
+        quotaType: newQuota,
+        documentsVerified: false,
+        notes: newNotes || "Newly registered applicant dossier.",
+        documents: [
+          { title: "Academic Scorecard / Certificate", verified: false, type: "Academic" },
+          { title: "Statutory Identification Document", verified: false, type: "Identity" },
+        ],
+      };
+
+      setCandidates([newCandidate, ...candidates]);
+      setIsAddModalOpen(false);
+      resetForm();
+      triggerToast(`Registered new applicant: ${newCandidate.name}`);
+      return;
+    }
+
+    const res = await createAdmissionCandidateAction({
       name: newName,
       guardianName: newGuardian || "Primary Guardian",
       phone: newPhone,
-      email: newEmail || "applicant@student.org",
+      email: newEmail,
       program: newProgram,
-      archetype,
-      appliedDate: "Today • Just now",
-      status: "Pending",
       meritScore: newScore,
-      numericScore: parseFloat(newScore) || 90.0,
       quotaType: newQuota,
-      documentsVerified: false,
-      notes: "Newly submitted applicant through Owner Admin Portal.",
-      documents: [
-        { title: "Academic Scorecard / Certificate", verified: false, type: "Academic" },
-        { title: "Statutory Identification Document", verified: false, type: "Identity" },
-      ],
-    };
+      notes: newNotes,
+    });
 
-    setCandidates([newCandidate, ...candidates]);
-    setIsAddModalOpen(false);
+    if (res.success) {
+      setIsAddModalOpen(false);
+      resetForm();
+      triggerToast(`Registered new applicant: ${newName}`);
+      refreshCandidates();
+    } else {
+      alert(res.error || "Failed to create candidate");
+    }
+  };
+
+  const resetForm = () => {
     setNewName("");
     setNewGuardian("");
     setNewPhone("");
     setNewEmail("");
-    triggerToast(`Registered new applicant: ${newCandidate.name}`);
+    setNewNotes("");
   };
 
-  // Filter candidates: archetype match priority
-  let filteredCandidates = candidates.filter((item) => {
-    const matchesArchetype = item.archetype === archetype;
+  // Filter candidates
+  const filteredCandidates = candidates.filter((item) => {
     const matchesSearch =
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.phone.includes(searchQuery) ||
@@ -356,18 +367,13 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
     const matchesStatus =
       statusFilter === "All statuses" || item.status === statusFilter;
 
-    return matchesArchetype && matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus;
   });
 
-  // Fallback if archetype has few items
-  if (filteredCandidates.length === 0 && searchQuery === "" && statusFilter === "All statuses") {
-    filteredCandidates = candidates.slice(0, 4);
-  }
-
   // Sorting
-  if (sortOrder === "Highest Merit") {
-    filteredCandidates.sort((a, b) => b.numericScore - a.numericScore);
-  }
+  const sortedCandidates = sortOrder === "Highest Merit"
+    ? [...filteredCandidates].sort((a, b) => b.numericScore - a.numericScore)
+    : filteredCandidates;
 
   // Specific Sub-Tab Filterings
   const isEntranceMeritTab = activeSubTab === "entrance_merit";
@@ -391,10 +397,15 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-1 border-b border-slate-200">
         <div>
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 font-serif flex items-center gap-2">
-            <span>{terms.cohortPlural} Admissions & Enrollment Registry</span>
+            <span>{terms.cohortPlural} Admissions & Enrollment Pipeline</span>
             <span className="text-xs px-2.5 py-0.5 rounded-full font-sans font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
               {archetypeConfig.name}
             </span>
+            {!isDemoMode && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-blue-50 text-blue-800 border border-blue-200">
+                PostgreSQL Live
+              </span>
+            )}
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
             {archetype === "K12_SCHOOL" && "CBSE/ICSE Admissions, RTE 25% EWS seat lottery, and Birth Certificate DPDPA consent vault."}
@@ -404,47 +415,49 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsAddModalOpen(true)}
-          style={{ backgroundColor: theme.primary }}
-          className="py-2.5 px-4 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-98 cursor-pointer shrink-0 hover:opacity-90"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New {terms.cohortUnit} Admission</span>
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => setIsAddModalOpen(true)}
+            style={{ backgroundColor: theme.primary }}
+            className="py-2.5 px-4 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-98 cursor-pointer hover:opacity-90"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New {terms.cohortUnit} Candidate</span>
+          </button>
+        </div>
       </div>
 
       {/* KPI Metric Pods */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-            Total {terms.cohortPlural} Inquiries
+            Total Candidates
           </span>
           <span className="text-xl sm:text-2xl font-black text-slate-900 block mt-0.5 font-sans">
-            {filteredCandidates.length + 14}
+            {candidates.length}
           </span>
-          <span className="text-[10px] text-slate-500 mt-1 block">Active Academic Intake</span>
+          <span className="text-[10px] text-slate-500 mt-1 block">Active Applications</span>
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-            Confirmed Enrolled
+            Admitted & Enrolled
           </span>
           <span className="text-xl sm:text-2xl font-black text-emerald-700 block mt-0.5 font-sans">
-            {filteredCandidates.filter((c) => c.status === "Confirmed").length || 3}
+            {candidates.filter((c) => c.status === "Admitted").length}
           </span>
-          <span className="text-[10px] text-emerald-600 mt-1 block">Seat Confirmed & Verified</span>
+          <span className="text-[10px] text-emerald-600 mt-1 block">Students Onboarded</span>
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-            Pending Scrutiny
+            Confirmed / Pending
           </span>
           <span className="text-xl sm:text-2xl font-black text-amber-700 block mt-0.5 font-sans">
-            {filteredCandidates.filter((c) => c.status === "Pending").length || 2}
+            {candidates.filter((c) => c.status === "Pending" || c.status === "Confirmed").length}
           </span>
-          <span className="text-[10px] text-amber-600 mt-1 block">Document Audit Required</span>
+          <span className="text-[10px] text-amber-600 mt-1 block">Awaiting Final Seat Allotment</span>
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs">
@@ -457,6 +470,13 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
           <span className="text-[10px] text-blue-600 mt-1 block">100% Policy Sealed</span>
         </div>
       </div>
+
+      {/* Loading state indicator */}
+      {isLoading && (
+        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-center text-xs text-slate-500 animate-pulse">
+          Connecting to institution PostgreSQL database and synchronizing admission records...
+        </div>
+      )}
 
       {/* ══════════════════════════════════════════════════════════════════════
           SUB-TAB 1: ENTRANCE MERIT LIST VIEW
@@ -483,7 +503,7 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
           </div>
 
           <div className="divide-y divide-slate-100">
-            {[...filteredCandidates]
+            {[...sortedCandidates]
               .sort((a, b) => b.numericScore - a.numericScore)
               .map((cand, idx) => (
                 <div key={cand.id} className="py-3 flex items-center justify-between gap-3 hover:bg-slate-50 px-2 rounded-xl transition-colors">
@@ -532,7 +552,7 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
                 <span>DPDPA 2023 Statutory Document Verification Vault</span>
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Verify government certificates, caste validity, transfer certificates, and Section 9 parental consent forms.
+                Verify government certificates, caste validity, transfer certificates, and parental consent forms.
               </p>
             </div>
             <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5">
@@ -542,7 +562,7 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
           </div>
 
           <div className="space-y-4">
-            {filteredCandidates.map((cand) => (
+            {sortedCandidates.map((cand) => (
               <div key={cand.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
@@ -632,7 +652,7 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
           </div>
 
           <div className="divide-y divide-slate-100 pt-2">
-            {filteredCandidates.map((cand) => (
+            {sortedCandidates.map((cand) => (
               <div key={cand.id} className="py-3 flex items-center justify-between text-xs">
                 <div>
                   <span className="font-bold text-slate-900 block">{cand.name}</span>
@@ -651,11 +671,11 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════
-          DEFAULT SUB-TAB: ALL INQUIRIES & APPLICATIONS TABLE (IMAGE 2 STYLE)
+          DEFAULT SUB-TAB: ALL INQUIRIES & APPLICATIONS TABLE
       ══════════════════════════════════════════════════════════════════════ */}
-      {(!isEntranceMeritTab && !isDocumentVaultTab && !isRteQuotasTab) && (
+      {!isEntranceMeritTab && !isDocumentVaultTab && !isRteQuotasTab && (
         <>
-          {/* Filter and Search Bar (Exact Style from Image 2) */}
+          {/* Filter and Search Bar */}
           <div className="bg-white rounded-2xl p-2.5 shadow-xs border border-slate-100 flex flex-col sm:flex-row items-center gap-3">
             <div className="relative flex-1 w-full">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -677,6 +697,7 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
                 <option value="All statuses">All statuses</option>
                 <option value="Pending">Pending</option>
                 <option value="Confirmed">Confirmed</option>
+                <option value="Admitted">Admitted (Enrolled)</option>
                 <option value="Rejected">Rejected</option>
               </select>
 
@@ -691,7 +712,7 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
             </div>
           </div>
 
-          {/* White Card Table (Exact Style from Image 2) */}
+          {/* Table Container */}
           <div className="bg-white rounded-3xl shadow-xs border border-slate-100 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
@@ -705,14 +726,16 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {filteredCandidates.length === 0 ? (
+                  {sortedCandidates.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="py-12 text-center text-slate-400">
-                        No admission applications match your current search or status filter.
+                        {isLoading
+                          ? "Loading admissions records from database..."
+                          : "No admission applications match your current search or status filter."}
                       </td>
                     </tr>
                   ) : (
-                    filteredCandidates.map((row) => (
+                    sortedCandidates.map((row) => (
                       <tr key={row.id} className="hover:bg-slate-50/80 transition-colors">
                         <td className="py-4 px-6">
                           <span className="font-bold text-slate-900 block text-xs">
@@ -728,7 +751,7 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
                         </td>
                         <td className="py-4 px-6">
                           <span className="font-semibold text-slate-900 block">{row.meritScore}</span>
-                          <span className="text-[10px] text-blue-700 font-medium bg-blue-50 px-1.5 py-0.2 rounded inline-block mt-0.5">
+                          <span className="text-[10px] text-blue-700 font-medium bg-blue-50 px-1.5 py-0.5 rounded inline-block mt-0.5">
                             {row.quotaType}
                           </span>
                         </td>
@@ -743,6 +766,17 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
                               Confirmed
                             </span>
                           )}
+                          {row.status === "Admitted" && (
+                            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1 w-max">
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>Admitted</span>
+                            </span>
+                          )}
+                          {row.status === "Waitlisted" && (
+                            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800">
+                              Waitlisted
+                            </span>
+                          )}
                           {row.status === "Rejected" && (
                             <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#FEE2E2] text-[#B91C1C]">
                               Rejected
@@ -750,7 +784,7 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
                           )}
                         </td>
                         <td className="py-4 px-6 text-right">
-                          <div className="flex items-center justify-end gap-1 text-slate-400">
+                          <div className="flex items-center justify-end gap-1.5 text-slate-400">
                             {/* Inspect Eye */}
                             <button
                               onClick={() => setInspectModalCandidate(row)}
@@ -760,23 +794,48 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
                               <Eye className="w-4 h-4" />
                             </button>
 
-                            {/* Approve Check */}
+                            {/* Allotment Letter */}
                             <button
-                              onClick={() => handleConfirm(row.id, row.name)}
-                              title="Confirm Admission"
-                              className="p-1.5 rounded-lg hover:text-emerald-600 hover:bg-emerald-50 transition-colors cursor-pointer"
+                              onClick={() => setAllotmentModalCandidate(row)}
+                              title="Generate Allotment Order"
+                              className="p-1.5 rounded-lg hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
                             >
-                              <CheckCircle2 className="w-4 h-4" />
+                              <Printer className="w-4 h-4" />
                             </button>
 
+                            {/* 1-Click Enroll Student */}
+                            {row.status !== "Admitted" && (
+                              <button
+                                onClick={() => handleEnrollStudent(row)}
+                                title="Complete Admission & Enroll as Student"
+                                className="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-[10px] flex items-center gap-1 transition-colors cursor-pointer"
+                              >
+                                <GraduationCap className="w-3.5 h-3.5" />
+                                <span>Enroll</span>
+                              </button>
+                            )}
+
+                            {/* Approve Check */}
+                            {row.status === "Pending" && (
+                              <button
+                                onClick={() => handleConfirm(row.id, row.name)}
+                                title="Confirm Admission"
+                                className="p-1.5 rounded-lg hover:text-emerald-600 hover:bg-emerald-50 transition-colors cursor-pointer"
+                              >
+                                <CheckCircle2 className="w-4 h-4" />
+                              </button>
+                            )}
+
                             {/* Reject Cross */}
-                            <button
-                              onClick={() => handleReject(row.id, row.name)}
-                              title="Reject Application"
-                              className="p-1.5 rounded-lg hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
-                            >
-                              <XCircle className="w-4 h-4" />
-                            </button>
+                            {row.status !== "Rejected" && row.status !== "Admitted" && (
+                              <button
+                                onClick={() => handleReject(row.id, row.name)}
+                                title="Reject Application"
+                                className="p-1.5 rounded-lg hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
+                              >
+                                <XCircle className="w-4 h-4" />
+                              </button>
+                            )}
 
                             {/* Trash Archive */}
                             <button
@@ -843,7 +902,7 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
                 <span className="text-[10px] text-slate-400 uppercase font-bold block">Statutory Quota & Governance</span>
                 <span className="text-slate-800 block font-semibold">{inspectModalCandidate.quotaType}</span>
                 <p className="text-slate-600 text-[11px] leading-relaxed pt-1">
-                  {inspectModalCandidate.notes}
+                  {inspectModalCandidate.notes || "Standard admission application form verified by admissions registrar."}
                 </p>
               </div>
 
@@ -865,25 +924,45 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
               </div>
             </div>
 
-            <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => {
-                  handleConfirm(inspectModalCandidate.id, inspectModalCandidate.name);
-                  setInspectModalCandidate(null);
-                }}
-                style={{ backgroundColor: theme.primary }}
-                className="px-4 py-2 rounded-xl text-white font-bold text-xs transition-all cursor-pointer hover:opacity-90"
-              >
-                Approve & Confirm
-              </button>
-              <button
-                type="button"
-                onClick={() => setInspectModalCandidate(null)}
-                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 cursor-pointer"
-              >
-                Close
-              </button>
+            <div className="pt-2 flex items-center justify-between gap-2 border-t border-slate-100">
+              {inspectModalCandidate.status !== "Admitted" ? (
+                <button
+                  type="button"
+                  onClick={() => handleEnrollStudent(inspectModalCandidate)}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                >
+                  <GraduationCap className="w-4 h-4" />
+                  <span>Enroll as Active Student</span>
+                </button>
+              ) : (
+                <span className="text-xs font-bold text-emerald-700 flex items-center gap-1">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Enrolled Student</span>
+                </span>
+              )}
+
+              <div className="flex items-center gap-2">
+                {inspectModalCandidate.status === "Pending" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleConfirm(inspectModalCandidate.id, inspectModalCandidate.name);
+                      setInspectModalCandidate(null);
+                    }}
+                    style={{ backgroundColor: theme.primary }}
+                    className="px-4 py-2 rounded-xl text-white font-bold text-xs transition-all cursor-pointer hover:opacity-90"
+                  >
+                    Approve
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setInspectModalCandidate(null)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -959,7 +1038,7 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
                     required
                     value={newPhone}
                     onChange={(e) => setNewPhone(e.target.value)}
-                    placeholder="98XXXXXXXX"
+                    placeholder="+91 98XXXXXXXX"
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600"
                   />
                 </div>
@@ -1022,6 +1101,19 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
                 </select>
               </div>
 
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">
+                  Application Notes / Verification Remarks
+                </label>
+                <textarea
+                  rows={2}
+                  value={newNotes}
+                  onChange={(e) => setNewNotes(e.target.value)}
+                  placeholder="e.g. TC submitted, birth certificate verified..."
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                />
+              </div>
+
               <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
                 <button
                   type="button"
@@ -1044,52 +1136,164 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════
-          MODAL 3: PROVISIONAL ALLOTMENT LETTER GENERATOR
+          MODAL 3: PROVISIONAL ALLOTMENT LETTER GENERATOR (PRINTABLE A4)
       ══════════════════════════════════════════════════════════════════════ */}
       {allotmentModalCandidate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="bg-white rounded-3xl p-6 max-w-xl w-full shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 no-print">
               <div className="flex items-center gap-2">
                 <Award className="w-5 h-5 text-amber-600" />
-                <h3 className="font-bold text-slate-900 text-sm">Provisional Allotment Letter</h3>
+                <h3 className="font-bold text-slate-900 text-sm">Official Provisional Allotment Order</h3>
               </div>
               <button onClick={() => setAllotmentModalCandidate(null)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
-              <div className="flex justify-between border-b pb-2">
-                <span className="text-slate-500">Applicant:</span>
-                <strong className="text-slate-900">{allotmentModalCandidate.name}</strong>
+            {/* Printable Document Box */}
+            <div className="print-allotment-section border border-slate-200 rounded-2xl p-6 bg-white space-y-4 text-xs font-serif text-slate-900">
+              <div className="text-center border-b border-slate-900 pb-3">
+                <h2 className="text-base font-bold uppercase tracking-wider">{institutionName}</h2>
+                <p className="text-[10px] text-slate-600 font-sans mt-0.5">Office of the Registrar & Admissions Board</p>
+                <span className="text-xs font-extrabold uppercase tracking-wide bg-slate-100 px-3 py-1 rounded inline-block mt-2 font-sans border border-slate-300">
+                  Provisional Admission Allotment Order • 2026-27
+                </span>
               </div>
-              <div className="flex justify-between border-b pb-2">
-                <span className="text-slate-500">Allotted Program:</span>
-                <strong className="text-slate-900">{allotmentModalCandidate.program}</strong>
+
+              <div className="flex justify-between text-[11px] font-mono text-slate-700">
+                <span>Ref: ADM-ALLOT-{allotmentModalCandidate.id.toUpperCase()}</span>
+                <span>Date: {new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</span>
               </div>
-              <div className="flex justify-between border-b pb-2">
-                <span className="text-slate-500">Merit Score:</span>
-                <strong className="text-emerald-700">{allotmentModalCandidate.meritScore}</strong>
+
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 font-sans text-xs">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="text-[10px] text-slate-500 uppercase font-bold block">Candidate Name</span>
+                    <strong className="text-slate-900">{allotmentModalCandidate.name}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-500 uppercase font-bold block">{terms.guardianLabel} Name</span>
+                    <strong className="text-slate-900">{allotmentModalCandidate.guardianName}</strong>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200">
+                  <div>
+                    <span className="text-[10px] text-slate-500 uppercase font-bold block">Allotted Program / Section</span>
+                    <strong className="text-slate-900">{allotmentModalCandidate.program}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-500 uppercase font-bold block">Merit Score & Cutoff</span>
+                    <strong className="text-emerald-700">{allotmentModalCandidate.meritScore}</strong>
+                  </div>
+                </div>
+
+                <div className="pt-1 border-t border-slate-200 flex justify-between">
+                  <span className="text-slate-600">Category / Quota:</span>
+                  <strong className="text-blue-800">{allotmentModalCandidate.quotaType}</strong>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Quota Category:</span>
-                <strong className="text-blue-700">{allotmentModalCandidate.quotaType}</strong>
+
+              <p className="text-[11px] leading-relaxed text-slate-700">
+                This is to certify that the candidate has been provisionally allotted a seat under the applicable institutional regulations.
+                Final admission is subject to statutory document verification and clearance of prescribed academic fees within 15 working days.
+              </p>
+
+              <div className="pt-8 flex justify-between items-end text-center font-sans text-[10px]">
+                <div>
+                  <div className="w-28 border-t border-slate-400 pt-1">Candidate / Guardian</div>
+                </div>
+                <div>
+                  <div className="w-28 border-t border-slate-400 pt-1">Admissions In-Charge</div>
+                </div>
+                <div>
+                  <div className="w-28 border-t border-slate-900 pt-1 font-bold">Principal / Dean Seal</div>
+                </div>
               </div>
             </div>
 
-            <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+            <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100 no-print">
               <button
                 type="button"
-                onClick={() => {
-                  triggerToast(`Printed Provisional Allotment Order for ${allotmentModalCandidate.name}`);
-                  setAllotmentModalCandidate(null);
-                }}
+                onClick={() => window.print()}
                 style={{ backgroundColor: theme.primary }}
-                className="w-full py-2.5 rounded-xl text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer hover:opacity-90"
+                className="py-2.5 px-4 rounded-xl text-white font-bold text-xs transition-all flex items-center gap-1.5 shadow-xs cursor-pointer hover:opacity-90"
               >
-                <Download className="w-4 h-4" />
-                <span>Issue & Print Allotment PDF</span>
+                <Printer className="w-4 h-4" />
+                <span>Print Allotment Order (A4)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAllotmentModalCandidate(null)}
+                className="py-2.5 px-4 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          MODAL 4: ENROLLMENT SUCCESS & WELCOME KIT MODAL
+      ══════════════════════════════════════════════════════════════════════ */}
+      {enrolledSuccessData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
+                <FileCheck2 className="w-5 h-5 text-emerald-700" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900 text-sm">
+                  Student Enrolled Successfully!
+                </h3>
+                <span className="text-[11px] text-emerald-700 font-medium">
+                  Synchronized with PostgreSQL `students` & `invoices`
+                </span>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
+              <div className="flex justify-between border-b pb-1.5">
+                <span className="text-slate-500">Student Name:</span>
+                <strong className="text-slate-900">{enrolledSuccessData.candidateName}</strong>
+              </div>
+              <div className="flex justify-between border-b pb-1.5">
+                <span className="text-slate-500">Official Admission No:</span>
+                <strong className="text-emerald-700 font-mono text-sm">{enrolledSuccessData.admissionNo}</strong>
+              </div>
+              <div className="flex justify-between border-b pb-1.5">
+                <span className="text-slate-500">Initial Tuition Invoice:</span>
+                <strong className="text-blue-700 font-mono">{enrolledSuccessData.invoiceNo}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Parent WhatsApp Contact:</span>
+                <span className="text-slate-900 font-mono">{enrolledSuccessData.phone}</span>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-1">
+              {/* WhatsApp Welcome Notice Button */}
+              <a
+                href={`https://wa.me/${enrolledSuccessData.phone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
+                  `Dear Parent, Congratulations! Admission confirmed for ${enrolledSuccessData.candidateName} at ${institutionName}. Student Admission No: ${enrolledSuccessData.admissionNo}. Invoice #${enrolledSuccessData.invoiceNo} has been generated. Please check your institutional portal.`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>Send WhatsApp Welcome Kit & Allotment Notice</span>
+              </a>
+
+              <button
+                type="button"
+                onClick={() => setEnrolledSuccessData(null)}
+                className="w-full py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 cursor-pointer"
+              >
+                Close & Return to Registry
               </button>
             </div>
           </div>

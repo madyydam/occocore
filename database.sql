@@ -269,6 +269,40 @@ CREATE TABLE IF NOT EXISTS biometric_devices (
 CREATE INDEX IF NOT EXISTS idx_biometric_devices_tenant ON biometric_devices(tenant_id);
 
 -- ----------------------------------------------------------------------------
+-- 6.1 Admission Applications & Candidate Pipeline
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS admission_applications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    application_no VARCHAR(100) NOT NULL,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    guardian_name VARCHAR(100) NOT NULL,
+    guardian_phone VARCHAR(20) NOT NULL,
+    email VARCHAR(255),
+    dob DATE,
+    gender gender_enum NOT NULL DEFAULT 'MALE',
+    program VARCHAR(100) NOT NULL,
+    target_class_id UUID REFERENCES classes(id) ON DELETE SET NULL,
+    target_section_id UUID REFERENCES sections(id) ON DELETE SET NULL,
+    merit_score VARCHAR(100),
+    numeric_score NUMERIC(6, 2) DEFAULT 0.0,
+    category VARCHAR(30) NOT NULL DEFAULT 'GENERAL',
+    quota_type VARCHAR(100) NOT NULL DEFAULT 'General Merit',
+    is_rte_quota BOOLEAN NOT NULL DEFAULT FALSE,
+    documents_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    documents JSONB DEFAULT '[]'::jsonb,
+    notes TEXT,
+    status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+    enrolled_student_id UUID REFERENCES students(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_application UNIQUE(tenant_id, application_no)
+);
+CREATE INDEX IF NOT EXISTS idx_admissions_tenant_status ON admission_applications(tenant_id, status);
+CREATE INDEX IF NOT EXISTS idx_admissions_tenant_created ON admission_applications(tenant_id, created_at DESC);
+
+-- ----------------------------------------------------------------------------
 -- 7. Fee Structures, Invoices & Receipts
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS fee_structures (

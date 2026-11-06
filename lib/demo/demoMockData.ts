@@ -471,4 +471,216 @@ export const DEMO_HALL_TICKETS: DemoHallTicketRecord[] = [
   { id: "ht-401", studentName: "Harshwardhan Patil", studentId: "ASP-881", cohort: "Rankers JEE 2027", attendancePct: 99.1, eligible: true, rollNoOrSeatNo: "JEE-AIR-881", centerCode: "TEST-CENTER-A", archetype: "COACHING_ACADEMY" },
 ];
 
+export interface DemoAdmissionCandidate {
+  id: string;
+  name: string;
+  guardianName: string;
+  phone: string;
+  email: string;
+  program: string;
+  archetype: InstitutionalArchetype;
+  appliedDate: string;
+  status: "Pending" | "Confirmed" | "Waitlisted" | "Rejected";
+  meritScore: string;
+  numericScore: number;
+  quotaType: string;
+  documentsVerified: boolean;
+  notes: string;
+  documents: { title: string; verified: boolean; type: string }[];
+}
+
+export const DEMO_ADMISSIONS: DemoAdmissionCandidate[] = [
+  // School
+  {
+    id: "adm-101",
+    name: "Raghvendra Mukhopadhyay",
+    guardianName: "Sunil Mukhopadhyay",
+    phone: "9845497084",
+    email: "ragh.m@family.org",
+    program: "Class 11 - Science (PCMB)",
+    archetype: "K12_SCHOOL",
+    appliedDate: "3 Nov 2026 • 12:00",
+    status: "Pending",
+    meritScore: "94.2% (Class 10 CBSE)",
+    numericScore: 94.2,
+    quotaType: "General Merit",
+    documentsVerified: true,
+    notes: "Applied for Senior Secondary Science stream. Board marksheet and transfer certificate submitted.",
+    documents: [
+      { title: "Class 10 CBSE Board Marksheet", verified: true, type: "Academic" },
+      { title: "Transfer Certificate (TC)", verified: true, type: "Statutory" },
+      { title: "Birth Certificate & DPDPA Consent", verified: true, type: "Legal" },
+    ],
+  },
+  {
+    id: "adm-102",
+    name: "Vikramaditya Roy",
+    guardianName: "Anil Roy",
+    phone: "9988776655",
+    email: "anil.roy@workmail.in",
+    program: "Grade 4 - Primary Wing",
+    archetype: "K12_SCHOOL",
+    appliedDate: "Today • 09:15 AM",
+    status: "Confirmed",
+    meritScore: "RTE 25% EWS Allotment",
+    numericScore: 99.0,
+    quotaType: "RTE 25% Free Seat",
+    documentsVerified: true,
+    notes: "State Education Dept RTE portal allotment #RTE-2026-9014. Zero tuition fee assigned.",
+    documents: [
+      { title: "State RTE Allotment Letter", verified: true, type: "Govt Quota" },
+      { title: "Tehsildar EWS Income Certificate", verified: true, type: "Legal" },
+      { title: "Aadhaar Card of Child & Guardian", verified: true, type: "ID Proof" },
+    ],
+  },
+  {
+    id: "adm-103",
+    name: "Ananya Deshmukh",
+    guardianName: "Sanjay Deshmukh",
+    phone: "9123456780",
+    email: "sanjay.deshmukh@mail.com",
+    program: "Class 9 - Section A",
+    archetype: "K12_SCHOOL",
+    appliedDate: "Yesterday • 02:00 PM",
+    status: "Confirmed",
+    meritScore: "91.5% in Class 8",
+    numericScore: 91.5,
+    quotaType: "General Merit",
+    documentsVerified: true,
+    notes: "Direct transfer from ICSE Board school. Equivalence verified.",
+    documents: [
+      { title: "Class 8 Progress Report", verified: true, type: "Academic" },
+      { title: "Medical Fitness Certificate", verified: true, type: "Health" },
+    ],
+  },
+  // College
+  {
+    id: "adm-201",
+    name: "Aaditya Singhania",
+    guardianName: "Rajesh Singhania",
+    phone: "9820123456",
+    email: "aaditya.singh@campus.in",
+    program: "B.Tech Computer Science & AI (Sem I)",
+    archetype: "DEGREE_COLLEGE",
+    appliedDate: "2 Nov 2026 • 03:30 PM",
+    status: "Confirmed",
+    meritScore: "98.4 Percentile (MHT-CET / JEE)",
+    numericScore: 98.4,
+    quotaType: "State CAP Merit Quota",
+    documentsVerified: true,
+    notes: "Round 1 CAP allotment. First semester tuition fee paid via Dynamic UPI QR.",
+    documents: [
+      { title: "MHT-CET / JEE Scorecard", verified: true, type: "Entrance" },
+      { title: "Higher Secondary (12th) Marksheet", verified: true, type: "Academic" },
+      { title: "State Domicile & Nationality Certificate", verified: true, type: "Statutory" },
+    ],
+  },
+  {
+    id: "adm-202",
+    name: "Meera Krishnan",
+    guardianName: "S. Krishnan",
+    phone: "9444123890",
+    email: "meera.k@gmail.com",
+    program: "B.Sc Biotechnology & Genetics (Sem I)",
+    archetype: "DEGREE_COLLEGE",
+    appliedDate: "Yesterday • 11:20 AM",
+    status: "Pending",
+    meritScore: "91.8% in Higher Secondary",
+    numericScore: 91.8,
+    quotaType: "Institutional Merit",
+    documentsVerified: false,
+    notes: "Lab safety undertaking pending verification. Migration certificate submitted.",
+    documents: [
+      { title: "12th Science Marksheet (PCB)", verified: true, type: "Academic" },
+      { title: "Lab Safety & Biosafety Declaration", verified: false, type: "Compliance" },
+      { title: "Migration Certificate", verified: true, type: "Statutory" },
+    ],
+  },
+  // University
+  {
+    id: "adm-301",
+    name: "Dr. Siddharth Sen",
+    guardianName: "Self-Sponsored",
+    phone: "9811443322",
+    email: "s.sen@research.ac.in",
+    program: "Ph.D. in Distributed Systems & AI",
+    archetype: "UNIVERSITY",
+    appliedDate: "1 Nov 2026 • 05:00 PM",
+    status: "Pending",
+    meritScore: "UGC-NET JRF (AIR 42)",
+    numericScore: 99.2,
+    quotaType: "National Research Fellowship",
+    documentsVerified: true,
+    notes: "Research synopsis approved by Departmental Doctoral Committee. Guide assigned.",
+    documents: [
+      { title: "UGC-NET JRF Award Letter", verified: true, type: "Fellowship" },
+      { title: "Postgraduate Degree (M.Tech) Transcript", verified: true, type: "Academic" },
+      { title: "APAAR / DigiLocker National ID", verified: true, type: "Govt ID" },
+    ],
+  },
+  {
+    id: "adm-302",
+    name: "Tanya Senapati",
+    guardianName: "Prof. K. Senapati",
+    phone: "9711223344",
+    email: "tanya.s@uni.ac.in",
+    program: "School of Legal Studies (LL.M)",
+    archetype: "UNIVERSITY",
+    appliedDate: "Today • 11:00 AM",
+    status: "Confirmed",
+    meritScore: "CUET-PG Score 284/300",
+    numericScore: 94.6,
+    quotaType: "Central CUET Quota",
+    documentsVerified: true,
+    notes: "NEP 2020 Digilocker Academic Bank of Credits (ABC) ID linked: 8941-2094-1192.",
+    documents: [
+      { title: "CUET-PG Official Rank Card", verified: true, type: "Entrance" },
+      { title: "B.A. LL.B Degree Certificate", verified: true, type: "Academic" },
+      { title: "DigiLocker ABC Verification Token", verified: true, type: "NEP 2020" },
+    ],
+  },
+  // Coaching
+  {
+    id: "adm-401",
+    name: "Harshwardhan Patil",
+    guardianName: "Mahesh Patil",
+    phone: "9766554433",
+    email: "harsh.patil@testprep.in",
+    program: "Rankers Super-30 (JEE Advanced 2027)",
+    archetype: "COACHING_ACADEMY",
+    appliedDate: "Today • 10:00 AM",
+    status: "Confirmed",
+    meritScore: "Score 96/100 (DAT AIR 4)",
+    numericScore: 96.0,
+    quotaType: "75% Scholarship Waiver",
+    documentsVerified: true,
+    notes: "Rank 4 in Diagnostic Admission Test. Assigned to Morning Batch A1.",
+    documents: [
+      { title: "DAT Test Hall Ticket & Score Record", verified: true, type: "Diagnostic" },
+      { title: "Class 10 School Marksheet", verified: true, type: "Academic" },
+      { title: "Guardian Post-Dated Cheque / Mandate", verified: true, type: "Fee Agreement" },
+    ],
+  },
+  {
+    id: "adm-402",
+    name: "Roshni Deshpande",
+    guardianName: "Dr. S. Deshpande",
+    phone: "9977881122",
+    email: "roshni.d@testprep.in",
+    program: "Champions Intensive (NEET 2026)",
+    archetype: "COACHING_ACADEMY",
+    appliedDate: "Yesterday • 05:00 PM",
+    status: "Pending",
+    meritScore: "Score 88/100 (DAT Tier 2)",
+    numericScore: 88.0,
+    quotaType: "50% Scholarship Waiver",
+    documentsVerified: false,
+    notes: "Awaiting parent consultation and batch timing confirmation.",
+    documents: [
+      { title: "Diagnostic Admission Test OMR Sheet", verified: true, type: "Diagnostic" },
+      { title: "Parent Undertaking for Attendance", verified: false, type: "Policy" },
+    ],
+  },
+];
+
 
