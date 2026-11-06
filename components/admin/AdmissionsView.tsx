@@ -584,7 +584,7 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
             )}
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            {archetype === "K12_SCHOOL" && "CBSE/ICSE Admissions, RTE 25% EWS seat lottery, and Birth Certificate DPDPA consent vault."}
+            {archetype === "K12_SCHOOL" && "Admissions, RTE 25% EWS seat lottery, and student document verification."}
             {archetype === "DEGREE_COLLEGE" && "State CAP/CET Merit cutoffs, Higher Secondary scorecards, and Branch allotment."}
             {archetype === "UNIVERSITY" && "Central Entrance Test (CUET), Research Fellowships, and NEP 2020 DigiLocker ABC registration."}
             {archetype === "COACHING_ACADEMY" && "Diagnostic Admission Test (DAT), All-India Rank scholarships, and batch timing allocation."}
@@ -750,16 +750,16 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
               <h3 className="font-bold text-slate-900 text-sm font-serif flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                <span>DPDPA 2023 Statutory Document Verification Vault</span>
+                <ShieldCheck className="w-4 h-4 text-slate-600" />
+                <span>Applicant Document Verification</span>
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
                 Verify government certificates, caste validity, transfer certificates, and parental consent forms.
               </p>
             </div>
-            <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>AES-256 Cloud Vault Sealed</span>
+            <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-slate-50 text-slate-700 border border-slate-200 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span>Verified Store</span>
             </span>
           </div>
 

@@ -498,15 +498,15 @@ export default function AdminDashboardPage() {
 
             <div className="space-y-2 text-[11px] text-slate-600 pt-1">
               <div className="flex items-center justify-between">
-                <span>DPDPA 2023 Consent Vault</span>
-                <span className="font-bold text-slate-900 font-mono">100% Sealed</span>
+                <span>Database Connectivity</span>
+                <span className="font-bold text-emerald-700 font-mono">Connected</span>
               </div>
               <div className="flex items-center justify-between">
-                <span>3-Tier Verification Mandate</span>
-                <span className="font-bold text-emerald-700">Email + Pass + PIN</span>
+                <span>Access Security</span>
+                <span className="font-bold text-slate-700">Multi-Factor Enabled</span>
               </div>
               <div className="flex items-center justify-between">
-                <span>Statutory Model</span>
+                <span>Institutional Model</span>
                 <span className="font-bold text-slate-900">{archetypeConfig.badge}</span>
               </div>
             </div>

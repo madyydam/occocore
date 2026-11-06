@@ -529,7 +529,7 @@ export default function AdminRolesPage() {
                 Institutional Credential & 4-Digit PIN Security Policies
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
-                Configure tenant-wide access rules adhering to DPDPA 2023, CBSE IT mandates, and ISO 27001 zero-trust controls.
+                Configure tenant-wide access rules, module permissions, and user authentication policies.
               </p>
             </div>
 

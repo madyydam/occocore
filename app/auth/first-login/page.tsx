@@ -379,8 +379,8 @@ export default function FirstLoginPage() {
                 <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-200 text-left text-xs space-y-1.5 font-mono text-slate-600">
                   <div><strong>Account Status:</strong> ACTIVE (Verified)</div>
                   <div><strong>4-Digit Security PIN:</strong> Configured (••••)</div>
-                  <div><strong>DPDPA Timestamp:</strong> {new Date().toISOString()}</div>
-                  <div><strong>Session Cryptography:</strong> TLS 1.3 / AES-256 GCM</div>
+                  <div><strong>Consent Timestamp:</strong> {new Date().toLocaleDateString("en-IN")}</div>
+                  <div><strong>Session Status:</strong> Encrypted &amp; Secured</div>
                 </div>
 
                 <div className="mt-6">

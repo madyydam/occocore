@@ -9,7 +9,6 @@ import {
   Check,
   RotateCcw,
   Sliders,
-  ShieldCheck,
   School,
   GraduationCap,
   Landmark,
@@ -711,13 +710,13 @@ export default function CustomizeThemeDrawer({ isOpen, onClose }: CustomizeTheme
                   />
                 </div>
 
-                <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
+                <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 space-y-1">
                   <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                    <span>Statutory Regulatory Compliance</span>
+                    <Check className="w-4 h-4 text-emerald-600" />
+                    <span>Live Theme Synchronization</span>
                   </div>
                   <p className="text-[11px] text-slate-600 leading-relaxed">
-                    Theme modifications and institutional profiles are securely saved to your administrative local vault and comply with DPDPA 2023 guidelines.
+                    Theme modifications and institutional profiles are securely saved to your administrative configuration.
                   </p>
                 </div>
               </div>

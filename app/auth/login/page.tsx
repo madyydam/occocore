@@ -15,10 +15,8 @@ import {
   ArrowRight,
   CheckCircle2,
   AlertCircle,
-  ShieldCheck,
   Settings,
   Lock,
-  Hash,
 } from "lucide-react";
 import { ROLE_DEFINITIONS, RoleConfig, INITIAL_USER_ACCOUNTS } from "@/lib/auth/roles";
 
@@ -123,7 +121,7 @@ export default function LoginPage() {
 
     // 3. Validate 4-Digit Security PIN (Strictly 4 numeric digits)
     if (!pin || !/^\d{4}$/.test(pin)) {
-      setAuthError("Security Policy Violation: A valid 4-digit numeric Security PIN is mandatory to unlock access.");
+      setAuthError("Please enter your 4-digit Security PIN.");
       return;
     }
 
@@ -203,10 +201,6 @@ export default function LoginPage() {
               <Settings className="w-3.5 h-3.5 text-amber-700" />
               <span>Admin Role & PIN Manager →</span>
             </Link>
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              TLS 1.3 • AES-256
-            </span>
           </div>
         </div>
       </header>
@@ -227,7 +221,7 @@ export default function LoginPage() {
               {currentTenant.name}
             </h1>
             <p className="text-xs sm:text-sm text-slate-600">
-              3-Tier Authenticated Portal • Email + Password + 4-Digit Security PIN Required.
+              Sign in to access your institutional portal.
             </p>
           </div>
 
@@ -328,18 +322,18 @@ export default function LoginPage() {
                   <div className="flex-1">
                     <span className="font-extrabold block text-sm">Authentication Successful!</span>
                     <span className="text-[11px] block text-emerald-800 mt-0.5">
-                      Email verified, password cryptographically matched, and 4-digit PIN validated.
+                      Credentials verified successfully. Redirecting to your dashboard...
                     </span>
                   </div>
                 </div>
                 <div className="p-2.5 bg-white/80 rounded-lg border border-emerald-200 text-[11px] space-y-1 font-mono text-slate-700">
                   <div><strong>Account Email:</strong> {email}</div>
                   <div><strong>Active Role:</strong> {selectedRoleKey} ({ROLE_DEFINITIONS[selectedRoleKey]?.label})</div>
-                  <div><strong>4-Digit Security PIN:</strong> <span className="tracking-widest font-bold text-emerald-700">•••• (Verified: {pin})</span></div>
+                  <div><strong>Security PIN:</strong> <span className="tracking-widest font-bold text-emerald-700">•••• (Verified)</span></div>
                   <div><strong>Assigned Modules:</strong> {ROLE_DEFINITIONS[selectedRoleKey]?.allowedModules?.join(", ")}</div>
                 </div>
                 <div className="pt-1 flex items-center justify-between">
-                  <span className="text-[10px] text-emerald-700">Session unlocked with DPDPA 2023 compliance.</span>
+                  <span className="text-[10px] text-slate-500 font-medium">Session authenticated.</span>
                   {activeTab === "student" ? (
                     <Link
                       href="/student"
@@ -432,20 +426,19 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Field 3: 4-DIGIT SECURITY PIN (Mandatory on ALL Logins) */}
-              <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200/80 space-y-2">
+              {/* Field 3: 4-Digit Security PIN */}
+              <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <label className="font-extrabold text-blue-900 flex items-center gap-1.5 text-[11px]">
-                    <Hash className="w-3.5 h-3.5 text-blue-700" />
-                    <span>4-Digit Security PIN (Mandatory)</span>
+                  <label className="font-bold text-slate-700 block text-[11px]">
+                    Security PIN (4 digits)
                   </label>
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-blue-100 text-blue-800 rounded border border-blue-300">
-                    4 Digits Required
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    4 numeric digits
                   </span>
                 </div>
                 
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-blue-700 absolute left-3 top-2.5 pointer-events-none" />
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
                   <input
                     type={showPin ? "text" : "password"}
                     inputMode="numeric"
@@ -453,8 +446,8 @@ export default function LoginPage() {
                     required
                     value={pin}
                     onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                    placeholder="e.g. 2468"
-                    className="w-full pl-9 pr-10 py-2 rounded-xl border border-blue-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 font-mono font-bold text-sm tracking-widest"
+                    placeholder="••••"
+                    className="w-full pl-9 pr-10 py-2 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 font-mono font-bold text-sm tracking-widest"
                   />
                   <button
                     type="button"
@@ -464,9 +457,6 @@ export default function LoginPage() {
                     {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                <p className="text-[10px] text-blue-800 leading-tight">
-                  Configured and managed by your institutional administrator. Portal will only unlock when this 4-digit PIN matches your profile.
-                </p>
               </div>
 
               {/* Super Admin Hardware TOTP (if Super Admin tab active) */}
@@ -517,7 +507,7 @@ export default function LoginPage() {
                   <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
                   <>
-                    <span>Unlock Portal (Verify Email + Password + 4-Digit PIN)</span>
+                    <span>Sign In to Portal</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </>
                 )}
@@ -530,7 +520,7 @@ export default function LoginPage() {
                 href="/auth/first-login"
                 className="hover:text-blue-700 underline font-medium"
               >
-                First-time user? Set your initial password & PIN →
+                First-time user? Set password & PIN →
               </Link>
 
               <Link
@@ -547,7 +537,7 @@ export default function LoginPage() {
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-blue-600" />
               <span className="text-[11px]">
-                Administrator Role Governance:
+                Administrator Governance:
               </span>
               <Link
                 href="/admin/roles"
@@ -572,7 +562,7 @@ export default function LoginPage() {
 
       {/* Footer */}
       <footer className="border-t border-slate-200/80 bg-white px-4 py-3 text-center text-[10px] text-slate-400">
-        OCCO Core Institutional OS • Strict 3-Factor Architecture: Email + Password + 4-Digit Security PIN. All rights reserved.
+        OCCO Core Institutional OS • Enterprise Multi-Tenant ERP Platform. All rights reserved.
       </footer>
     </div>
   );

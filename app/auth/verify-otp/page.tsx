@@ -443,7 +443,7 @@ export default function VerifyOtpPage() {
                   Authentication Successful
                 </h2>
                 <p className="text-sm text-slate-600 mt-2">
-                  Session token verified under DPDPA 2023 Digital Vault standards.
+                  Session verified successfully.
                 </p>
                 <div className="mt-5 p-4 bg-slate-50 rounded-xl border border-slate-200 text-left text-xs space-y-1.5 font-mono text-slate-600">
                   <div><strong>Portal Shell:</strong> Parent / Guardian Portal</div>
@@ -467,8 +467,8 @@ export default function VerifyOtpPage() {
             {/* Bottom Security Footer */}
             <div className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
               <div className="flex items-center space-x-1.5">
-                <ShieldCheck className="w-4 h-4 text-blue-700 shrink-0" />
-                <span>DPDPA 2023 Compliant Vault</span>
+                <ShieldCheck className="w-4 h-4 text-slate-500 shrink-0" />
+                <span>Verified Institutional Session</span>
               </div>
               <div className="text-slate-400">
                 Session ID: <span className="font-mono text-slate-600">#4921-X9</span>

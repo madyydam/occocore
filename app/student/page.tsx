@@ -14,7 +14,6 @@ import {
   Download,
   BookOpen,
   Bell,
-  ShieldCheck,
   LogOut,
   ChevronRight,
   X,
@@ -282,10 +281,6 @@ export default function StudentPortalPage() {
             <div className="h-6 w-px bg-slate-200 mx-1 hidden sm:block" />
 
             <div className="flex items-center gap-2">
-              <span className="hidden lg:inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                <span>PIN Verified</span>
-              </span>
               <Link
                 href="/auth/login"
                 className="p-1.5 rounded-xl hover:bg-slate-200 text-slate-500 hover:text-slate-900 transition-colors"
@@ -1151,8 +1146,8 @@ export default function StudentPortalPage() {
                   <div className="flex items-center gap-3">
                     <QrCode className="w-12 h-12 text-slate-800" />
                     <div>
-                      <span className="font-mono text-[10px] text-slate-600 block">Digitally Verified via OCCO Core</span>
-                      <span className="font-mono text-[9px] text-slate-400 block">Hash: SHA256-CBSE-{student.admissionNo}</span>
+                      <span className="font-bold text-slate-700 text-xs block">Official Academic Transcript</span>
+                      <span className="text-[10px] text-slate-400 block font-mono">ID: {student.admissionNo}</span>
                     </div>
                   </div>
 
@@ -1457,8 +1452,8 @@ export default function StudentPortalPage() {
       )}
 
       {/* Footer */}
-      <footer className="border-t border-slate-200/90 bg-white py-3 px-4 sm:px-6 text-center text-[10px] text-slate-400 font-sans">
-        OCCO Core Institutional OS • Student Self-Service Portal. DPDPA 2023 &amp; CBSE Affiliation Compliant.
+      <footer className="border-t border-slate-200/90 bg-white py-3.5 px-4 sm:px-6 text-center text-[11px] text-slate-500 font-sans">
+        {student.tenantName} • Student Portal
       </footer>
     </div>
   );

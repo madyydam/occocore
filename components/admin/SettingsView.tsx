@@ -166,9 +166,9 @@ export default function SettingsView({ archetype }: SettingsViewProps) {
           </span>
         </h2>
         <p className="text-xs text-slate-500 mt-0.5">
-          {archetype === "K12_SCHOOL" && "CBSE/ICSE affiliation codes, school crest branding, and Section 9 DPDPA parental consent."}
-          {archetype === "DEGREE_COLLEGE" && "NAAC/NBA accreditation grades, university affiliation code, and custom CNAME domains."}
-          {archetype === "UNIVERSITY" && "UGC 2(f) recognition, DigiLocker ABC integration tokens, and campus privacy vaults."}
+          {archetype === "K12_SCHOOL" && "Affiliation codes, school crest branding, and parental consent governance."}
+          {archetype === "DEGREE_COLLEGE" && "Accreditation grades, university affiliation code, and custom CNAME domains."}
+          {archetype === "UNIVERSITY" && "UGC recognition, DigiLocker ABC integration tokens, and data privacy settings."}
           {archetype === "COACHING_ACADEMY" && "Academy GSTIN, center franchise codes, test engine keys, and custom coaching portals."}
         </p>
       </div>
@@ -324,36 +324,36 @@ export default function SettingsView({ archetype }: SettingsViewProps) {
         )}
 
         {/* ══════════════════════════════════════════════════════════════════════
-            SUB-TAB 4: DPDPA 2023 STATUTORY CONSENT VAULT
+            SUB-TAB 4: DATA PRIVACY & GOVERNANCE
         ══════════════════════════════════════════════════════════════════════ */}
         {isDpdpaTab && (
           <div className="bg-white rounded-3xl p-6 shadow-xs border border-slate-100 space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <Lock className="w-4 h-4 text-emerald-700" />
-                <h3 className="font-bold text-slate-900 text-sm">DPDPA 2023 Statutory Privacy Compliance</h3>
+                <Lock className="w-4 h-4 text-slate-700" />
+                <h3 className="font-bold text-slate-900 text-sm">Data Privacy &amp; Governance</h3>
               </div>
-              <span className="text-[10px] font-bold bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-full border border-emerald-200">
-                Section 9 Minor Consent Sealed
+              <span className="text-[10px] font-bold bg-slate-50 text-slate-700 px-2.5 py-1 rounded-full border border-slate-200">
+                Parental Consent Active
               </span>
             </div>
 
             <div className="space-y-3 text-xs text-slate-600">
               <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-1">
-                <strong className="text-slate-900 block text-xs">Section 9 Verifiable Parental Consent</strong>
+                <strong className="text-slate-900 block text-xs">Parental Consent &amp; Student Data Protection</strong>
                 <p className="text-[11px] leading-relaxed">
-                  For students under 18 years of age, cryptographic audit tokens record verified parental consent prior to any data processing.
+                  For minor students, audit records verify parental consent prior to academic profile processing.
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
                   <span className="text-slate-400 block text-[10px] font-bold uppercase">Encryption Standard</span>
-                  <strong className="text-slate-900 font-mono text-xs">AES-256-GCM At-Rest</strong>
+                  <strong className="text-slate-900 font-mono text-xs">Encrypted At-Rest &amp; In-Transit</strong>
                 </div>
                 <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
-                  <span className="text-slate-400 block text-[10px] font-bold uppercase">Key Rotation Schedule</span>
-                  <strong className="text-emerald-700 font-mono text-xs">90-Day Auto Rotation</strong>
+                  <span className="text-slate-400 block text-[10px] font-bold uppercase">Data Retention Policy</span>
+                  <strong className="text-slate-700 font-mono text-xs">Automated Statutory Retention</strong>
                 </div>
               </div>
             </div>
