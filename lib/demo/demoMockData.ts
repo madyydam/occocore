@@ -323,3 +323,152 @@ export const DEMO_FEE_STRUCTURES: DemoFeeStructureHead[] = [
   { id: "fh-402", headName: "All-India Computer Based Test Series (CBT)", frequency: "Annual", amount: 10000, isOptional: false, concessionAllowed: false, archetype: "COACHING_ACADEMY" },
 ];
 
+export interface DemoExamBroadsheetRecord {
+  id: string;
+  studentName: string;
+  studentId: string;
+  cohort: string;
+  totalMarksOrScore: string;
+  gradeOrSgpaOrRank: string;
+  status: "Passed" | "Qualified" | "Distinction" | "Remedial";
+  subjectScores: { subject: string; score: string; grade: string }[];
+  archetype: InstitutionalArchetype;
+}
+
+export interface DemoExamScheduleItem {
+  id: string;
+  examTitle: string;
+  subjectCode: string;
+  date: string;
+  timeSlot: string;
+  hallNo: string;
+  chiefInvigilator: string;
+  archetype: InstitutionalArchetype;
+}
+
+export interface DemoHallTicketRecord {
+  id: string;
+  studentName: string;
+  studentId: string;
+  cohort: string;
+  attendancePct: number;
+  eligible: boolean;
+  rollNoOrSeatNo: string;
+  centerCode: string;
+  archetype: InstitutionalArchetype;
+}
+
+export const DEMO_EXAM_RECORDS: DemoExamBroadsheetRecord[] = [
+  // School
+  {
+    id: "ex-1",
+    studentName: "Aarav Sharma",
+    studentId: "APX-0491",
+    cohort: "Class 10-A",
+    totalMarksOrScore: "468 / 500 (93.6%)",
+    gradeOrSgpaOrRank: "CBSE Grade A1",
+    status: "Distinction",
+    subjectScores: [
+      { subject: "Mathematics (041)", score: "96 / 100", grade: "A1" },
+      { subject: "General Science (086)", score: "94 / 100", grade: "A1" },
+      { subject: "English Literature", score: "92 / 100", grade: "A1" },
+      { subject: "Social Science", score: "94 / 100", grade: "A1" },
+      { subject: "Hindi Course A", score: "92 / 100", grade: "A1" },
+    ],
+    archetype: "K12_SCHOOL",
+  },
+  {
+    id: "ex-2",
+    studentName: "Diya Patel",
+    studentId: "APX-0492",
+    cohort: "Class 10-A",
+    totalMarksOrScore: "442 / 500 (88.4%)",
+    gradeOrSgpaOrRank: "CBSE Grade A2",
+    status: "Passed",
+    subjectScores: [
+      { subject: "Mathematics (041)", score: "88 / 100", grade: "A2" },
+      { subject: "General Science (086)", score: "90 / 100", grade: "A1" },
+      { subject: "English Literature", score: "86 / 100", grade: "A2" },
+      { subject: "Social Science", score: "89 / 100", grade: "A2" },
+      { subject: "Hindi Course A", score: "89 / 100", grade: "A2" },
+    ],
+    archetype: "K12_SCHOOL",
+  },
+  // College
+  {
+    id: "ex-201",
+    studentName: "Aaditya Singhania",
+    studentId: "PRN-2026-014",
+    cohort: "B.Tech CSE (Sem IV)",
+    totalMarksOrScore: "542 / 600 (24 Credits)",
+    gradeOrSgpaOrRank: "SGPA: 9.42 (Grade O)",
+    status: "Distinction",
+    subjectScores: [
+      { subject: "Data Structures & Algos", score: "92 / 100 (4 Cr)", grade: "O" },
+      { subject: "Database Management", score: "95 / 100 (4 Cr)", grade: "O" },
+      { subject: "Operating Systems", score: "88 / 100 (4 Cr)", grade: "A+" },
+      { subject: "Discrete Mathematics", score: "90 / 100 (4 Cr)", grade: "O" },
+    ],
+    archetype: "DEGREE_COLLEGE",
+  },
+  // University
+  {
+    id: "ex-301",
+    studentName: "Dr. Siddharth Sen",
+    studentId: "UNI-9812",
+    cohort: "M.Tech / Ph.D. Computing",
+    totalMarksOrScore: "Research Broadsheet (18 Cr)",
+    gradeOrSgpaOrRank: "CGPA: 9.80 (ABC Verified)",
+    status: "Distinction",
+    subjectScores: [
+      { subject: "Distributed Machine Learning", score: "98 / 100", grade: "O" },
+      { subject: "Research Methodology", score: "95 / 100", grade: "O" },
+      { subject: "Doctoral Seminar", score: "Satisfactory", grade: "Pass" },
+    ],
+    archetype: "UNIVERSITY",
+  },
+  // Coaching
+  {
+    id: "ex-401",
+    studentName: "Harshwardhan Patil",
+    studentId: "ASP-881",
+    cohort: "Rankers JEE 2027",
+    totalMarksOrScore: "284 / 300 (99.8%ile)",
+    gradeOrSgpaOrRank: "All-India Rank: 14",
+    status: "Qualified",
+    subjectScores: [
+      { subject: "Physics (+4/-1)", score: "96 / 100", grade: "AIR 8" },
+      { subject: "Chemistry (+4/-1)", score: "92 / 100", grade: "AIR 22" },
+      { subject: "Mathematics (+4/-1)", score: "96 / 100", grade: "AIR 12" },
+    ],
+    archetype: "COACHING_ACADEMY",
+  },
+];
+
+export const DEMO_EXAM_SCHEDULES: DemoExamScheduleItem[] = [
+  // School
+  { id: "sch-1", examTitle: "Term 1 Board Pattern Examination", subjectCode: "MATH-041", date: "18 Nov 2026", timeSlot: "09:30 AM - 12:30 PM", hallNo: "Main Hall A & B", chiefInvigilator: "Mrs. Sunita Sharma", archetype: "K12_SCHOOL" },
+  { id: "sch-2", examTitle: "Term 1 Board Pattern Examination", subjectCode: "SCI-086", date: "21 Nov 2026", timeSlot: "09:30 AM - 12:30 PM", hallNo: "Main Hall A & B", chiefInvigilator: "Dr. K. Raman", archetype: "K12_SCHOOL" },
+  // College
+  { id: "sch-201", examTitle: "University End-Semester Theory", subjectCode: "CS-401 (DSA)", date: "25 Nov 2026", timeSlot: "10:00 AM - 01:00 PM", hallNo: "Engineering Exam Block 2", chiefInvigilator: "Prof. S. Sen", archetype: "DEGREE_COLLEGE" },
+  { id: "sch-202", examTitle: "University End-Semester Lab Exam", subjectCode: "CS-402L (DBMS)", date: "28 Nov 2026", timeSlot: "02:00 PM - 05:00 PM", hallNo: "PostgreSQL Lab Hall", chiefInvigilator: "Dr. M. Iyer", archetype: "DEGREE_COLLEGE" },
+  // University
+  { id: "sch-301", examTitle: "NEP 2020 Multi-Disciplinary Exam", subjectCode: "NEP-CSC601", date: "30 Nov 2026", timeSlot: "09:30 AM - 12:30 PM", hallNo: "Auditorium Wing A", chiefInvigilator: "Prof. V. Nambiar", archetype: "UNIVERSITY" },
+  // Coaching
+  { id: "sch-401", examTitle: "Sunday All-India Grand Mock Test #5", subjectCode: "JEE-ADV-P1", date: "10 Nov 2026", timeSlot: "09:00 AM - 12:00 PM", hallNo: "CBT Test Arena 1", chiefInvigilator: "Er. Nitin Verma", archetype: "COACHING_ACADEMY" },
+];
+
+export const DEMO_HALL_TICKETS: DemoHallTicketRecord[] = [
+  // School
+  { id: "ht-1", studentName: "Aarav Sharma", studentId: "APX-0491", cohort: "Class 10-A", attendancePct: 96.4, eligible: true, rollNoOrSeatNo: "101491", centerCode: "CBSE-CTR-8901", archetype: "K12_SCHOOL" },
+  { id: "ht-2", studentName: "Rohan Varma", studentId: "APX-0493", cohort: "Class 10-A", attendancePct: 71.5, eligible: false, rollNoOrSeatNo: "101493", centerCode: "CBSE-CTR-8901", archetype: "K12_SCHOOL" },
+  // College
+  { id: "ht-201", studentName: "Aaditya Singhania", studentId: "PRN-2026-014", cohort: "B.Tech CSE", attendancePct: 89.2, eligible: true, rollNoOrSeatNo: "PRN-BTECH-014", centerCode: "UNI-ENG-441", archetype: "DEGREE_COLLEGE" },
+  { id: "ht-202", studentName: "Meera Krishnan", studentId: "PRN-2026-088", cohort: "B.Sc Biotech", attendancePct: 69.8, eligible: false, rollNoOrSeatNo: "PRN-BSC-088", centerCode: "UNI-SCI-102", archetype: "DEGREE_COLLEGE" },
+  // University
+  { id: "ht-301", studentName: "Dr. Siddharth Sen", studentId: "UNI-9812", cohort: "Ph.D. Computing", attendancePct: 96.0, eligible: true, rollNoOrSeatNo: "PHD-COMP-9812", centerCode: "CAMPUS-EXAM-01", archetype: "UNIVERSITY" },
+  // Coaching
+  { id: "ht-401", studentName: "Harshwardhan Patil", studentId: "ASP-881", cohort: "Rankers JEE 2027", attendancePct: 99.1, eligible: true, rollNoOrSeatNo: "JEE-AIR-881", centerCode: "TEST-CENTER-A", archetype: "COACHING_ACADEMY" },
+];
+
+

@@ -258,7 +258,9 @@ body {
 
   /* Show only elements explicitly marked for print */
   .print-muster-section,
-  .print-receipt-section {
+  .print-receipt-section,
+  .print-report-card-section,
+  .print-hall-ticket-section {
     display: block !important;
   }
 
