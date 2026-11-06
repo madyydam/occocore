@@ -644,19 +644,73 @@ export default function StudentPortalPage() {
             }`}>
               <div className="space-y-1">
                 <span className="font-bold text-sm block">
-                  Overall Academic Presence: {attendance.percentage}% ({attendance.presentCount} of {attendance.totalCount} Session Days)
+                  Overall Academic Presence: {attendance.percentage}% ({attendance.presentCount} of {attendance.totalCount} Sessions)
                 </span>
                 <span className="text-xs opacity-80 block">
                   {attendance.isSafe
-                    ? "✓ You are fully eligible for Board / Institutional Examinations."
-                    : "⚠ Shortfall Alert: Attendance is below 75%. Please submit medical condonation or attend upcoming sessions."}
+                    ? "✓ You meet the statutory 75% attendance threshold."
+                    : "⚠ Shortfall Alert: Attendance is below 75%. Please attend upcoming sessions to clear shortfall."}
                 </span>
               </div>
               <div className="flex items-center gap-2 text-xs font-mono font-bold">
-                <span className="px-2.5 py-1 bg-white rounded-lg border">Present: {attendance.presentCount}</span>
-                <span className="px-2.5 py-1 bg-white rounded-lg border">Absent: {Math.max(0, attendance.totalCount - Math.floor(attendance.presentCount))}</span>
+                <span className="px-2.5 py-1 bg-white rounded-lg border text-emerald-700">Present (P): {attendance.presentCount}</span>
+                <span className="px-2.5 py-1 bg-white rounded-lg border text-rose-700">Absent (A): {attendance.absentCount ?? Math.max(0, attendance.totalCount - attendance.presentCount)}</span>
               </div>
             </div>
+
+            {/* Subject-Wise Lecture Attendance (For College & University & Coaching) */}
+            {attendance.subjectWise && attendance.subjectWise.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                    <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Subject-Wise Lecture Attendance (P / A per Subject)</span>
+                  </h4>
+                  <span className="text-[10px] font-mono text-slate-400">
+                    Mandatory 75% Cutoff per Subject
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-2xs">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-wider bg-slate-50/60">
+                        <th className="py-2.5 px-4">Subject / Course</th>
+                        <th className="py-2.5 px-4">Total Lectures</th>
+                        <th className="py-2.5 px-4">Attended (P)</th>
+                        <th className="py-2.5 px-4">Missed (A)</th>
+                        <th className="py-2.5 px-4">Percentage</th>
+                        <th className="py-2.5 px-4 text-right">Eligibility</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-mono text-xs">
+                      {attendance.subjectWise.map((sub, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50/60 transition-colors">
+                          <td className="py-3 px-4 font-sans font-bold text-slate-900">
+                            {sub.subject}
+                          </td>
+                          <td className="py-3 px-4 text-slate-600">{sub.total}</td>
+                          <td className="py-3 px-4 font-bold text-emerald-700">{sub.attended}</td>
+                          <td className="py-3 px-4 font-bold text-rose-600">{sub.missed}</td>
+                          <td className="py-3 px-4 font-bold text-slate-900">{sub.percentage}%</td>
+                          <td className="py-3 px-4 text-right font-sans">
+                            <span
+                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                sub.isSafe
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : "bg-rose-100 text-rose-800"
+                              }`}
+                            >
+                              {sub.isSafe ? "Eligible (≥75%)" : "Shortfall Risk"}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
             {/* Daily Punch History */}
             <div className="space-y-3">
@@ -666,7 +720,7 @@ export default function StudentPortalPage() {
                   <thead>
                     <tr className="border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-wider bg-slate-50/50">
                       <th className="py-2.5 px-4">Date</th>
-                      <th className="py-2.5 px-4">Session</th>
+                      <th className="py-2.5 px-4">Session / Subject</th>
                       <th className="py-2.5 px-4">Status Code</th>
                       <th className="py-2.5 px-4">Source</th>
                       <th className="py-2.5 px-4">Remarks &amp; Audit Trail</th>
@@ -685,21 +739,10 @@ export default function StudentPortalPage() {
                           <td className="py-3 px-4 font-mono font-bold text-slate-900">{log.date}</td>
                           <td className="py-3 px-4 font-mono text-slate-600">{log.session}</td>
                           <td className="py-3 px-4">
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                              log.code === "P" ? "bg-emerald-100 text-emerald-800" :
-                              log.code === "L" ? "bg-amber-100 text-amber-800" :
-                              log.code === "LC" ? "bg-teal-100 text-teal-800" :
-                              log.code === "HD" ? "bg-purple-100 text-purple-800" :
-                              log.code === "OD" ? "bg-blue-100 text-blue-800" :
-                              "bg-red-100 text-red-800"
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                              log.code === "P" ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"
                             }`}>
-                              {log.code === "P" && "Present (P)"}
-                              {log.code === "L" && "Late Arrival (L)"}
-                              {log.code === "LC" && "Medical Cleared (LC)"}
-                              {log.code === "HD" && "Half Day (HD)"}
-                              {log.code === "OD" && "On Duty (OD)"}
-                              {log.code === "A" && "Absent (A)"}
-                              {!["P", "L", "LC", "HD", "OD", "A"].includes(log.code) && log.code}
+                              {log.code === "P" ? "Present (P)" : "Absent (A)"}
                             </span>
                           </td>
                           <td className="py-3 px-4 font-mono text-slate-500">{log.source}</td>

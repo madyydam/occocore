@@ -2,6 +2,12 @@
 
 import { query, getClient } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import {
+  buildPrnString,
+  buildRollNoString,
+  DEFAULT_ID_NUMBERING_CONFIG,
+  IdNumberingFormatConfig,
+} from "@/lib/utils/idFormatUtils";
 
 export interface RealAdmissionCandidate {
   id: string;
@@ -295,6 +301,7 @@ export async function enrollApplicantAsStudentAction(candidateId: string): Promi
     const candRes = await client.query<{
       id: string;
       application_no: string;
+      program: string;
       first_name: string;
       last_name: string;
       guardian_name: string;
@@ -306,7 +313,7 @@ export async function enrollApplicantAsStudentAction(candidateId: string): Promi
       status: string;
       enrolled_student_id: string | null;
     }>(
-      `SELECT id, application_no, first_name, last_name, guardian_name, guardian_phone, 
+      `SELECT id, application_no, program, first_name, last_name, guardian_name, guardian_phone, 
               email, gender, to_char(dob, 'YYYY-MM-DD') AS dob, is_rte_quota, status, enrolled_student_id
        FROM admission_applications
        WHERE id = $1 AND tenant_id = $2
@@ -339,33 +346,53 @@ export async function enrollApplicantAsStudentAction(candidateId: string): Promi
     }
     const sectionId = secRes.rows[0].id;
 
-    // 3. Generate sequential Admission No
-    const nextRollRes = await client.query<{ max_roll: number }>(
-      `SELECT COALESCE(MAX(roll_no), 0) AS max_roll 
-       FROM students 
-       WHERE tenant_id = $1`,
+    // 3. Fetch tenant numbering configuration
+    const tenantConfRes = await client.query<{ feature_flags: Record<string, unknown> | null }>(
+      `SELECT feature_flags FROM tenants WHERE id = $1 LIMIT 1`,
       [tenantId]
     );
-    const nextRoll = (nextRollRes.rows[0]?.max_roll || 0) + 1;
-    const admissionNo = `SCH/2026/0${String(490 + nextRoll).slice(-4)}`;
+    const flags = (tenantConfRes.rows[0]?.feature_flags && typeof tenantConfRes.rows[0].feature_flags === "object")
+      ? tenantConfRes.rows[0].feature_flags
+      : {};
+    const config: IdNumberingFormatConfig =
+      (flags.id_numbering_config as IdNumberingFormatConfig) || DEFAULT_ID_NUMBERING_CONFIG;
 
-    // 4. Insert Student
+    const countRes = await client.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM students WHERE tenant_id = $1`,
+      [tenantId]
+    );
+    const nextSeq = parseInt(countRes.rows[0]?.count || "0", 10) + 1;
+
+    const rollNo = buildRollNoString(config.rollNo, {
+      year: 2026,
+      cohort: cand.program,
+      seq: nextSeq,
+    });
+    const prn = buildPrnString(config.prn, {
+      year: 2026,
+      dept: cand.program || "CSE",
+      seq: nextSeq,
+    });
+    const admissionNo = `SCH/2026/0${String(490 + nextSeq).slice(-4)}`;
+
+    // 4. Insert Student with formatted roll_no and prn
     const stuRes = await client.query<{ id: string }>(
       `INSERT INTO students (
-        tenant_id, section_id, admission_no, roll_no, first_name, last_name,
+        tenant_id, section_id, admission_no, roll_no, prn, first_name, last_name,
         dob, gender, category, is_rte_quota, emergency_phone, guardian_name,
         guardian_phone, is_active
       ) VALUES (
-        $1, $2, $3, $4, $5, $6,
-        COALESCE($7::date, '2011-05-15'::date), $8,
-        CASE WHEN $9 = TRUE THEN 'RTE' ELSE 'GENERAL' END,
-        $9, $10, $11, $10, TRUE
+        $1, $2, $3, $4, $5, $6, $7,
+        COALESCE($8::date, '2011-05-15'::date), $9,
+        CASE WHEN $10 = TRUE THEN 'RTE' ELSE 'GENERAL' END,
+        $10, $11, $12, $11, TRUE
       ) RETURNING id`,
       [
         tenantId,
         sectionId,
         admissionNo,
-        nextRoll,
+        rollNo,
+        prn,
         cand.first_name,
         cand.last_name,
         cand.dob,

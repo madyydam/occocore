@@ -42,26 +42,16 @@ import { InstitutionalArchetype, ARCHETYPES } from "@/lib/terminology";
 import { useAdmin } from "@/lib/admin/adminContext";
 
 // ══════════════════════════════════════════════════════════════════════════
-// ATTENDANCE CODE ENGINE TYPES (PRD SECTION 7.1)
 // ══════════════════════════════════════════════════════════════════════════
-export type AttendanceCode =
-  | "P"   // Present (1.0)
-  | "L"   // Late before register close (1.0 / policy flagged)
-  | "LC"  // Late after register close (0.0 absent or policy)
-  | "HD"  // Half day (0.5)
-  | "OD"  // On duty (sports, competition, school circular, 1.0)
-  | "EL"  // Excused leave (approved parent leave, 0.0 in denominator)
-  | "ML"  // Medical leave (doctor certificate attached, 0.0 in denominator)
-  | "A"   // Absent, unexplained (0.0, triggers parent alert)
-  | "SU"  // Suspended (disciplinary order, 0.0)
-  | "H"   // Holiday / No school (excluded from possible days)
-  | "NE"; // Not enrolled yet / transferred (excluded from possible days)
+// ATTENDANCE CODE ENGINE TYPES: STRICTLY P (PRESENT) & A (ABSENT)
+// ══════════════════════════════════════════════════════════════════════════
+export type AttendanceCode = "P" | "A";
 
 export interface CodeRuleDefinition {
   code: AttendanceCode;
   label: string;
   name: string;
-  weight: number; // 1.0, 0.5, 0.0
+  weight: number; // 1.0 or 0.0
   inDenominator: boolean;
   isAuthorised: boolean;
   triggersAlert: boolean;
@@ -73,16 +63,7 @@ export interface CodeRuleDefinition {
 
 export const ATTENDANCE_CODES: Record<AttendanceCode, CodeRuleDefinition> = {
   P: { code: "P", label: "P", name: "Present", weight: 1.0, inDenominator: true, isAuthorised: true, triggersAlert: false, requiresDocument: false, badgeBg: "bg-emerald-50", badgeText: "text-emerald-700", badgeBorder: "border-emerald-200" },
-  L: { code: "L", label: "L", name: "Late (Before Cutoff)", weight: 1.0, inDenominator: true, isAuthorised: true, triggersAlert: false, requiresDocument: false, badgeBg: "bg-amber-50", badgeText: "text-amber-700", badgeBorder: "border-amber-200" },
-  LC: { code: "LC", label: "LC", name: "Late (After Cutoff)", weight: 0.0, inDenominator: true, isAuthorised: false, triggersAlert: true, requiresDocument: false, badgeBg: "bg-orange-50", badgeText: "text-orange-700", badgeBorder: "border-orange-200" },
-  HD: { code: "HD", label: "HD", name: "Half Day", weight: 0.5, inDenominator: true, isAuthorised: true, triggersAlert: false, requiresDocument: false, badgeBg: "bg-blue-50", badgeText: "text-blue-700", badgeBorder: "border-blue-200" },
-  OD: { code: "OD", label: "OD", name: "On Duty (Sports/Event)", weight: 1.0, inDenominator: true, isAuthorised: true, triggersAlert: false, requiresDocument: true, badgeBg: "bg-indigo-50", badgeText: "text-indigo-700", badgeBorder: "border-indigo-200" },
-  EL: { code: "EL", label: "EL", name: "Excused Leave", weight: 0.0, inDenominator: true, isAuthorised: true, triggersAlert: false, requiresDocument: false, badgeBg: "bg-sky-50", badgeText: "text-sky-700", badgeBorder: "border-sky-200" },
-  ML: { code: "ML", label: "ML", name: "Medical Leave", weight: 0.0, inDenominator: true, isAuthorised: true, triggersAlert: false, requiresDocument: true, badgeBg: "bg-teal-50", badgeText: "text-teal-700", badgeBorder: "border-teal-200" },
-  A: { code: "A", label: "A", name: "Unexplained Absent", weight: 0.0, inDenominator: true, isAuthorised: false, triggersAlert: true, requiresDocument: false, badgeBg: "bg-rose-50", badgeText: "text-rose-700", badgeBorder: "border-rose-200" },
-  SU: { code: "SU", label: "SU", name: "Suspended", weight: 0.0, inDenominator: true, isAuthorised: false, triggersAlert: true, requiresDocument: true, badgeBg: "bg-slate-100", badgeText: "text-slate-700", badgeBorder: "border-slate-300" },
-  H: { code: "H", label: "H", name: "Holiday / Recess", weight: 0.0, inDenominator: false, isAuthorised: true, triggersAlert: false, requiresDocument: false, badgeBg: "bg-purple-50", badgeText: "text-purple-700", badgeBorder: "border-purple-200" },
-  NE: { code: "NE", label: "NE", name: "Not Enrolled / Exited", weight: 0.0, inDenominator: false, isAuthorised: true, triggersAlert: false, requiresDocument: false, badgeBg: "bg-slate-50", badgeText: "text-slate-400", badgeBorder: "border-slate-200" },
+  A: { code: "A", label: "A", name: "Absent", weight: 0.0, inDenominator: true, isAuthorised: false, triggersAlert: true, requiresDocument: false, badgeBg: "bg-rose-50", badgeText: "text-rose-700", badgeBorder: "border-rose-200" },
 };
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -379,43 +360,30 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
     const total = roster.length;
     let presentEquivalent = 0;
     let absent = 0;
-    let late = 0;
-    let onLeave = 0;
     let unmarked = 0;
 
     roster.forEach((st) => {
       if (st.todaySource === "Unmarked") {
         unmarked++;
-      } else if (st.todayCode === "P" || st.todayCode === "OD") {
+      } else if (st.todayCode === "P") {
         presentEquivalent += 1.0;
-      } else if (st.todayCode === "L") {
-        presentEquivalent += 1.0;
-        late++;
-      } else if (st.todayCode === "HD") {
-        presentEquivalent += 0.5;
-        onLeave++;
-      } else if (st.todayCode === "LC") {
+      } else if (st.todayCode === "A") {
         absent++;
-        late++;
-      } else if (st.todayCode === "A" || st.todayCode === "SU") {
-        absent++;
-      } else if (st.todayCode === "EL" || st.todayCode === "ML") {
-        onLeave++;
       }
     });
 
-    const activePossible = total - roster.filter((r) => r.todayCode === "H" || r.todayCode === "NE").length;
-    const percentage = activePossible > 0 ? ((presentEquivalent / activePossible) * 100).toFixed(1) : "0.0";
+    const activePossible = presentEquivalent + absent;
+    const percentage = activePossible > 0 ? ((presentEquivalent / activePossible) * 100).toFixed(1) : (unmarked > 0 ? "0.0" : "100.0");
 
     return {
       total,
-      presentEquivalent: presentEquivalent.toFixed(1),
+      presentEquivalent: presentEquivalent.toFixed(0),
       absent,
-      late,
-      onLeave,
+      late: 0,
+      onLeave: 0,
       unmarked,
       percentage,
-      activePossible,
+      activePossible: total,
     };
   }, [roster]);
 
@@ -446,12 +414,12 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
       ]).catch((err) => console.error("Error saving mark to DB:", err));
     }
 
-    // If absent or late after close, prompt quick reason drawer
-    if (newCode === "A" || newCode === "LC" || newCode === "ML") {
+    // If absent, prompt quick reason drawer
+    if (newCode === "A") {
       const target = roster.find((s) => s.id === studentId);
       if (target) {
         setReasonDrawerStudent(target);
-        setReasonCategory(newCode === "ML" ? "Medical / Illness" : "Unexplained / Personal");
+        setReasonCategory("Unexplained / Personal");
         setReasonNoteText(target.reasonNote || "");
       }
     }
@@ -479,7 +447,7 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
     if (!isDemoMode) {
       const recordsToSave = roster.map((s) => ({
         studentId: s.id,
-        code: "P",
+        code: "P" as const,
         source: "MANUAL",
       }));
       saveAttendanceRecordsAction(selectedDate, selectedSession, recordsToSave).catch((err) =>
@@ -719,22 +687,31 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
             />
           </div>
 
-          {/* 6. Session / Period */}
+          {/* 6. Session / Subject Selector */}
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-              Session / Period
+              {archetype === "K12_SCHOOL" ? "Daily Session (School)" : "Subject / Lecture (College/Uni)"}
             </label>
             <select
               value={selectedSession}
               onChange={(e) => setSelectedSession(e.target.value)}
               className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-bold focus:outline-none cursor-pointer"
             >
-              <option value="Full Day">Full Day (Morning Roll Call)</option>
-              <option value="Morning AM">Morning Session (AM)</option>
-              <option value="Afternoon PM">Afternoon Session (PM)</option>
-              <option value="Period 1">Period 1 (08:30 - 09:15)</option>
-              <option value="Period 2">Period 2 (09:15 - 10:00)</option>
-              <option value="Period 3">Period 3 (10:15 - 11:00)</option>
+              {archetype === "K12_SCHOOL" ? (
+                <>
+                  <option value="Full Day">Full Day (Daily Roll Call)</option>
+                  <option value="Morning AM">Morning Session (AM)</option>
+                  <option value="Afternoon PM">Afternoon Session (PM)</option>
+                </>
+              ) : (
+                <>
+                  <option value="Mathematics (MATH-101)">Mathematics (MATH-101)</option>
+                  <option value="Physics (PHYS-101)">Physics (PHYS-101)</option>
+                  <option value="Chemistry (CHEM-101)">Chemistry (CHEM-101)</option>
+                  <option value="Computer Applications (CS-101)">Computer Applications (CS-101)</option>
+                  <option value="English Language & Lit (ENG-101)">English Language & Lit (ENG-101)</option>
+                </>
+              )}
             </select>
           </div>
         </div>
@@ -763,85 +740,69 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
       ══════════════════════════════════════════════════════════════════════ */}
       {(!activeSubTab || activeSubTab === "today_rollcall" || activeSubTab === "daily_roll_call") && (
         <div className="space-y-6">
-          {/* KPI Metric Pods (Strict Metric Dictionary) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-            {/* Tile 1: Present Equivalent */}
+          {/* KPI Metric Pods (Strict P / A Model) */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            {/* Tile 1: Present (P) */}
             <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-xs space-y-1">
               <div className="flex items-center justify-between text-xs font-bold text-slate-500">
-                <span>Present Equivalent</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800">
-                  {metrics.percentage}%
+                <span>Present (P)</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 font-bold">
+                  Active
                 </span>
               </div>
-              <span className="text-2xl sm:text-3xl font-black text-slate-900 font-sans block">
-                {metrics.presentEquivalent} <span className="text-xs text-slate-400 font-normal">/ {metrics.activePossible}</span>
+              <span className="text-2xl sm:text-3xl font-black text-emerald-700 font-sans block">
+                {metrics.presentEquivalent} <span className="text-xs text-slate-400 font-normal">/ {metrics.total}</span>
               </span>
               <span className="text-[10px] text-slate-400 block truncate">
-                Includes P, L, OD &amp; 0.5×HD
+                Full attendance credits
               </span>
             </div>
 
-            {/* Tile 2: Unexplained Absent */}
+            {/* Tile 2: Absent (A) */}
             <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-xs space-y-1">
               <div className="flex items-center justify-between text-xs font-bold text-slate-500">
-                <span>Unexplained Absent</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-50 text-rose-800">
-                  Alert Active
+                <span>Absent (A)</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-50 text-rose-800 font-bold">
+                  {metrics.absent > 0 ? "Alert Active" : "Clean"}
                 </span>
               </div>
               <span className="text-2xl sm:text-3xl font-black text-rose-600 font-sans block">
                 {metrics.absent}
               </span>
               <span className="text-[10px] text-slate-400 block truncate">
-                Triggers parent SMS/WhatsApp
+                Zero attendance credits
               </span>
             </div>
 
-            {/* Tile 3: Late Arrivals */}
+            {/* Tile 3: Overall Cohort Rate */}
             <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-xs space-y-1">
               <div className="flex items-center justify-between text-xs font-bold text-slate-500">
-                <span>Late Arrivals</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-800">
-                  Cutoff 08:30
-                </span>
-              </div>
-              <span className="text-2xl sm:text-3xl font-black text-amber-700 font-sans block">
-                {metrics.late}
-              </span>
-              <span className="text-[10px] text-slate-400 block truncate">
-                1 Before bell, 1 After cutoff (LC)
-              </span>
-            </div>
-
-            {/* Tile 4: Authorised Leave */}
-            <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-xs space-y-1">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-500">
-                <span>On Approved Leave</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-800">
-                  Slip Verified
-                </span>
-              </div>
-              <span className="text-2xl sm:text-3xl font-black text-blue-700 font-sans block">
-                {metrics.onLeave}
-              </span>
-              <span className="text-[10px] text-slate-400 block truncate">
-                Medical (ML) + Sports (OD)
-              </span>
-            </div>
-
-            {/* Tile 5: Unmarked */}
-            <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-xs space-y-1">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-500">
-                <span>Unmarked Roster</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                  {metrics.unmarked === 0 ? "Complete" : "Action Needed"}
+                <span>Attendance Rate</span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${Number(metrics.percentage) >= 75 ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800"}`}>
+                  {Number(metrics.percentage) >= 75 ? "Safe" : "Deficit"}
                 </span>
               </div>
               <span className="text-2xl sm:text-3xl font-black text-slate-900 font-sans block">
-                {metrics.unmarked}
+                {metrics.percentage}%
               </span>
               <span className="text-[10px] text-slate-400 block truncate">
-                Requires teacher sign-off
+                Target &ge; 75.0% threshold
+              </span>
+            </div>
+
+            {/* Tile 4: Attendance Architecture */}
+            <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-xs space-y-1">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+                <span>Logging Mode</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-800 font-bold">
+                  Standard
+                </span>
+              </div>
+              <span className="text-sm font-extrabold text-slate-900 font-sans block pt-1">
+                {archetype === "K12_SCHOOL" ? "Daily (P / A per Day)" : "Subject (P / A per Lecture)"}
+              </span>
+              <span className="text-[10px] text-slate-400 block truncate">
+                {archetype === "K12_SCHOOL" ? "Class Register Roll Call" : selectedSession}
               </span>
             </div>
           </div>
@@ -1017,29 +978,36 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
                           </div>
                         </td>
 
-                        {/* Code Engine Interactive Palette */}
+                        {/* Strictly P (Present) or A (Absent) */}
                         <td className="py-3 px-3">
-                          <div className="flex items-center gap-1 flex-wrap">
-                            {(["P", "L", "LC", "HD", "OD", "EL", "ML", "A"] as AttendanceCode[]).map((c) => {
-                              const r = ATTENDANCE_CODES[c];
-                              const isSelected = st.todayCode === c;
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleSetCode(st.id, "P")}
+                              title="Present (1.0 Credit)"
+                              className={`px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-1 transition-all cursor-pointer ${
+                                st.todayCode === "P"
+                                  ? "bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-500/30 scale-105"
+                                  : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                              }`}
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              <span>P</span>
+                            </button>
 
-                              return (
-                                <button
-                                  key={c}
-                                  type="button"
-                                  onClick={() => handleSetCode(st.id, c)}
-                                  title={`${r.name} (${r.weight * 100}%)`}
-                                  className={`w-6 h-6 rounded-lg text-[10px] font-extrabold flex items-center justify-center transition-all cursor-pointer ${
-                                    isSelected
-                                      ? "ring-2 ring-slate-800 shadow-xs scale-105 " + r.badgeBg + " " + r.badgeText + " border " + r.badgeBorder
-                                      : "bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200/80"
-                                  }`}
-                                >
-                                  {c}
-                                </button>
-                              );
-                            })}
+                            <button
+                              type="button"
+                              onClick={() => handleSetCode(st.id, "A")}
+                              title="Absent (0.0 Credit)"
+                              className={`px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-1 transition-all cursor-pointer ${
+                                st.todayCode === "A"
+                                  ? "bg-rose-600 text-white shadow-sm ring-2 ring-rose-500/30 scale-105"
+                                  : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                              }`}
+                            >
+                              <X className="w-3.5 h-3.5" />
+                              <span>A</span>
+                            </button>
 
                             {/* Note button */}
                             {st.reasonNote && (
@@ -1050,7 +1018,7 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
                                   setReasonNoteText(st.reasonNote || "");
                                 }}
                                 title={st.reasonNote}
-                                className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[9px] font-bold border border-amber-200 cursor-pointer truncate max-w-28"
+                                className="px-2 py-1 rounded-lg bg-amber-50 text-amber-700 text-[10px] font-bold border border-amber-200 cursor-pointer truncate max-w-28"
                               >
                                 {st.reasonNote.split(" ")[0]}
                               </button>

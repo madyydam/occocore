@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 export interface StudentProfileData {
   id: string;
   admissionNo: string;
-  rollNo: number | null;
+  rollNo: string | number | null;
   prn: string;
   apaarId: string;
   firstName: string;
@@ -45,13 +45,26 @@ export interface StudentLeaveItem {
   appliedOn: string;
 }
 
+export interface StudentSubjectAttendanceItem {
+  subject: string;
+  code: string;
+  attended: number;
+  missed: number;
+  total: number;
+  percentage: number;
+  isSafe: boolean;
+}
+
 export interface StudentAttendanceSummary {
+  attendanceMode: "DAILY" | "SUBJECT";
   presentCount: number;
+  absentCount: number;
   totalCount: number;
   percentage: number;
   isSafe: boolean; // >= 75%
   recentLogs: StudentAttendanceLog[];
   leaveRequests: StudentLeaveItem[];
+  subjectWise: StudentSubjectAttendanceItem[];
 }
 
 export interface StudentInvoiceItem {
@@ -123,7 +136,7 @@ export interface StudentSelectorOption {
   id: string;
   name: string;
   admissionNo: string;
-  rollNo: number | null;
+  rollNo: string | number | null;
   className: string;
   sectionName: string;
 }
@@ -159,7 +172,7 @@ export async function getActiveStudentsListAction(): Promise<{
       first_name: string;
       last_name: string;
       admission_no: string;
-      roll_no: number | null;
+      roll_no: string | number | null;
       class_name: string;
       section_name: string;
     }>(
@@ -202,9 +215,10 @@ export async function getStudentDashboardAction(studentId?: string): Promise<{
       id: string;
       name: string;
       slug: string;
+      type: string;
       primary_color: string;
     }>(
-      `SELECT id, name, slug, primary_color FROM tenants WHERE slug = $1 LIMIT 1`,
+      `SELECT id, name, slug, type, primary_color FROM tenants WHERE slug = $1 LIMIT 1`,
       ["apexacademy"]
     );
     if (tenantRes.rows.length === 0) return { success: false, error: "Tenant not found." };
@@ -217,7 +231,7 @@ export async function getStudentDashboardAction(studentId?: string): Promise<{
       first_name: string;
       last_name: string;
       admission_no: string;
-      roll_no: number | null;
+      roll_no: string | number | null;
       class_name: string;
       section_name: string;
     }>(
@@ -254,7 +268,7 @@ export async function getStudentDashboardAction(studentId?: string): Promise<{
     const stuRes = await query<{
       id: string;
       admission_no: string;
-      roll_no: number | null;
+      roll_no: string | number | null;
       prn: string | null;
       apaar_id: string | null;
       first_name: string;
@@ -310,22 +324,57 @@ export async function getStudentDashboardAction(studentId?: string): Promise<{
       primaryColor: tenant.primary_color || "#153E35",
     };
 
-    // 3. Fetch real Attendance Summary (Accurate P, L, LC, OD, HD math)
-    const attRes = await query<{ present_count: string; total_count: string }>(
+    // 3. Fetch real Attendance Summary (Strictly P / A, with School vs College/University mode)
+    const attRes = await query<{ present_count: string; absent_count: string; total_count: string }>(
       `SELECT 
-         COALESCE(SUM(CASE 
-           WHEN code IN ('P', 'OD', 'L', 'LC') THEN 1.0 
-           WHEN code = 'HD' THEN 0.5 
-           ELSE 0.0 
-         END), 0)::text AS present_count,
+         COUNT(*) FILTER (WHERE code = 'P')::text AS present_count,
+         COUNT(*) FILTER (WHERE code = 'A')::text AS absent_count,
          COUNT(*)::text AS total_count
        FROM attendance_records
        WHERE student_id = $1 AND tenant_id = $2`,
       [stu.id, tenantId]
     );
-    const presentCount = parseFloat(attRes.rows[0]?.present_count || "0");
+    const presentCount = parseInt(attRes.rows[0]?.present_count || "0", 10);
+    const absentCount = parseInt(attRes.rows[0]?.absent_count || "0", 10);
     const totalCount = parseInt(attRes.rows[0]?.total_count || "0", 10);
     const attPct = totalCount > 0 ? parseFloat(((presentCount / totalCount) * 100).toFixed(1)) : 100.0;
+
+    // Subject-wise attendance (for College/University & Coaching institutes)
+    const subjAttRes = await query<{
+      session: string;
+      attended: string;
+      missed: string;
+      total: string;
+    }>(
+      `SELECT session,
+              COUNT(*) FILTER (WHERE code = 'P')::text AS attended,
+              COUNT(*) FILTER (WHERE code = 'A')::text AS missed,
+              COUNT(*)::text AS total
+       FROM attendance_records
+       WHERE student_id = $1 AND tenant_id = $2 AND session != 'Full Day' AND session != 'Morning'
+       GROUP BY session
+       ORDER BY session ASC`,
+      [stu.id, tenantId]
+    );
+
+    const subjectWise: StudentSubjectAttendanceItem[] = subjAttRes.rows.map((row) => {
+      const att = parseInt(row.attended || "0", 10);
+      const miss = parseInt(row.missed || "0", 10);
+      const tot = parseInt(row.total || "0", 10);
+      const pct = tot > 0 ? Number(((att / tot) * 100).toFixed(1)) : 100.0;
+      return {
+        subject: row.session,
+        code: row.session.split("(")[1]?.replace(")", "") || "SUBJ",
+        attended: att,
+        missed: miss,
+        total: tot,
+        percentage: pct,
+        isSafe: pct >= 75.0,
+      };
+    });
+
+    const isSchool = tenant.type === "K12_SCHOOL";
+    const attendanceMode: "DAILY" | "SUBJECT" = isSchool ? "DAILY" : "SUBJECT";
 
     // Real chronological attendance logs
     const logsRes = await query<{
@@ -345,9 +394,9 @@ export async function getStudentDashboardAction(studentId?: string): Promise<{
 
     const recentLogs: StudentAttendanceLog[] = logsRes.rows.map((r) => ({
       date: r.date,
-      code: r.code,
+      code: r.code === "A" ? "A" : "P",
       session: r.session || "Full Day",
-      reason: r.reason || "Regular Session Roll Call",
+      reason: r.reason || "Roll Call",
       source: r.source || "MANUAL",
     }));
 
@@ -386,12 +435,15 @@ export async function getStudentDashboardAction(studentId?: string): Promise<{
     }));
 
     const attendance: StudentAttendanceSummary = {
+      attendanceMode,
       presentCount,
+      absentCount,
       totalCount,
       percentage: attPct,
       isSafe: attPct >= 75.0,
       recentLogs,
       leaveRequests,
+      subjectWise,
     };
 
     // 4. Fetch real Fee Invoices & Receipts with overdue calculation

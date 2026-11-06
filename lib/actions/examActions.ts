@@ -393,8 +393,7 @@ export async function getRealHallTicketsAction(): Promise<{ success: boolean; ha
       `SELECT s.id, s.admission_no, s.roll_no, s.first_name, s.last_name,
               c.name AS class_name, sec.name AS section_name,
               COALESCE(SUM(CASE 
-                WHEN ar.code IN ('P', 'OD', 'L', 'LC') THEN 1.0 
-                WHEN ar.code = 'HD' THEN 0.5 
+                WHEN ar.code = 'P' THEN 1.0 
                 ELSE 0.0 
               END), 0) AS present_count,
               COUNT(ar.id) AS total_count

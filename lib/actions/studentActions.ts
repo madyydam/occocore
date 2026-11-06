@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 
 export interface StudentInputPayload {
   admissionNo: string;
-  rollNo?: number;
+  rollNo?: string | number;
   firstName: string;
   lastName: string;
   gender?: "MALE" | "FEMALE" | "OTHER";
@@ -69,7 +69,7 @@ export async function quickAddStudentAction(data: StudentInputPayload) {
       return { success: false, error: "No class section available in the database. Please initialize classes first." };
     }
 
-    const rollNo = Number(data.rollNo) || null;
+    const rollNo = data.rollNo !== undefined && data.rollNo !== null ? String(data.rollNo).trim() : null;
     const dob = data.dob || "2011-05-15";
     const gender = data.gender || "MALE";
 
@@ -177,7 +177,7 @@ export async function bulkImportStudentsAction(students: StudentInputPayload[]) 
       const st = students[i];
       if (!st.admissionNo || !st.firstName) continue;
 
-      const rollNo = Number(st.rollNo) || null;
+      const rollNo = st.rollNo !== undefined && st.rollNo !== null ? String(st.rollNo).trim() : null;
       const dob = st.dob || "2011-05-15";
       const gender = st.gender || "MALE";
       const targetSectionId = st.sectionId || defaultSectionId;

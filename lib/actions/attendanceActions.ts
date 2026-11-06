@@ -5,9 +5,19 @@ import { revalidatePath } from "next/cache";
 
 export interface AttendanceRecordPayload {
   studentId: string;
-  code: string;
+  code: "P" | "A";
   reason?: string;
   source?: string;
+}
+
+export interface SubjectAttendanceItem {
+  subject: string;
+  code: string;
+  attended: number;
+  missed: number;
+  total: number;
+  percentage: number;
+  isShortfall: boolean;
 }
 
 export interface RealLeaveRequest {
@@ -96,7 +106,7 @@ export async function getAttendanceRosterAction(dateStr: string, sessionStr: str
       total_count: string;
     }>(
       `SELECT student_id,
-              COUNT(*) FILTER (WHERE code IN ('P', 'L', 'HD', 'OD'))::text AS present_count,
+              COUNT(*) FILTER (WHERE code = 'P')::text AS present_count,
               COUNT(*)::text AS total_count
        FROM attendance_records
        WHERE tenant_id = $1
@@ -113,6 +123,8 @@ export async function getAttendanceRosterAction(dateStr: string, sessionStr: str
       const pres = parseInt(stStats?.present_count || "0", 10);
       const tot = parseInt(stStats?.total_count || "0", 10);
 
+      const code: "P" | "A" = rec ? (rec.code === "A" ? "A" : "P") : "P";
+
       return {
         id: s.id,
         rollNo: s.roll_no || 0,
@@ -120,14 +132,14 @@ export async function getAttendanceRosterAction(dateStr: string, sessionStr: str
         name: `${s.first_name} ${s.last_name}`,
         guardianName: s.guardian_name || "Parent/Guardian",
         guardianPhone: s.emergency_phone || "Unrecorded",
-        todayCode: rec ? rec.code : "P",
+        todayCode: code,
         todaySource: ((rec?.source as "Manual Teacher" | "Biometric" | "RFID Turnstile" | "Approved Leave") || "Manual Teacher"),
         timeLogged: rec ? new Date(rec.updated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Unmarked",
         monthPresentDays: pres,
         monthTotalDays: tot,
         yearPresentDays: pres,
         yearTotalDays: tot,
-        lastFiveDays: rec ? [rec.code] : [],
+        lastFiveDays: rec ? [code] : [],
         reasonNote: rec?.reason || undefined,
         archetype: "K12_SCHOOL" as const,
       };
@@ -412,9 +424,7 @@ export async function getMonthlyMusterAction(year: number, month: number) {
 
       for (let d = 1; d <= daysInMonth; d++) {
         const mark = dailyMarks[d];
-        if (mark === "P" || mark === "OD" || mark === "LC") presentCount += 1.0;
-        else if (mark === "L") presentCount += 1.0;
-        else if (mark === "HD") presentCount += 0.5;
+        if (mark === "P") presentCount += 1.0;
         else if (mark === "A") absentCount += 1.0;
       }
 
@@ -475,5 +485,64 @@ export async function saveCondonationCaseAction(studentId: string, reason: strin
   } catch (error) {
     console.error("Failed to save condonation case to PostgreSQL:", error);
     return { success: false, error: String(error) };
+  }
+}
+
+export async function getSubjectAttendanceSummaryAction(studentId?: string): Promise<{
+  success: boolean;
+  subjects: SubjectAttendanceItem[];
+}> {
+  try {
+    const tenantRes = await query<{ id: string }>(
+      `SELECT id FROM tenants WHERE slug = $1 LIMIT 1`,
+      ["apexacademy"]
+    );
+    if (tenantRes.rows.length === 0) return { success: false, subjects: [] };
+    const tenantId = tenantRes.rows[0].id;
+
+    const params: unknown[] = [tenantId];
+    let studentFilter = "";
+    if (studentId) {
+      params.push(studentId);
+      studentFilter = "AND student_id = $2";
+    }
+
+    const res = await query<{
+      session: string;
+      attended: string;
+      missed: string;
+      total: string;
+    }>(
+      `SELECT session,
+              COUNT(*) FILTER (WHERE code = 'P')::text AS attended,
+              COUNT(*) FILTER (WHERE code = 'A')::text AS missed,
+              COUNT(*)::text AS total
+       FROM attendance_records
+       WHERE tenant_id = $1 AND session != 'Full Day' AND session != 'Morning' ${studentFilter}
+       GROUP BY session
+       ORDER BY session ASC`,
+      params
+    );
+
+    const subjects: SubjectAttendanceItem[] = res.rows.map((row) => {
+      const att = parseInt(row.attended || "0", 10);
+      const miss = parseInt(row.missed || "0", 10);
+      const tot = parseInt(row.total || "0", 10);
+      const pct = tot > 0 ? Number(((att / tot) * 100).toFixed(1)) : 100.0;
+      return {
+        subject: row.session,
+        code: row.session.split("(")[1]?.replace(")", "") || "SUBJ",
+        attended: att,
+        missed: miss,
+        total: tot,
+        percentage: pct,
+        isShortfall: pct < 75.0,
+      };
+    });
+
+    return { success: true, subjects };
+  } catch (error) {
+    console.error("Failed to load subject attendance summary:", error);
+    return { success: false, subjects: [] };
   }
 }

@@ -11,6 +11,9 @@ import {
   Lock,
   Palette,
   Check,
+  Hash,
+  Sliders,
+  Layers,
 } from "lucide-react";
 import { InstitutionalArchetype, ARCHETYPES } from "@/lib/terminology";
 import { useAdmin } from "@/lib/admin/adminContext";
@@ -18,8 +21,16 @@ import {
   getTenantSettingsAction,
   updateTenantSettingsAction,
   verifyTenantDomainAction,
+  updateIdNumberingConfigAction,
+  applyIdNumberingToExistingStudentsAction,
   TenantDomainRecord,
 } from "@/lib/actions/settingActions";
+import {
+  buildPrnString,
+  buildRollNoString,
+  DEFAULT_ID_NUMBERING_CONFIG,
+  IdNumberingFormatConfig,
+} from "@/lib/utils/idFormatUtils";
 
 interface SettingsViewProps {
   archetype: InstitutionalArchetype;
@@ -47,6 +58,14 @@ export default function SettingsView({ archetype }: SettingsViewProps) {
   // Branding motto
   const [brandMotto, setBrandMotto] = useState("Excellence in Knowledge and Virtue");
 
+  // ID Numbering Formats (Roll Number & PRN)
+  const [idConfig, setIdConfig] = useState<IdNumberingFormatConfig>(DEFAULT_ID_NUMBERING_CONFIG);
+  const [isApplyingIds, setIsApplyingIds] = useState(false);
+  const [appliedResults, setAppliedResults] = useState<{
+    count: number;
+    samples: { admissionNo: string; oldRoll: string; newRoll: string; oldPrn: string; newPrn: string }[];
+  } | null>(null);
+
   const triggerToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(""), 3500);
@@ -68,6 +87,7 @@ export default function SettingsView({ archetype }: SettingsViewProps) {
         if (d.primaryColor) setBrandColor(d.primaryColor);
         if (d.executiveHead) setExecutiveHead(d.executiveHead);
         if (d.registeredAddress) setRegisteredAddress(d.registeredAddress);
+        if (d.idNumberingConfig) setIdConfig(d.idNumberingConfig);
         setIsDnsVerified(d.domainVerified);
         if (d.domains) setDomainsList(d.domains);
       })
@@ -140,9 +160,47 @@ export default function SettingsView({ archetype }: SettingsViewProps) {
     }
   };
 
+  const handleSaveIdConfig = async () => {
+    setIsSaving(true);
+    try {
+      const res = await updateIdNumberingConfigAction({ config: idConfig });
+      setIsSaving(false);
+      if (res.success) {
+        triggerToast("Saved custom Roll No & PRN formatting successfully.");
+      } else {
+        triggerToast("Failed to save format: " + res.error);
+      }
+    } catch (err) {
+      setIsSaving(false);
+      triggerToast("Error saving format: " + String(err));
+    }
+  };
+
+  const handleApplyToAllStudents = async () => {
+    setIsApplyingIds(true);
+    try {
+      await updateIdNumberingConfigAction({ config: idConfig });
+      const res = await applyIdNumberingToExistingStudentsAction("apexacademy");
+      setIsApplyingIds(false);
+      if (res.success) {
+        setAppliedResults({
+          count: res.updatedCount,
+          samples: res.previewSamples,
+        });
+        triggerToast(`Applied format & updated ${res.updatedCount} students in database!`);
+      } else {
+        triggerToast("Failed to apply formatting: " + res.error);
+      }
+    } catch (err) {
+      setIsApplyingIds(false);
+      triggerToast("Error applying formats: " + String(err));
+    }
+  };
+
   const isBrandingTab = activeSubTab === "branding_theme";
   const isCnameTab = activeSubTab === "subdomain_cname";
   const isDpdpaTab = activeSubTab === "dpdpa_vault";
+  const isNumberingTab = activeSubTab === "id_numbering_formats";
 
   return (
     <div className="space-y-5 animate-in fade-in duration-200">
@@ -361,9 +419,392 @@ export default function SettingsView({ archetype }: SettingsViewProps) {
         )}
 
         {/* ══════════════════════════════════════════════════════════════════════
+            SUB-TAB: CUSTOMIZABLE ROLL NO & PRN FORMATS
+        ══════════════════════════════════════════════════════════════════════ */}
+        {isNumberingTab && (
+          <div className="space-y-5">
+            <div className="bg-white rounded-3xl p-6 shadow-xs border border-slate-100 space-y-5">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
+                    <Hash className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-sm">
+                      Roll Number &amp; Permanent Registration Number (PRN) Customizer
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Define the exact statutory and institutional naming structure for student identifiers. Select which segments are fixed, dynamic tokens, separators, and sequence padding.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleSaveIdConfig}
+                  disabled={isSaving}
+                  style={{ backgroundColor: theme.primary }}
+                  className="px-4 py-2 rounded-xl text-white font-bold text-xs hover:opacity-90 transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+                >
+                  {isSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                  <span>{isSaving ? "Saving..." : "Save Formats"}</span>
+                </button>
+              </div>
+
+              {/* Grid with 2 Customizer Cards */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 text-xs">
+                {/* CARD 1: UNIVERSITY PRN FORMAT */}
+                <div className="p-5 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                      <Layers className="w-4 h-4 text-indigo-600" />
+                      <span>1. University PRN Number Format</span>
+                    </span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold">
+                      Permanent ID
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Fixed Institutional Prefix</label>
+                      <input
+                        type="text"
+                        value={idConfig.prn.prefix}
+                        onChange={(e) =>
+                          setIdConfig({
+                            ...idConfig,
+                            prn: { ...idConfig.prn, prefix: e.target.value.toUpperCase() },
+                          })
+                        }
+                        placeholder="e.g. PRN or UNIV"
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-mono font-bold text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Delimiter / Separator</label>
+                      <select
+                        value={idConfig.prn.separator}
+                        onChange={(e) =>
+                          setIdConfig({
+                            ...idConfig,
+                            prn: { ...idConfig.prn, separator: e.target.value },
+                          })
+                        }
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-mono font-bold text-xs cursor-pointer"
+                      >
+                        <option value="/">Slash ( / )</option>
+                        <option value="-">Hyphen ( - )</option>
+                        <option value=".">Dot ( . )</option>
+                        <option value="">None (Concatenated)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700 pt-1">
+                        <input
+                          type="checkbox"
+                          checked={idConfig.prn.includeYear}
+                          onChange={(e) =>
+                            setIdConfig({
+                              ...idConfig,
+                              prn: { ...idConfig.prn, includeYear: e.target.checked },
+                            })
+                          }
+                          className="rounded border-slate-300 text-blue-600"
+                        />
+                        <span>Include Academic Year</span>
+                      </label>
+                      {idConfig.prn.includeYear && (
+                        <div className="flex items-center gap-2 pl-5 pt-1">
+                          <label className="flex items-center gap-1 text-[11px] cursor-pointer">
+                            <input
+                              type="radio"
+                              name="yearFormat"
+                              checked={idConfig.prn.yearFormat === "YYYY"}
+                              onChange={() =>
+                                setIdConfig({
+                                  ...idConfig,
+                                  prn: { ...idConfig.prn, yearFormat: "YYYY" },
+                                })
+                              }
+                            />
+                            <span>2026 (4-digit)</span>
+                          </label>
+                          <label className="flex items-center gap-1 text-[11px] cursor-pointer">
+                            <input
+                              type="radio"
+                              name="yearFormat"
+                              checked={idConfig.prn.yearFormat === "YY"}
+                              onChange={() =>
+                                setIdConfig({
+                                  ...idConfig,
+                                  prn: { ...idConfig.prn, yearFormat: "YY" },
+                                })
+                              }
+                            />
+                            <span>26 (2-digit)</span>
+                          </label>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Sequence Digits</label>
+                      <select
+                        value={idConfig.prn.seqDigits}
+                        onChange={(e) =>
+                          setIdConfig({
+                            ...idConfig,
+                            prn: { ...idConfig.prn, seqDigits: Number(e.target.value) },
+                          })
+                        }
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-mono font-bold text-xs cursor-pointer"
+                      >
+                        <option value={3}>3 Digits (001 - 999)</option>
+                        <option value={4}>4 Digits (0001 - 9999)</option>
+                        <option value={5}>5 Digits (00001 - 99999)</option>
+                        <option value={6}>6 Digits (000001 - 999999)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700 mb-1">
+                      <input
+                        type="checkbox"
+                        checked={idConfig.prn.includeDept}
+                        onChange={(e) =>
+                          setIdConfig({
+                            ...idConfig,
+                            prn: { ...idConfig.prn, includeDept: e.target.checked },
+                          })
+                        }
+                        className="rounded border-slate-300 text-blue-600"
+                      />
+                      <span>Include Department / Program Code (e.g. CSE, ECE, MED)</span>
+                    </label>
+                  </div>
+
+                  {/* Live PRN Preview Box */}
+                  <div className="p-3.5 rounded-xl bg-white border border-indigo-200 space-y-1">
+                    <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider block">
+                      Live Generated PRN Sample:
+                    </span>
+                    <div className="text-sm font-mono font-extrabold text-slate-900 tracking-wider">
+                      {buildPrnString(idConfig.prn, { year: 2026, dept: "CSE", seq: 1 })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* CARD 2: STUDENT ROLL NUMBER FORMAT */}
+                <div className="p-5 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                      <Sliders className="w-4 h-4 text-emerald-600" />
+                      <span>2. Student Roll Number Format</span>
+                    </span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
+                      Class / Exam Seat
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Numbering Mode</label>
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setIdConfig({
+                            ...idConfig,
+                            rollNo: { ...idConfig.rollNo, mode: "NUMERIC" },
+                          })
+                        }
+                        className={`p-2.5 rounded-xl border text-left cursor-pointer transition-all ${
+                          idConfig.rollNo.mode === "NUMERIC"
+                            ? "bg-white border-blue-600 ring-2 ring-blue-500/20 shadow-xs"
+                            : "bg-white/60 border-slate-200 hover:bg-white"
+                        }`}
+                      >
+                        <span className="font-bold text-slate-900 block text-xs">Simple Numeric</span>
+                        <span className="text-[10px] text-slate-500 block">Sequential: 1, 2, 3, 4...</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setIdConfig({
+                            ...idConfig,
+                            rollNo: { ...idConfig.rollNo, mode: "FORMATTED" },
+                          })
+                        }
+                        className={`p-2.5 rounded-xl border text-left cursor-pointer transition-all ${
+                          idConfig.rollNo.mode === "FORMATTED"
+                            ? "bg-white border-blue-600 ring-2 ring-blue-500/20 shadow-xs"
+                            : "bg-white/60 border-slate-200 hover:bg-white"
+                        }`}
+                      >
+                        <span className="font-bold text-slate-900 block text-xs">Formatted Alphanumeric</span>
+                        <span className="text-[10px] text-slate-500 block">Structured with Prefix &amp; Padding</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {idConfig.rollNo.mode === "FORMATTED" && (
+                    <div className="space-y-3 pt-1 border-t border-slate-200/60 animate-in fade-in">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="font-bold text-slate-700 block mb-1">Fixed Prefix</label>
+                          <input
+                            type="text"
+                            value={idConfig.rollNo.prefix}
+                            onChange={(e) =>
+                              setIdConfig({
+                                ...idConfig,
+                                rollNo: { ...idConfig.rollNo, prefix: e.target.value.toUpperCase() },
+                              })
+                            }
+                            placeholder="e.g. ROLL or SEAT"
+                            className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="font-bold text-slate-700 block mb-1">Delimiter</label>
+                          <select
+                            value={idConfig.rollNo.separator}
+                            onChange={(e) =>
+                              setIdConfig({
+                                ...idConfig,
+                                rollNo: { ...idConfig.rollNo, separator: e.target.value },
+                              })
+                            }
+                            className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-mono font-bold text-xs cursor-pointer"
+                          >
+                            <option value="/">Slash ( / )</option>
+                            <option value="-">Hyphen ( - )</option>
+                            <option value=".">Dot ( . )</option>
+                            <option value="">None</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="font-bold text-slate-700 block mb-1">Sequence Digits</label>
+                          <select
+                            value={idConfig.rollNo.seqDigits}
+                            onChange={(e) =>
+                              setIdConfig({
+                                ...idConfig,
+                                rollNo: { ...idConfig.rollNo, seqDigits: Number(e.target.value) },
+                              })
+                            }
+                            className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-mono font-bold text-xs cursor-pointer"
+                          >
+                            <option value={2}>2 Digits (01 - 99)</option>
+                            <option value={3}>3 Digits (001 - 999)</option>
+                            <option value={4}>4 Digits (0001 - 9999)</option>
+                          </select>
+                        </div>
+
+                        <div className="pt-5">
+                          <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700">
+                            <input
+                              type="checkbox"
+                              checked={idConfig.rollNo.includeCohort}
+                              onChange={(e) =>
+                                setIdConfig({
+                                  ...idConfig,
+                                  rollNo: { ...idConfig.rollNo, includeCohort: e.target.checked },
+                                })
+                              }
+                              className="rounded border-slate-300 text-blue-600"
+                            />
+                            <span>Include Cohort / Section</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Live Roll No Preview Box */}
+                  <div className="p-3.5 rounded-xl bg-white border border-emerald-200 space-y-1">
+                    <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block">
+                      Live Generated Roll Number Sample:
+                    </span>
+                    <div className="text-sm font-mono font-extrabold text-slate-900 tracking-wider">
+                      {buildRollNoString(idConfig.rollNo, { year: 2026, cohort: "10-A", seq: 1 })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Bar: Apply to All Enrolled Students */}
+              <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="text-xs text-slate-500">
+                  <span>Batch Operations: Update student database records to conform to newly saved scheme.</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleApplyToAllStudents}
+                  disabled={isApplyingIds}
+                  className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all shadow-sm flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {isApplyingIds ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-amber-400" />}
+                  <span>{isApplyingIds ? "Applying to Database..." : "Apply & Generate for All Enrolled Students"}</span>
+                </button>
+              </div>
+
+              {/* Sample Updated Table Preview */}
+              {appliedResults && (
+                <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-3 animate-in fade-in">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-emerald-900 text-xs flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Successfully Updated {appliedResults.count} Student Records in PostgreSQL</span>
+                    </span>
+                    <span className="text-[10px] font-mono font-bold text-emerald-700">Live Database Synced</span>
+                  </div>
+
+                  <div className="overflow-x-auto rounded-xl border border-emerald-200 bg-white">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 border-b border-emerald-100 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                        <tr>
+                          <th className="py-2 px-3">Admission No</th>
+                          <th className="py-2 px-3">Old Roll No</th>
+                          <th className="py-2 px-3">Updated Roll No</th>
+                          <th className="py-2 px-3">Old PRN</th>
+                          <th className="py-2 px-3">Updated PRN Number</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
+                        {appliedResults.samples.map((s, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50">
+                            <td className="py-2 px-3 font-bold text-slate-900">{s.admissionNo}</td>
+                            <td className="py-2 px-3 text-slate-400 line-through">{s.oldRoll}</td>
+                            <td className="py-2 px-3 font-bold text-emerald-700">{s.newRoll}</td>
+                            <td className="py-2 px-3 text-slate-400 line-through">{s.oldPrn}</td>
+                            <td className="py-2 px-3 font-bold text-indigo-700">{s.newPrn}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════════════
             DEFAULT SUB-TAB: INSTITUTE LEGAL PROFILE & ACCREDITATION
         ══════════════════════════════════════════════════════════════════════ */}
-        {(!isBrandingTab && !isCnameTab && !isDpdpaTab) && (
+        {(!isBrandingTab && !isCnameTab && !isDpdpaTab && !isNumberingTab) && (
           <div className="bg-white rounded-3xl p-6 shadow-xs border border-slate-100 space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
               <Building2 className="w-4 h-4 text-blue-700" />

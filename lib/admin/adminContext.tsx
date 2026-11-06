@@ -183,9 +183,10 @@ export const MODULE_SUBTABS: Record<AdminMainModule, SubModuleTab[]> = {
   ],
   settings: [
     { id: "institute_profile", label: "Institute Profile" },
+    { id: "id_numbering_formats", label: "Roll No & PRN Formats" },
     { id: "branding_theme", label: "Branding & Live Theme" },
     { id: "subdomain_cname", label: "Subdomain & CNAME DNS" },
-    { id: "dpdpa_vault", label: "DPDPA 2023 Consent Vault" },
+    { id: "dpdpa_vault", label: "Data Privacy & Governance" },
   ],
   library: [
     { id: "catalog", label: "Book Catalog & RFID" },

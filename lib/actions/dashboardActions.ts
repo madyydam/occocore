@@ -48,11 +48,10 @@ export async function getDashboardOverviewStatsAction(
     );
     const pendingCount = parseInt(pendingRes.rows[0]?.count || "0", 10);
 
-    // 3. Real Aggregate Attendance Rate (using valid code column & weighted presence)
+    // 3. Real Aggregate Attendance Rate (strictly P = 100%, A = 0%)
     const attRes = await query<{ rate: string | null }>(
       `SELECT ROUND(AVG(CASE 
-                WHEN code IN ('P', 'L', 'LC', 'OD') THEN 100.0 
-                WHEN code = 'HD' THEN 50.0 
+                WHEN code = 'P' THEN 100.0 
                 ELSE 0.0 
               END), 1) as rate
        FROM attendance_records

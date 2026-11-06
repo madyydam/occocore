@@ -193,10 +193,10 @@ export default function EnrollStudentModal({ isOpen, onClose, onSuccess }: Enrol
               <div className="space-y-1">
                 <label className="font-bold text-slate-700">Roll Number</label>
                 <input
-                  type="number"
+                  type="text"
                   value={singleStudent.rollNo || ""}
-                  onChange={(e) => setSingleStudent({ ...singleStudent, rollNo: parseInt(e.target.value, 10) || undefined })}
-                  placeholder="e.g. 1"
+                  onChange={(e) => setSingleStudent({ ...singleStudent, rollNo: e.target.value })}
+                  placeholder="e.g. 1 or ROLL/001"
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
                 />
               </div>
