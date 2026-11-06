@@ -8,6 +8,8 @@ import {
   updateLeaveStatusAction,
   getBiometricDevicesAction,
   saveCondonationCaseAction,
+  getMonthlyMusterAction,
+  type MusterStudentRow,
 } from "@/lib/actions/attendanceActions";
 import EnrollStudentModal from "./EnrollStudentModal";
 import {
@@ -209,6 +211,11 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
   const [toastMessage, setToastMessage] = useState("");
   const [undoSnapshot, setUndoSnapshot] = useState<StudentRosterRecord[] | null>(null);
 
+  // Monthly muster state — loaded from PostgreSQL when "registers" sub-tab is active
+  const [musterData, setMusterData] = useState<MusterStudentRow[]>([]);
+  const [musterDaysInMonth, setMusterDaysInMonth] = useState<number>(30);
+  const [isLoadingMuster, setIsLoadingMuster] = useState<boolean>(false);
+
   // Modals & Drawers
   const [reasonDrawerStudent, setReasonDrawerStudent] = useState<StudentRosterRecord | null>(null);
   const [reasonCategory, setReasonCategory] = useState("Medical / Illness");
@@ -341,6 +348,29 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
       isMounted = false;
     };
   }, [selectedDate, selectedSession, isDemoMode]);
+
+  // Load monthly muster from PostgreSQL when "registers" tab becomes active.
+  // Per React 19 rules: setMusterData is only called inside async .then() callbacks,
+  // never synchronously in the effect body itself.
+  useEffect(() => {
+    if (isDemoMode || activeSubTab !== "registers") return;
+    let isMounted = true;
+    const now = new Date();
+    getMonthlyMusterAction(now.getFullYear(), now.getMonth() + 1)
+      .then((res) => {
+        if (!isMounted) return;
+        if (res.success) {
+          setMusterData(res.students);
+          setMusterDaysInMonth(res.daysInMonth);
+        }
+        setIsLoadingMuster(false);
+      })
+      .catch((err) => {
+        console.error("Error loading muster from PostgreSQL:", err);
+        if (isMounted) setIsLoadingMuster(false);
+      });
+    return () => { isMounted = false; };
+  }, [activeSubTab, isDemoMode]);
 
   // ══════════════════════════════════════════════════════════════════════════
   // CALCULATIONS FOLLOWING METRIC DICTIONARY (PRD SECTION 7.2)
@@ -1046,6 +1076,22 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
                 </tbody>
               </table>
             </div>
+
+            {/* Print-only signature block — hidden in browser UI via CSS */}
+            <div className="print-signature-block hidden mt-8">
+              <div>
+                <div className="sig-line">Class Teacher Signature</div>
+              </div>
+              <div>
+                <div className="sig-line">Subject Teacher Signature</div>
+              </div>
+              <div>
+                <div className="sig-line">Vice-Principal Verification</div>
+              </div>
+              <div>
+                <div className="sig-line">Principal Sign &amp; Stamp</div>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -1125,15 +1171,22 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
             </div>
           </div>
 
-          {/* Classic Monthly Register Grid (Students as Rows, Days 1-30 as Columns) */}
-          <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          {/* Classic Monthly Register Grid (Students as Rows, Days 1-N as Columns) */}
+          <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-4 print-muster-section">
+            {/* Print-only institution header — hidden in browser UI via CSS */}
+            <div className="print-header hidden">
+              <h1>Official Monthly Attendance Register</h1>
+              <p>Apex International Global Academy · {selectedCohort} · {selectedRegisterMonth}</p>
+              <p>Academic Session: {selectedAcademicYear} · Term: {selectedTerm}</p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 no-print">
               <div>
                 <h3 className="text-base font-extrabold text-slate-900 font-serif">
                   Official Attendance Register · {selectedRegisterMonth}
                 </h3>
                 <p className="text-xs text-slate-500">
-                  {selectedCohort} · Total Possible Working Days: 24 · Click any cell to inspect audit history
+                  {selectedCohort} · Working Days in Month: {musterDaysInMonth} · Click any cell to inspect audit history
                 </p>
               </div>
 
@@ -1159,23 +1212,18 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
 
             {/* Scrollable Register Grid Table */}
             <div className="overflow-x-auto">
-              <table className="w-full text-center text-xs border-collapse">
+              <table className="w-full text-center text-xs border-collapse print-muster-table">
                 <thead>
                   <tr className="border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase bg-slate-50">
                     <th className="py-2.5 px-3 text-left sticky left-0 bg-slate-50 z-10 w-44">
                       Scholar Name / Roll
                     </th>
-                    {/* Days 1 to 30 */}
-                    {Array.from({ length: 30 }, (_, i) => i + 1).map((day) => {
-                      const isSunday = day % 7 === 1; // Sundays simulation
-                      const isDiwaliHoliday = day === 12 || day === 13;
-
+                    {/* Days 1 to N (real days in month from PostgreSQL) */}
+                    {Array.from({ length: musterDaysInMonth }, (_, i) => i + 1).map((day) => {
                       return (
                         <th
                           key={day}
-                          className={`py-2 px-1 w-7 text-center font-mono ${
-                            isSunday ? "bg-slate-200/70 text-slate-600" : isDiwaliHoliday ? "bg-purple-100/60 text-purple-700" : ""
-                          }`}
+                          className="py-2 px-1 w-7 text-center font-mono"
                         >
                           {day}
                         </th>
@@ -1189,7 +1237,7 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {isLoadingRealData ? (
+                  {isLoadingMuster ? (
                     <tr>
                       <td colSpan={36} className="py-12 text-center">
                         <div className="flex flex-col items-center justify-center space-y-2">
@@ -1198,87 +1246,63 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
                         </div>
                       </td>
                     </tr>
-                  ) : roster.length === 0 ? (
+                  ) : musterData.length === 0 && !isLoadingMuster ? (
                     <tr>
                       <td colSpan={36} className="py-12 text-center text-slate-400 text-xs font-medium">
-                        No attendance muster records found for this academic period.
+                        No muster records found for this month. Mark attendance in Daily Roll Call first.
                       </td>
                     </tr>
                   ) : (
-                    roster.map((st) => {
-                    const isBelow75 = (st.monthPresentDays / st.monthTotalDays) * 100 < 75.0;
+                    musterData.map((st) => {
+                    const isBelow75 = st.percentage < 75.0;
 
                     return (
-                      <tr key={st.id} className="hover:bg-slate-50/60 transition-colors">
+                      <tr key={st.id} className="hover:bg-slate-50/60 transition-colors print-row">
                         {/* Sticky Student Name */}
                         <td className="py-2 px-3 text-left sticky left-0 bg-white z-10 font-bold text-slate-800 truncate shadow-xs">
                           <span className="text-slate-400 font-mono text-[10px] pr-1.5">{st.rollNo}.</span>
-                          <span
-                            onClick={() => setStudent360Dossier(st)}
-                            className="hover:underline cursor-pointer"
-                          >
-                            {st.name}
-                          </span>
+                          {st.name}
                         </td>
 
-                        {/* Days 1 to 30 cells */}
-                        {Array.from({ length: 30 }, (_, i) => i + 1).map((day) => {
-                          const isSunday = day % 7 === 1;
-                          const isDiwali = day === 12 || day === 13;
-                          let dayCode: AttendanceCode = "P";
-
-                          if (isSunday || isDiwali) {
-                            dayCode = "H";
-                          } else if (st.id === "st-3" && day >= 1 && day <= 5) {
-                            dayCode = "ML";
-                          } else if (st.id === "st-6" && (day === 2 || day === 6 || day === 9 || day === 16 || day === 23)) {
-                            dayCode = "A";
-                          } else if (st.id === "st-5" && (day === 4 || day === 18)) {
-                            dayCode = "L";
-                          } else if (st.id === "st-7" && day >= 2 && day <= 4) {
-                            dayCode = "OD";
-                          }
-
-                          const r = ATTENDANCE_CODES[dayCode];
+                        {/* Days 1 to N cells from real PostgreSQL data */}
+                        {Array.from({ length: musterDaysInMonth }, (_, i) => i + 1).map((day) => {
+                          const dayCode = (st.dailyMarks[day] || "—") as AttendanceCode | "—";
+                          const r = dayCode !== "—" ? ATTENDANCE_CODES[dayCode as AttendanceCode] : null;
 
                           return (
                             <td
                               key={day}
                               onClick={() =>
-                                setRegisterCellAudit({
-                                  student: st,
+                                r && setRegisterCellAudit({
+                                  student: { ...st, todayCode: dayCode as AttendanceCode, todaySource: "Manual Teacher", timeLogged: "08:15 AM", monthPresentDays: st.presentDays, monthTotalDays: musterDaysInMonth, yearPresentDays: st.presentDays, yearTotalDays: musterDaysInMonth, lastFiveDays: ["P", "P", "P", "P", "P"], guardianName: "Guardian", guardianPhone: "", archetype: "K12_SCHOOL" },
                                   day,
-                                  code: dayCode,
-                                  source: dayCode === "ML" ? "Approved Medical Leave Slip" : dayCode === "H" ? "Institutional Holiday Calendar" : "RFID Turnstile #1",
-                                  timestamp: "08:14 AM",
+                                  code: dayCode as AttendanceCode,
+                                  source: "Attendance Register",
+                                  timestamp: "08:15 AM",
                                 })
                               }
                               className={`py-1.5 px-0.5 text-[10px] font-mono font-bold cursor-pointer transition-transform hover:scale-110 ${
-                                isSunday
-                                  ? "bg-slate-100 text-slate-400"
-                                  : isDiwali
-                                  ? "bg-purple-50 text-purple-600"
-                                  : r.badgeBg + " " + r.badgeText
+                                r ? r.badgeBg + " " + r.badgeText : "bg-slate-50 text-slate-300"
                               }`}
                             >
-                              {isSunday ? "—" : dayCode}
+                              {dayCode}
                             </td>
                           );
                         })}
 
                         {/* Summary Totals */}
                         <td className="py-2 px-2 font-mono font-bold text-emerald-700 bg-emerald-50/40">
-                          {st.monthPresentDays}
+                          {st.presentDays}
                         </td>
                         <td className="py-2 px-2 font-mono font-bold text-rose-600 bg-rose-50/40">
-                          {st.monthTotalDays - st.monthPresentDays}
+                          {st.absentDays}
                         </td>
                         <td className="py-2 px-2 font-mono font-bold text-amber-700 bg-amber-50/40">
-                          {st.lastFiveDays.filter((c) => c === "L").length}
+                          —
                         </td>
                         <td className="py-2 px-2 font-mono font-black bg-slate-50">
                           <span className={isBelow75 ? "text-rose-600" : "text-emerald-700"}>
-                            {((st.monthPresentDays / st.monthTotalDays) * 100).toFixed(0)}%
+                            {st.percentage.toFixed(0)}%
                           </span>
                         </td>
                       </tr>
@@ -1287,6 +1311,22 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
                 )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Print-only signature block — hidden in browser UI via CSS */}
+            <div className="print-signature-block hidden mt-8">
+              <div>
+                <div className="sig-line">Class Teacher Signature</div>
+              </div>
+              <div>
+                <div className="sig-line">Subject Teacher Signature</div>
+              </div>
+              <div>
+                <div className="sig-line">Vice-Principal Verification</div>
+              </div>
+              <div>
+                <div className="sig-line">Principal Sign &amp; Stamp</div>
+              </div>
             </div>
           </div>
         </div>
@@ -1780,6 +1820,22 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
                 </tbody>
               </table>
             </div>
+
+            {/* Print-only signature block — hidden in browser UI via CSS */}
+            <div className="print-signature-block hidden mt-8">
+              <div>
+                <div className="sig-line">Class Teacher Signature</div>
+              </div>
+              <div>
+                <div className="sig-line">Subject Teacher Signature</div>
+              </div>
+              <div>
+                <div className="sig-line">Vice-Principal Verification</div>
+              </div>
+              <div>
+                <div className="sig-line">Principal Sign &amp; Stamp</div>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -1828,6 +1884,22 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Print-only signature block — hidden in browser UI via CSS */}
+            <div className="print-signature-block hidden mt-8">
+              <div>
+                <div className="sig-line">Class Teacher Signature</div>
+              </div>
+              <div>
+                <div className="sig-line">Subject Teacher Signature</div>
+              </div>
+              <div>
+                <div className="sig-line">Vice-Principal Verification</div>
+              </div>
+              <div>
+                <div className="sig-line">Principal Sign &amp; Stamp</div>
+              </div>
             </div>
           </div>
         </div>
@@ -2346,19 +2418,26 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
               >
                 Cancel
               </button>
-              <button
-                type="button"
+              {/* WhatsApp Web direct link — opens immediately on mobile, opens web.whatsapp.com on desktop */}
+              <a
+                href={`https://wa.me/${parentNoticeModalStudent.guardianPhone.replace(/\D/g, "")}?text=${encodeURIComponent(
+                  `Dear Parent/Guardian, This is an urgent statutory notice regarding your ward ${parentNoticeModalStudent.name} (${parentNoticeModalStudent.studentId}). Their attendance is currently ${(
+                    (parentNoticeModalStudent.yearPresentDays / parentNoticeModalStudent.yearTotalDays) * 100
+                  ).toFixed(1)}%, below the mandatory 75.0% threshold. Immediate action required. Please contact the Principal Office. - Apex International Global Academy`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 onClick={() => {
                   triggerToast(
-                    `Sent urgent WhatsApp shortfall warning notice to guardian of ${parentNoticeModalStudent.name} (${parentNoticeModalStudent.guardianPhone})`
+                    `Opening WhatsApp for guardian of ${parentNoticeModalStudent.name} (${parentNoticeModalStudent.guardianPhone})`
                   );
                   setParentNoticeModalStudent(null);
                 }}
                 className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
               >
                 <Send className="w-4 h-4" />
-                <span>Dispatch Notice Now</span>
-              </button>
+                <span>Open WhatsApp Now</span>
+              </a>
             </div>
           </div>
         </div>
