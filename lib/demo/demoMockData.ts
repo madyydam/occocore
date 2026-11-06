@@ -907,4 +907,115 @@ export const DEMO_DLT_LOGS: DemoDltSmsLog[] = [
   { id: "dlt-3", headerSenderId: "APXACD", peid: "140129384729104", templateId: "110716182930493", recipientPhone: "+91 9820123456", messageSnippet: "Paid ₹24,500 via Dynamic UPI QR for Vihaan Deshmukh. Rec #891. - APEX ACD", charCount: 71, deliveredAt: "Today • 10:46 AM", status: "DELIVERED" },
 ];
 
+export interface DemoActivityItem {
+  id: string;
+  name: string;
+  phone: string;
+  program: string;
+  timestamp: string;
+  status: "Pending" | "Confirmed" | "Collected" | "Rejected";
+  category: "admissions" | "fees" | "attendance" | "exams";
+  feeAmount?: string;
+  details?: string;
+}
+
+export const DEMO_ACTIVITIES: DemoActivityItem[] = [
+  {
+    id: "act-1",
+    name: "Raghvendra Mukhopadhyay",
+    phone: "9845497084",
+    program: "Senior Secondary • Science Major",
+    timestamp: "3 Nov 2026 • 12:00",
+    status: "Pending",
+    category: "admissions",
+    details: "Applied for CBSE Class 11 Science (PCMB) with 94.2% in Class 10 Board exams. Verification pending for TC.",
+  },
+  {
+    id: "act-2",
+    name: "Pavan Sharma",
+    phone: "9845497084",
+    program: "Term 2 Tuition & Lab Fee",
+    timestamp: "29 Oct 2026 • 11:00",
+    status: "Confirmed",
+    category: "fees",
+    feeAmount: "₹24,500",
+    details: "Paid via Dynamic UPI QR (Transaction ID: UPI/2026/982147). Automated digital invoice generated.",
+  },
+  {
+    id: "act-3",
+    name: "Swaraj Wadavale",
+    phone: "07385249974",
+    program: "Class 10-A • Term 1 Terminology Exam",
+    timestamp: "30 Sept 2026 • 11:15",
+    status: "Confirmed",
+    category: "exams",
+    details: "NEP 2020 Holistic Progress Card (HPC) generated with Grade A+ (9.2 SGPA equivalent).",
+  },
+  {
+    id: "act-4",
+    name: "Ananya Deshmukh",
+    phone: "9123456780",
+    program: "Class 9-B • Daily Roll Call",
+    timestamp: "Today • 08:30 AM",
+    status: "Collected",
+    category: "attendance",
+    details: "Biometric attendance marked present via Fingerprint Device Terminal #2. Offline log synced.",
+  },
+  {
+    id: "act-5",
+    name: "Vikramaditya Roy",
+    phone: "9988776655",
+    program: "Primary Wing • Grade 4 Admission",
+    timestamp: "Today • 09:15 AM",
+    status: "Pending",
+    category: "admissions",
+    details: "RTE 25% EWS category application. Income certificate #MH-2026-914 verified.",
+  },
+  {
+    id: "act-6",
+    name: "Kavita Reddy",
+    phone: "9765432100",
+    program: "Annual Transport & Bus Fee",
+    timestamp: "Yesterday • 04:30 PM",
+    status: "Confirmed",
+    category: "fees",
+    feeAmount: "₹18,000",
+    details: "Route 14 (South Campus Express). Paid via NetBanking.",
+  },
+];
+
+export interface DemoLibraryBook {
+  id: string;
+  title: string;
+  author: string;
+  isbn: string;
+  borrower: string;
+  due: string;
+  status: "Checked Out" | "Overdue" | "Reserved";
+}
+
+export const DEMO_LIBRARY_BOOKS: DemoLibraryBook[] = [
+  { id: "BK-101", title: "Higher Engineering Mathematics", author: "B.S. Grewal", isbn: "978-81-7409-195-5", borrower: "Aarav Sharma", due: "08 Nov 2026", status: "Checked Out" },
+  { id: "BK-102", title: "Concepts of Physics (Vol 1 & 2)", author: "H.C. Verma", isbn: "978-81-7709-187-0", borrower: "Priya Nair", due: "10 Nov 2026", status: "Checked Out" },
+  { id: "BK-103", title: "Principles of Anatomy & Physiology", author: "Tortora & Derrickson", isbn: "978-11-1970-138-5", borrower: "Kabir Khan", due: "02 Nov 2026", status: "Overdue" },
+  { id: "BK-104", title: "Organic Chemistry: Structure & Reactivity", author: "Morrison & Boyd", isbn: "978-93-3257-789-3", borrower: "Ananya Deshmukh", due: "15 Nov 2026", status: "Reserved" },
+];
+
+export interface DemoTransportRoute {
+  id: string;
+  name: string;
+  busNo: string;
+  driver: string;
+  stops: string;
+  status: string;
+  speed: string;
+}
+
+export const DEMO_TRANSPORT_ROUTES: DemoTransportRoute[] = [
+  { id: "RT-01", name: "North Ring Road Express", busNo: "MH-12-AB-4021", driver: "Ramesh Gurjar (9811223344)", stops: "7 Stops", status: "GPS Online", speed: "34 km/h" },
+  { id: "RT-02", name: "Metro Station Feeder", busNo: "KA-01-CD-8910", driver: "Mohd. Aslam (9822334455)", stops: "5 Stops", status: "GPS Online", speed: "28 km/h" },
+  { id: "RT-03", name: "South City Expressway", busNo: "AP-09-EF-3321", driver: "Gurpreet Singh (9833445566)", stops: "9 Stops", status: "Parked / Idle", speed: "0 km/h" },
+];
+
+
 

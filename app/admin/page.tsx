@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Calendar,
@@ -16,6 +16,13 @@ import {
 } from "lucide-react";
 import { useAdmin } from "@/lib/admin/adminContext";
 import { ARCHETYPES } from "@/lib/terminology";
+import { DEMO_ACTIVITIES } from "@/lib/demo/demoMockData";
+import {
+  getDashboardOverviewStatsAction,
+  getRecentDashboardActivitiesAction,
+  ActivityFeedItem,
+  DashboardMetricStats,
+} from "@/lib/actions/dashboardActions";
 
 // Sub-Module Views
 import AdmissionsView from "@/components/admin/AdmissionsView";
@@ -27,83 +34,6 @@ import CommunicationView from "@/components/admin/CommunicationView";
 import SettingsView from "@/components/admin/SettingsView";
 import AddonModulesView from "@/components/admin/AddonModulesView";
 
-interface ActivityItem {
-  id: string;
-  name: string;
-  phone: string;
-  program: string;
-  timestamp: string;
-  status: "Pending" | "Confirmed" | "Collected" | "Rejected";
-  category: "admissions" | "fees" | "attendance" | "exams";
-  feeAmount?: string;
-  details?: string;
-}
-
-const INITIAL_ACTIVITIES: ActivityItem[] = [
-  {
-    id: "act-1",
-    name: "Raghvendra Mukhopadhyay",
-    phone: "9845497084",
-    program: "Senior Secondary • Science Major",
-    timestamp: "3 Nov 2026 • 12:00",
-    status: "Pending",
-    category: "admissions",
-    details: "Applied for CBSE Class 11 Science (PCMB) with 94.2% in Class 10 Board exams. Verification pending for TC.",
-  },
-  {
-    id: "act-2",
-    name: "Pavan Sharma",
-    phone: "9845497084",
-    program: "Term 2 Tuition & Lab Fee",
-    timestamp: "29 Oct 2026 • 11:00",
-    status: "Confirmed",
-    category: "fees",
-    feeAmount: "₹24,500",
-    details: "Paid via Dynamic UPI QR (Transaction ID: UPI/2026/982147). Automated digital invoice generated.",
-  },
-  {
-    id: "act-3",
-    name: "Swaraj Wadavale",
-    phone: "07385249974",
-    program: "Class 10-A • Term 1 Terminology Exam",
-    timestamp: "30 Sept 2026 • 11:15",
-    status: "Confirmed",
-    category: "exams",
-    details: "NEP 2020 Holistic Progress Card (HPC) generated with Grade A+ (9.2 SGPA equivalent).",
-  },
-  {
-    id: "act-4",
-    name: "Ananya Deshmukh",
-    phone: "9123456780",
-    program: "Class 9-B • Daily Roll Call",
-    timestamp: "Today • 08:30 AM",
-    status: "Collected",
-    category: "attendance",
-    details: "Biometric attendance marked present via Fingerprint Device Terminal #2. Offline log synced.",
-  },
-  {
-    id: "act-5",
-    name: "Vikramaditya Roy",
-    phone: "9988776655",
-    program: "Primary Wing • Grade 4 Admission",
-    timestamp: "Today • 09:15 AM",
-    status: "Pending",
-    category: "admissions",
-    details: "RTE 25% EWS category application. Income certificate #MH-2026-914 verified.",
-  },
-  {
-    id: "act-6",
-    name: "Kavita Reddy",
-    phone: "9765432100",
-    program: "Annual Transport & Bus Fee",
-    timestamp: "Yesterday • 04:30 PM",
-    status: "Confirmed",
-    category: "fees",
-    feeAmount: "₹18,000",
-    details: "Route 14 (South Campus Express). Paid via NetBanking.",
-  },
-];
-
 export default function AdminDashboardPage() {
   const {
     activeModule,
@@ -113,6 +43,7 @@ export default function AdminDashboardPage() {
     institutionName,
     adminName,
     theme,
+    isDemoMode,
   } = useAdmin();
 
   const archetypeConfig = ARCHETYPES[currentArchetype] || ARCHETYPES.K12_SCHOOL;
@@ -120,10 +51,36 @@ export default function AdminDashboardPage() {
 
   // Search & Filter States
   const [activityCategoryFilter, setActivityCategoryFilter] = useState<string>("all");
-  const [activities, setActivities] = useState<ActivityItem[]>(INITIAL_ACTIVITIES);
+  const [activities, setActivities] = useState<ActivityFeedItem[]>([]);
+  const [dbStats, setDbStats] = useState<DashboardMetricStats | null>(null);
+
+  // Sync real database metrics & activities when not in demo mode
+  useEffect(() => {
+    if (isDemoMode) return;
+    let isMounted = true;
+    getDashboardOverviewStatsAction("apexacademy")
+      .then((res) => {
+        if (isMounted && res.success && res.data) {
+          setDbStats(res.data);
+        }
+      })
+      .catch((err) => console.warn("Failed to load dashboard stats from DB:", err));
+
+    getRecentDashboardActivitiesAction("apexacademy")
+      .then((res) => {
+        if (isMounted && res.success && res.data) {
+          setActivities(res.data);
+        }
+      })
+      .catch((err) => console.warn("Failed to load dashboard activities from DB:", err));
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isDemoMode]);
 
   // Modal States
-  const [viewItemModal, setViewItemModal] = useState<ActivityItem | null>(null);
+  const [viewItemModal, setViewItemModal] = useState<ActivityFeedItem | null>(null);
   const [isUpiModalOpen, setIsUpiModalOpen] = useState(false);
   const [upiAmount, setUpiAmount] = useState(
     currentArchetype === "K12_SCHOOL" ? "24500" : currentArchetype === "DEGREE_COLLEGE" ? "54000" : "45000"
@@ -135,6 +92,8 @@ export default function AdminDashboardPage() {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(""), 3500);
   };
+
+  const rawActivities = isDemoMode ? DEMO_ACTIVITIES : activities;
 
   // Actions on activity items
   const handleConfirmItem = (id: string, name: string) => {
@@ -152,7 +111,7 @@ export default function AdminDashboardPage() {
   };
 
   // Filtered Activities
-  const filteredActivities = activities.filter((item) => {
+  const filteredActivities = rawActivities.filter((item) => {
     return activityCategoryFilter === "all" || item.category === activityCategoryFilter;
   });
 
@@ -163,6 +122,9 @@ export default function AdminDashboardPage() {
     UNIVERSITY: { admissions: "142", pending: "14", attendance: "94.1%", collections: "₹54.2L" },
     COACHING_ACADEMY: { admissions: "64", pending: "18", attendance: "98.5%", collections: "₹12.6L" },
   }[currentArchetype];
+
+  const activeMetrics = (!isDemoMode && dbStats) ? dbStats : metricValues;
+
 
   // ══════════════════════════════════════════════════════════════════════════
   // DYNAMIC MODULE ROUTING (SIDEBAR / TOP HEADER)
@@ -269,7 +231,7 @@ export default function AdminDashboardPage() {
           </div>
           <div>
             <span className="text-2xl sm:text-3xl font-black text-slate-900 block leading-tight font-sans">
-              {metricValues.admissions}
+              {activeMetrics.admissions}
             </span>
             <span className="text-xs font-semibold text-slate-500 block">
               Today&apos;s {terms.cohortPlural} Admissions
@@ -287,7 +249,7 @@ export default function AdminDashboardPage() {
           </div>
           <div>
             <span className="text-2xl sm:text-3xl font-black text-slate-900 block leading-tight font-sans">
-              {metricValues.pending}
+              {activeMetrics.pending}
             </span>
             <span className="text-xs font-semibold text-slate-500 block">
               Pending Scrutiny
@@ -305,7 +267,7 @@ export default function AdminDashboardPage() {
           </div>
           <div>
             <span className="text-2xl sm:text-3xl font-black text-slate-900 block leading-tight font-sans">
-              {metricValues.attendance}
+              {activeMetrics.attendance}
             </span>
             <span className="text-xs font-semibold text-slate-500 block">
               Daily Roll Call Present
@@ -323,7 +285,7 @@ export default function AdminDashboardPage() {
           </div>
           <div>
             <span className="text-2xl sm:text-3xl font-black text-slate-900 block leading-tight font-sans">
-              {metricValues.collections}
+              {activeMetrics.collections}
             </span>
             <span className="text-xs font-semibold text-slate-500 block">
               Today&apos;s UPI Collections
@@ -414,7 +376,12 @@ export default function AdminDashboardPage() {
 
           {/* Activity List Rows */}
           <div className="divide-y divide-slate-100">
-            {filteredActivities.slice(0, 5).map((act) => (
+            {filteredActivities.length === 0 ? (
+              <div className="py-8 text-center text-slate-400 text-xs font-medium">
+                No recent activity records found. Activities will automatically log here in real-time as admissions, fee receipts, and exam results are recorded.
+              </div>
+            ) : (
+              filteredActivities.slice(0, 5).map((act) => (
               <div
                 key={act.id}
                 className="py-3.5 flex items-center justify-between gap-3 hover:bg-slate-50/70 rounded-xl px-2 transition-colors"
@@ -459,7 +426,7 @@ export default function AdminDashboardPage() {
                   </button>
                 </div>
               </div>
-            ))}
+            )))}
           </div>
         </div>
 

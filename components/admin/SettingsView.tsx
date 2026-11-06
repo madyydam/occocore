@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Globe,
   ShieldCheck,
@@ -10,16 +10,23 @@ import {
   Sparkles,
   Lock,
   Palette,
+  Check,
 } from "lucide-react";
 import { InstitutionalArchetype, ARCHETYPES } from "@/lib/terminology";
 import { useAdmin } from "@/lib/admin/adminContext";
+import {
+  getTenantSettingsAction,
+  updateTenantSettingsAction,
+  verifyTenantDomainAction,
+  TenantDomainRecord,
+} from "@/lib/actions/settingActions";
 
 interface SettingsViewProps {
   archetype: InstitutionalArchetype;
 }
 
 export default function SettingsView({ archetype }: SettingsViewProps) {
-  const { activeSubTab, brandColor, setBrandColor, theme } = useAdmin();
+  const { activeSubTab, brandColor, setBrandColor, theme, isDemoMode, setInstitutionName: setGlobalInstitutionName } = useAdmin();
   const archetypeConfig = ARCHETYPES[archetype] || ARCHETYPES.K12_SCHOOL;
   const terms = archetypeConfig.terms;
 
@@ -30,6 +37,12 @@ export default function SettingsView({ archetype }: SettingsViewProps) {
   const [isDnsVerified, setIsDnsVerified] = useState(true);
   const [isCheckingDns, setIsCheckingDns] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Profile details
+  const [executiveHead, setExecutiveHead] = useState("Dr. M. S. Raghavan, Ph.D.");
+  const [registeredAddress, setRegisteredAddress] = useState("Plot 42, Institutional Knowledge Park, Phase 1");
+  const [domainsList, setDomainsList] = useState<TenantDomainRecord[]>([]);
 
   // Branding motto
   const [brandMotto, setBrandMotto] = useState("Excellence in Knowledge and Virtue");
@@ -39,18 +52,92 @@ export default function SettingsView({ archetype }: SettingsViewProps) {
     setTimeout(() => setToastMessage(""), 3500);
   };
 
-  const handleVerifyDns = () => {
+  // Sync settings with PostgreSQL when not in demo mode
+  useEffect(() => {
+    if (isDemoMode) return;
+    let isMounted = true;
+    getTenantSettingsAction("apexacademy")
+      .then((res) => {
+        if (!isMounted || !res.success || !res.data) return;
+        const d = res.data;
+        if (d.name) setInstitutionName(d.name);
+        if (d.affiliationNo) setAffiliationCode(d.affiliationNo);
+        if (d.slug) setSubdomain(d.slug);
+        if (d.customDomain) setCustomCname(d.customDomain);
+        if (d.motto) setBrandMotto(d.motto);
+        if (d.primaryColor) setBrandColor(d.primaryColor);
+        if (d.executiveHead) setExecutiveHead(d.executiveHead);
+        if (d.registeredAddress) setRegisteredAddress(d.registeredAddress);
+        setIsDnsVerified(d.domainVerified);
+        if (d.domains) setDomainsList(d.domains);
+      })
+      .catch((err) => {
+        console.warn("Could not load tenant settings from DB:", err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isDemoMode, setBrandColor]);
+
+  const handleVerifyDns = async () => {
     setIsCheckingDns(true);
-    setTimeout(() => {
-      setIsCheckingDns(false);
-      setIsDnsVerified(true);
-      triggerToast(`CNAME ${customCname} verified! Cloudflare SSL certificate active.`);
-    }, 1200);
+    if (!isDemoMode) {
+      try {
+        const res = await verifyTenantDomainAction({ domain: customCname, slug: "apexacademy" });
+        setIsCheckingDns(false);
+        if (res.success) {
+          setIsDnsVerified(true);
+          triggerToast(`CNAME ${customCname} verified! Cloudflare SSL certificate active.`);
+        } else {
+          triggerToast(`Verification failed: ${res.error || "DNS records pending propagation"}`);
+        }
+      } catch (err) {
+        setIsCheckingDns(false);
+        triggerToast(`DNS verification error: ${String(err)}`);
+      }
+    } else {
+      setTimeout(() => {
+        setIsCheckingDns(false);
+        setIsDnsVerified(true);
+        triggerToast(`CNAME ${customCname} verified! Cloudflare SSL certificate active.`);
+      }, 1000);
+    }
   };
 
-  const handleSaveSettings = (e: React.FormEvent) => {
+  const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    triggerToast("Updated institutional profile and settings successfully.");
+    setIsSaving(true);
+    if (!isDemoMode) {
+      try {
+        const res = await updateTenantSettingsAction({
+          slug: "apexacademy",
+          name: institutionName,
+          affiliationNo: affiliationCode,
+          motto: brandMotto,
+          primaryColor: brandColor,
+          executiveHead,
+          registeredAddress,
+        });
+        setIsSaving(false);
+        if (res.success) {
+          if (setGlobalInstitutionName) {
+            setGlobalInstitutionName(institutionName);
+          }
+          triggerToast("Updated institutional profile and settings successfully in database.");
+        } else {
+          triggerToast(`Failed to update settings: ${res.error}`);
+        }
+      } catch (err) {
+        setIsSaving(false);
+        triggerToast(`Error updating settings: ${String(err)}`);
+      }
+    } else {
+      setTimeout(() => {
+        setIsSaving(false);
+        triggerToast("Updated institutional profile and settings successfully (Demo Mode).");
+      }, 500);
+    }
   };
 
   const isBrandingTab = activeSubTab === "branding_theme";
@@ -113,7 +200,7 @@ export default function SettingsView({ archetype }: SettingsViewProps) {
                     onChange={(e) => setBrandColor(e.target.value)}
                     className="w-32 px-3 py-2 rounded-xl border border-slate-200 font-mono text-xs uppercase"
                   />
-                  <span className="text-[11px] text-slate-500">Royal Blue (#1D4ED8 default)</span>
+                  <span className="text-[11px] text-slate-500">Royal Accent Color</span>
                 </div>
               </div>
 
@@ -144,6 +231,18 @@ export default function SettingsView({ archetype }: SettingsViewProps) {
               <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-full">
                 0ms Live Sync Active
               </span>
+            </div>
+
+            <div className="pt-2 flex items-center justify-end border-t border-slate-100">
+              <button
+                type="submit"
+                disabled={isSaving}
+                style={{ backgroundColor: theme.primary }}
+                className="px-5 py-2.5 rounded-xl text-white font-bold text-xs hover:opacity-90 transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+              >
+                {isSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                <span>{isSaving ? "Saving..." : "Save Branding"}</span>
+              </button>
             </div>
           </div>
         )}
@@ -205,6 +304,22 @@ export default function SettingsView({ archetype }: SettingsViewProps) {
                 {isDnsVerified ? "100% Verified" : "Pending DNS Propagation"}
               </span>
             </div>
+
+            {domainsList.length > 0 && (
+              <div className="pt-2">
+                <h4 className="text-xs font-bold text-slate-700 mb-2">Configured Host Domains in Database</h4>
+                <div className="divide-y divide-slate-100 border border-slate-100 rounded-2xl overflow-hidden">
+                  {domainsList.map((dom) => (
+                    <div key={dom.id} className="p-3 bg-slate-50 flex items-center justify-between text-xs">
+                      <span className="font-mono font-semibold text-slate-900">{dom.domain}</span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                        {dom.sslStatus} SSL
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -282,7 +397,8 @@ export default function SettingsView({ archetype }: SettingsViewProps) {
                 <label className="font-bold text-slate-700 block mb-1">Executive Head / {terms.leaderTitle}</label>
                 <input
                   type="text"
-                  defaultValue="Dr. M. S. Raghavan, Ph.D."
+                  value={executiveHead}
+                  onChange={(e) => setExecutiveHead(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none"
                 />
               </div>
@@ -291,7 +407,8 @@ export default function SettingsView({ archetype }: SettingsViewProps) {
                 <label className="font-bold text-slate-700 block mb-1">Registered Campus Address</label>
                 <input
                   type="text"
-                  defaultValue="Plot 42, Institutional Knowledge Park, Phase 1"
+                  value={registeredAddress}
+                  onChange={(e) => setRegisteredAddress(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none"
                 />
               </div>
@@ -300,10 +417,12 @@ export default function SettingsView({ archetype }: SettingsViewProps) {
             <div className="pt-2 flex items-center justify-end border-t border-slate-100">
               <button
                 type="submit"
+                disabled={isSaving}
                 style={{ backgroundColor: theme.primary }}
-                className="px-5 py-2.5 rounded-xl text-white font-bold text-xs hover:opacity-90 transition-all shadow-xs cursor-pointer"
+                className="px-5 py-2.5 rounded-xl text-white font-bold text-xs hover:opacity-90 transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
               >
-                Save Identity Profile
+                {isSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                <span>{isSaving ? "Saving..." : "Save Identity Profile"}</span>
               </button>
             </div>
           </div>
