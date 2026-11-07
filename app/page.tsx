@@ -123,6 +123,7 @@ export default function Home() {
   const [contactPhone, setContactPhone] = useState("");
   const [instituteType, setInstituteType] = useState("K-12 School");
   const [customScope, setCustomScope] = useState("Dedicated On-Premise / Private Cloud");
+  const [customMessage, setCustomMessage] = useState("");
 
   const handleDemoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1934,7 +1935,7 @@ export default function Home() {
       >
         <div className="max-w-2xl mx-auto w-full my-auto space-y-3">
           {/* CARD 1: CUSTOM BUILD REQUEST */}
-          <div className="p-5 sm:p-6 rounded-2xl border border-slate-200 bg-white shadow-lg space-y-4">
+          <div className="p-4 sm:p-5 rounded-2xl border border-slate-200 bg-white shadow-lg space-y-3">
             <div className="text-center space-y-1">
               <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">
                 Enterprise & Bespoke Deployments
@@ -1958,10 +1959,15 @@ export default function Home() {
                 <p className="text-[11px] text-slate-600 max-w-sm mx-auto">
                   Thank you, <strong>{instituteName}</strong>. Our enterprise engineering team will review your specifications ({customScope}) and reach out to <strong>{contactEmail}</strong> within 4 business hours.
                 </p>
+                {customMessage && (
+                  <p className="text-[10px] text-slate-500 italic max-w-sm mx-auto line-clamp-2">
+                    &ldquo;{customMessage}&rdquo;
+                  </p>
+                )}
               </div>
             ) : (
-              <form onSubmit={handleDemoSubmit} className="space-y-3 text-xs">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <form onSubmit={handleDemoSubmit} className="space-y-2.5 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <div className="space-y-1">
                     <label className="font-bold text-slate-700 block text-[11px]">
                       Institution Name
@@ -1969,10 +1975,9 @@ export default function Home() {
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Apex University"
                       value={instituteName}
                       onChange={(e) => setInstituteName(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 bg-white text-xs"
+                      className="w-full px-3 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 bg-white text-xs"
                     />
                   </div>
 
@@ -1983,7 +1988,7 @@ export default function Home() {
                     <select
                       value={instituteType}
                       onChange={(e) => setInstituteType(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 bg-white text-xs"
+                      className="w-full px-3 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 bg-white text-xs"
                     >
                       <option value="K-12 School">K-12 School (CBSE / ICSE / State)</option>
                       <option value="Degree College">Degree College (UGC / NAAC)</option>
@@ -1994,7 +1999,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <div className="space-y-1">
                     <label className="font-bold text-slate-700 block text-[11px]">
                       Official Email
@@ -2002,10 +2007,9 @@ export default function Home() {
                     <input
                       type="email"
                       required
-                      placeholder="admin@institution.edu"
                       value={contactEmail}
                       onChange={(e) => setContactEmail(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 bg-white text-xs"
+                      className="w-full px-3 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 bg-white text-xs"
                     />
                   </div>
 
@@ -2015,10 +2019,9 @@ export default function Home() {
                     </label>
                     <input
                       type="tel"
-                      placeholder="+91 98765 43210"
                       value={contactPhone}
                       onChange={(e) => setContactPhone(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 bg-white text-xs"
+                      className="w-full px-3 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 bg-white text-xs"
                     />
                   </div>
                 </div>
@@ -2030,14 +2033,27 @@ export default function Home() {
                   <select
                     value={customScope}
                     onChange={(e) => setCustomScope(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 bg-white text-xs"
+                    className="w-full px-3 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 bg-white text-xs"
                   >
                     <option value="Dedicated On-Premise / Private Cloud">Dedicated On-Premise / Private Cloud Deployment</option>
                     <option value="Custom Academic Workflows & Exam Engine">Custom Academic Workflows & Exam Engine</option>
                     <option value="Legacy ERP Data Migration & Sync">Legacy ERP Data Migration & Sync</option>
                     <option value="White-Label & Custom System Integrations">Full White-Label & Third-Party System Integrations</option>
                     <option value="End-to-End Bespoke Institutional Solution">Complete Bespoke Institutional ERP Build</option>
+                    <option value="Custom / Other Bespoke Scope">Custom / Other Scope (Specify below)</option>
                   </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 block text-[11px]">
+                    Message / Specific Custom Requirements
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={customMessage}
+                    onChange={(e) => setCustomMessage(e.target.value)}
+                    className="w-full px-3 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 bg-white text-xs resize-none"
+                  />
                 </div>
 
                 <button
