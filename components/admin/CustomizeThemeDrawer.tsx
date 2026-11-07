@@ -25,6 +25,17 @@ import {
   Bus,
   BedDouble,
   Briefcase,
+  Upload,
+  Globe,
+  Link2,
+  Mail,
+  Phone,
+  MapPin,
+  ExternalLink,
+  Stamp,
+  Image as ImageIcon,
+  CheckCircle2,
+  GraduationCap,
 } from "lucide-react";
 import {
   useAdmin,
@@ -80,6 +91,118 @@ export default function CustomizeThemeDrawer({ isOpen, onClose }: CustomizeTheme
     }
     return "Excellence in Knowledge & Character";
   });
+
+  // Comprehensive Institutional Identity & Branding states
+  const [logoUrl, setLogoUrl] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return localStorage.getItem("occo_brand_logo") || "";
+      } catch {
+        // ignore
+      }
+    }
+    return "";
+  });
+
+  const [shortName, setShortName] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return localStorage.getItem("occo_brand_short_name") || "Apex Global";
+      } catch {
+        // ignore
+      }
+    }
+    return "Apex Global";
+  });
+
+  const [affiliationCode, setAffiliationCode] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return localStorage.getItem("occo_brand_affiliation") || "CBSE/AFF/2026/8921";
+      } catch {
+        // ignore
+      }
+    }
+    return "CBSE/AFF/2026/8921";
+  });
+
+  const [websiteUrl, setWebsiteUrl] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return localStorage.getItem("occo_brand_website") || "https://www.apexacademy.edu.in";
+      } catch {
+        // ignore
+      }
+    }
+    return "https://www.apexacademy.edu.in";
+  });
+
+  const [portalCname, setPortalCname] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return localStorage.getItem("occo_brand_cname") || "portal.apexacademy.edu.in";
+      } catch {
+        // ignore
+      }
+    }
+    return "portal.apexacademy.edu.in";
+  });
+
+  const [admissionsUrl, setAdmissionsUrl] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return localStorage.getItem("occo_brand_admissions_url") || "https://admissions.apexacademy.edu.in";
+      } catch {
+        // ignore
+      }
+    }
+    return "https://admissions.apexacademy.edu.in";
+  });
+
+  const [contactEmail, setContactEmail] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return localStorage.getItem("occo_brand_email") || "admissions@apexacademy.edu.in";
+      } catch {
+        // ignore
+      }
+    }
+    return "admissions@apexacademy.edu.in";
+  });
+
+  const [contactPhone, setContactPhone] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return localStorage.getItem("occo_brand_phone") || "+91 80 2845 9000";
+      } catch {
+        // ignore
+      }
+    }
+    return "+91 80 2845 9000";
+  });
+
+  const [campusAddress, setCampusAddress] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return localStorage.getItem("occo_brand_address") || "Plot 42, Institutional Knowledge Park, Phase 1, Bangalore 560098";
+      } catch {
+        // ignore
+      }
+    }
+    return "Plot 42, Institutional Knowledge Park, Phase 1, Bangalore 560098";
+  });
+
+  const [sealAttached, setSealAttached] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return localStorage.getItem("occo_brand_seal_attached") !== "false";
+      } catch {
+        // ignore
+      }
+    }
+    return true;
+  });
+
   const [toastMsg, setToastMsg] = useState("");
 
   // Handle ESC key to close
@@ -121,12 +244,65 @@ export default function CustomizeThemeDrawer({ isOpen, onClose }: CustomizeTheme
     }
   };
 
+  const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        triggerToast("Logo size exceeds 2MB limit. Please upload a smaller image.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string;
+        setLogoUrl(base64);
+        try {
+          localStorage.setItem("occo_brand_logo", base64);
+        } catch {
+          // ignore
+        }
+        triggerToast("New institution logo uploaded and attached!");
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveAndClose = () => {
+    try {
+      localStorage.setItem("occo_institution_name", institutionName);
+      localStorage.setItem("occo_brand_logo", logoUrl);
+      localStorage.setItem("occo_brand_short_name", shortName);
+      localStorage.setItem("occo_brand_motto", localMotto);
+      localStorage.setItem("occo_brand_affiliation", affiliationCode);
+      localStorage.setItem("occo_brand_website", websiteUrl);
+      localStorage.setItem("occo_brand_cname", portalCname);
+      localStorage.setItem("occo_brand_admissions_url", admissionsUrl);
+      localStorage.setItem("occo_brand_email", contactEmail);
+      localStorage.setItem("occo_brand_phone", contactPhone);
+      localStorage.setItem("occo_brand_address", campusAddress);
+      localStorage.setItem("occo_brand_seal_attached", String(sealAttached));
+    } catch {
+      // ignore
+    }
+    triggerToast("Saved branding, logo attachments & identity configurations!");
+    onClose();
+  };
+
   const handleResetDefaults = () => {
     handleApplyColor("#1D4ED8");
     handleNameChange("Apex International Global Academy");
     handleMottoChange("Excellence in Knowledge & Character");
+    setLogoUrl("");
+    setShortName("Apex Global");
+    setAffiliationCode("CBSE/AFF/2026/8921");
+    setWebsiteUrl("https://www.apexacademy.edu.in");
+    setPortalCname("portal.apexacademy.edu.in");
+    setAdmissionsUrl("https://admissions.apexacademy.edu.in");
+    setContactEmail("admissions@apexacademy.edu.in");
+    setContactPhone("+91 80 2845 9000");
+    setCampusAddress("Plot 42, Institutional Knowledge Park, Phase 1, Bangalore 560098");
+    setSealAttached(true);
     resetModules();
-    triggerToast("Reset to default Royal Blue theme & standard modules.");
+    triggerToast("Reset to default Royal Blue theme & standard identity.");
   };
 
   if (!isOpen) return null;
@@ -549,49 +725,368 @@ export default function CustomizeThemeDrawer({ isOpen, onClose }: CustomizeTheme
             )}
 
             {/* ══════════════════════════════════════════════════════════════════
-                TAB 4: IDENTITY & BRANDING
+                TAB 3: IDENTITY, BRANDING & LINK ATTACHMENTS
             ══════════════════════════════════════════════════════════════════ */}
             {activeTab === "identity" && (
-              <div className="space-y-5">
-                <div>
-                  <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1">
-                    Institution Display Name
-                  </label>
-                  <p className="text-xs text-slate-500 mb-2">
-                    Reflected across the sidebar, fee receipts, and digital admit cards.
-                  </p>
-                  <input
-                    type="text"
-                    value={institutionName}
-                    onChange={(e) => handleNameChange(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400"
-                    placeholder="e.g. Apex International Global Academy"
-                  />
+              <div className="space-y-6">
+                {/* 1. Logo & Visual Brand Attachments */}
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-4">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                    <div className="flex items-center gap-2">
+                      <ImageIcon className="w-4 h-4 text-emerald-700" />
+                      <span className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+                        Logo &amp; Brand Attachments
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase">PNG, SVG, JPG (Max 2MB)</span>
+                  </div>
+
+                  {/* Logo Preview and Upload Controls */}
+                  <div className="flex items-center gap-4">
+                    <div
+                      className="w-16 h-16 rounded-2xl border-2 border-dashed border-slate-300 flex items-center justify-center p-1 bg-white shrink-0 overflow-hidden shadow-2xs"
+                    >
+                      {logoUrl ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={logoUrl}
+                          alt="Institution Logo"
+                          className="w-full h-full object-contain"
+                        />
+                      ) : (
+                        <div
+                          className="w-full h-full rounded-xl flex items-center justify-center text-white"
+                          style={{ backgroundColor: theme.primary }}
+                        >
+                          <GraduationCap className="w-7 h-7" />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5 flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <label
+                          htmlFor="logo-file-input"
+                          className="px-3 py-1.5 rounded-xl text-white font-bold text-xs shadow-2xs hover:opacity-90 transition-all cursor-pointer inline-flex items-center gap-1.5 shrink-0"
+                          style={{ backgroundColor: theme.primary }}
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>Upload New Logo</span>
+                        </label>
+                        <input
+                          id="logo-file-input"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoFileUpload}
+                          className="hidden"
+                        />
+
+                        {logoUrl && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setLogoUrl("");
+                              try {
+                                localStorage.removeItem("occo_brand_logo");
+                              } catch {
+                                // ignore
+                              }
+                              triggerToast("Restored default institution crest.");
+                            }}
+                            className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-slate-600 hover:text-red-700 hover:bg-red-50 text-xs font-semibold transition-colors cursor-pointer"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-500 leading-tight">
+                        Appears on top sidebar, official marksheets, dynamic fee receipts, and digital admit cards.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Direct Logo Image URL Input */}
+                  <div className="pt-2 border-t border-slate-200">
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Or Direct Logo Image URL
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="url"
+                        value={logoUrl}
+                        onChange={(e) => setLogoUrl(e.target.value)}
+                        placeholder="https://example.com/logo.png"
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                      />
+                      {logoUrl && (
+                        <a
+                          href={logoUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-slate-900 transition-colors shrink-0"
+                          title="Preview URL"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1">
-                    Institutional Motto / Tagline
-                  </label>
-                  <p className="text-xs text-slate-500 mb-2">
-                    Displayed on student portal login and official transcripts.
-                  </p>
-                  <input
-                    type="text"
-                    value={localMotto}
-                    onChange={(e) => handleMottoChange(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400"
-                    placeholder="e.g. Excellence in Knowledge and Virtue"
-                  />
+                {/* 2. Web Presence & Link Attachments */}
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-4">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                    <div className="flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-blue-700" />
+                      <span className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+                        Website &amp; Digital Link Attachments
+                      </span>
+                    </div>
+                    <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-200">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      SSL Active
+                    </span>
+                  </div>
+
+                  {/* Official Website Link */}
+                  <div>
+                    <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1">
+                      Official Institution Website
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <Link2 className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
+                        <input
+                          type="url"
+                          value={websiteUrl}
+                          onChange={(e) => setWebsiteUrl(e.target.value)}
+                          className="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                          placeholder="https://www.apexacademy.edu.in"
+                        />
+                      </div>
+                      <a
+                        href={websiteUrl.startsWith("http") ? websiteUrl : `https://${websiteUrl}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3 py-2 bg-white border border-slate-200 hover:bg-slate-100 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-1 transition-colors shrink-0"
+                        title="Visit Institution Website"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Visit</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Custom Domain / White-label CNAME */}
+                  <div>
+                    <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1">
+                      Custom Portal CNAME (White-label)
+                    </label>
+                    <div className="relative">
+                      <Globe className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
+                      <input
+                        type="text"
+                        value={portalCname}
+                        onChange={(e) => setPortalCname(e.target.value)}
+                        className="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                        placeholder="portal.apexacademy.edu.in"
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      Mapped to your DNS CNAME record for seamless white-label domain routing.
+                    </p>
+                  </div>
+
+                  {/* Public Admissions Inquiry Link */}
+                  <div>
+                    <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1">
+                      Public Admissions Application Form Link
+                    </label>
+                    <div className="relative">
+                      <Link2 className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
+                      <input
+                        type="url"
+                        value={admissionsUrl}
+                        onChange={(e) => setAdmissionsUrl(e.target.value)}
+                        className="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                        placeholder="https://admissions.apexacademy.edu.in"
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      Shared on digital marketing, student inquiry kiosks, and social flyers.
+                    </p>
+                  </div>
                 </div>
 
-                <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 space-y-1">
+                {/* 3. Core Institutional Profile */}
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
+                    <Building2 className="w-4 h-4 text-purple-700" />
+                    <span className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+                      Institutional Identity &amp; Accreditation
+                    </span>
+                  </div>
+
+                  {/* Display Name & Short Name */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1">
+                        Full Legal Name
+                      </label>
+                      <input
+                        type="text"
+                        value={institutionName}
+                        onChange={(e) => handleNameChange(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                        placeholder="Apex International Global Academy"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1">
+                        Short Name / Code
+                      </label>
+                      <input
+                        type="text"
+                        value={shortName}
+                        onChange={(e) => setShortName(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                        placeholder="Apex Global"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Motto & Affiliation Code */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1">
+                        Institutional Motto
+                      </label>
+                      <input
+                        type="text"
+                        value={localMotto}
+                        onChange={(e) => handleMottoChange(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                        placeholder="Excellence in Knowledge & Character"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1">
+                        Accreditation / Affiliation Code
+                      </label>
+                      <input
+                        type="text"
+                        value={affiliationCode}
+                        onChange={(e) => setAffiliationCode(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                        placeholder="CBSE/AFF/2026/8921"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Official Contacts & Location */}
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
+                    <MapPin className="w-4 h-4 text-amber-700" />
+                    <span className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+                      Official Contacts &amp; Location
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1">
+                        Registrar / Administrative Email
+                      </label>
+                      <div className="relative">
+                        <Mail className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
+                        <input
+                          type="email"
+                          value={contactEmail}
+                          onChange={(e) => setContactEmail(e.target.value)}
+                          className="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                          placeholder="admissions@apexacademy.edu.in"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1">
+                        Emergency Helpline Phone
+                      </label>
+                      <div className="relative">
+                        <Phone className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
+                        <input
+                          type="tel"
+                          value={contactPhone}
+                          onChange={(e) => setContactPhone(e.target.value)}
+                          className="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                          placeholder="+91 80 2845 9000"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1">
+                      Campus Physical Address
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={campusAddress}
+                      onChange={(e) => setCampusAddress(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
+                      placeholder="Plot 42, Institutional Knowledge Park, Phase 1, Bangalore 560098"
+                    />
+                  </div>
+                </div>
+
+                {/* 5. Digital Seal & Official Stamp Attachment */}
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-200 text-emerald-800 flex items-center justify-center shrink-0">
+                      <Stamp className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-extrabold text-slate-900 block leading-tight">
+                        Digital Seal &amp; Stamp Attachment
+                      </span>
+                      <p className="text-[11px] text-slate-500 leading-snug">
+                        Automatically embeds verified institutional stamp and cryptographic QR verification on transcripts &amp; receipts.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSealAttached(!sealAttached);
+                      triggerToast(
+                        sealAttached
+                          ? "Disabled digital seal watermark."
+                          : "Enabled digital seal attachment on generated documents."
+                      );
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                      sealAttached
+                        ? "bg-emerald-600 text-white border-emerald-700 shadow-2xs"
+                        : "bg-white text-slate-600 border-slate-300 hover:bg-slate-100"
+                    }`}
+                  >
+                    {sealAttached ? "Attached" : "Disabled"}
+                  </button>
+                </div>
+
+                {/* Live Synchronization Status Banner */}
+                <div className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-1 shadow-2xs">
                   <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
                     <Check className="w-4 h-4 text-emerald-600" />
-                    <span>Live Theme Synchronization</span>
+                    <span>Live Institutional Identity Synchronization</span>
                   </div>
                   <p className="text-[11px] text-slate-600 leading-relaxed">
-                    Theme modifications and institutional profiles are securely saved to your administrative configuration.
+                    All website attachments, custom logos, domain names, and contact parameters take effect immediately upon saving.
                   </p>
                 </div>
               </div>
@@ -611,11 +1106,11 @@ export default function CustomizeThemeDrawer({ isOpen, onClose }: CustomizeTheme
 
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleSaveAndClose}
               style={{ backgroundColor: theme.primary }}
               className="inline-flex items-center justify-center gap-1.5 flex-1 py-2 px-4 rounded-xl text-white font-bold text-xs hover:opacity-95 transition-all shadow-xs cursor-pointer"
             >
-              <span>Save & Close</span>
+              <span>Save &amp; Close</span>
             </button>
           </div>
         </div>
