@@ -281,7 +281,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={() => setIsCustomizeOpen(true)}
-              title="Customize Portal Appearance, Model Archetype & Modules"
+              title="Customize Portal Appearance & Modules"
               className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200/90 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-2xs transition-all cursor-pointer hover:border-slate-300 group"
             >
               <div

@@ -5,14 +5,9 @@ import {
   X,
   Palette,
   Building2,
-  Sparkles,
   Check,
   RotateCcw,
   Sliders,
-  School,
-  GraduationCap,
-  Landmark,
-  Zap,
   PackagePlus,
   Trash2,
   Plus,
@@ -37,7 +32,6 @@ import {
   ALL_AVAILABLE_MODULES,
 } from "@/lib/admin/adminContext";
 import { THEME_COLOR_PRESETS } from "@/lib/admin/themeUtils";
-import { InstitutionalArchetype } from "@/lib/terminology";
 
 interface CustomizeThemeDrawerProps {
   isOpen: boolean;
@@ -68,15 +62,13 @@ export default function CustomizeThemeDrawer({ isOpen, onClose }: CustomizeTheme
     theme,
     institutionName,
     setInstitutionName,
-    currentArchetype,
-    setCurrentArchetype,
     enabledModules,
     addModule,
     removeModule,
     resetModules,
   } = useAdmin();
 
-  const [activeTab, setActiveTab] = useState<"theme" | "archetype" | "modules" | "identity">("theme");
+  const [activeTab, setActiveTab] = useState<"theme" | "modules" | "identity">("theme");
   const [localMotto, setLocalMotto] = useState(() => {
     if (typeof window !== "undefined") {
       try {
@@ -133,49 +125,11 @@ export default function CustomizeThemeDrawer({ isOpen, onClose }: CustomizeTheme
     handleApplyColor("#1D4ED8");
     handleNameChange("Apex International Global Academy");
     handleMottoChange("Excellence in Knowledge & Character");
-    setCurrentArchetype("K12_SCHOOL");
     resetModules();
-    triggerToast("Reset to default Royal Blue theme, School model & standard modules.");
+    triggerToast("Reset to default Royal Blue theme & standard modules.");
   };
 
   if (!isOpen) return null;
-
-  const archetypeOptions: {
-    id: InstitutionalArchetype;
-    label: string;
-    sub: string;
-    icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
-    desc: string;
-  }[] = [
-    {
-      id: "K12_SCHOOL",
-      label: "K-12 School",
-      sub: "CBSE / ICSE / IB World School",
-      icon: School,
-      desc: "Roll call, parent WhatsApp broadcasts, RTE 25% quota, CCE progress cards.",
-    },
-    {
-      id: "DEGREE_COLLEGE",
-      label: "Degree College",
-      sub: "UGC Affiliated / Autonomous",
-      icon: GraduationCap,
-      desc: "Semester credits, 75% attendance condonation, semester hall tickets.",
-    },
-    {
-      id: "UNIVERSITY",
-      label: "Autonomous University",
-      sub: "Deemed / State Multi-Campus",
-      icon: Landmark,
-      desc: "NEP 2020 CBCS major/minor, faculty workload, multi-campus governance.",
-    },
-    {
-      id: "COACHING_ACADEMY",
-      label: "Coaching Academy",
-      sub: "Competitive Test-Prep",
-      icon: Zap,
-      desc: "Batches, mock tests, target exam rankers, dynamic UPI fee installments.",
-    },
-  ];
 
   const activeModulesList = ALL_AVAILABLE_MODULES.filter((m) => enabledModules.includes(m.id));
   const availableToAddList = ALL_AVAILABLE_MODULES.filter((m) => !enabledModules.includes(m.id));
@@ -207,7 +161,7 @@ export default function CustomizeThemeDrawer({ isOpen, onClose }: CustomizeTheme
                   Customize Portal
                 </h2>
                 <p className="text-[11px] font-medium" style={{ color: theme.primaryLight }}>
-                  Theme, Model Archetype & Module Manager
+                  Theme, Module Manager & Identity
                 </p>
               </div>
             </div>
@@ -245,19 +199,6 @@ export default function CustomizeThemeDrawer({ isOpen, onClose }: CustomizeTheme
             >
               <Palette className="w-3.5 h-3.5" style={{ color: theme.primary }} />
               <span>Theme</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("archetype")}
-              className={`flex-1 py-2 px-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === "archetype"
-                  ? "bg-white text-slate-900 shadow-2xs font-extrabold border border-slate-200"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5" style={{ color: theme.primary }} />
-              <span>Model</span>
             </button>
 
             <button
@@ -463,74 +404,7 @@ export default function CustomizeThemeDrawer({ isOpen, onClose }: CustomizeTheme
             )}
 
             {/* ══════════════════════════════════════════════════════════════════
-                TAB 2: MODEL ARCHETYPE SWITCHER (Moved here from header)
-            ══════════════════════════════════════════════════════════════════ */}
-            {activeTab === "archetype" && (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1">
-                    Select Institutional Model Archetype
-                  </label>
-                  <p className="text-xs text-slate-500">
-                    Switches portal terminology, statutory mandates, grading scales, and report formats across all portals.
-                  </p>
-                </div>
-
-                <div className="space-y-3">
-                  {archetypeOptions.map((opt) => {
-                    const isSelected = currentArchetype === opt.id;
-                    const Icon = opt.icon;
-                    return (
-                      <div
-                        key={opt.id}
-                        onClick={() => {
-                          setCurrentArchetype(opt.id);
-                          triggerToast(`Switched model to ${opt.label}!`);
-                        }}
-                        className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
-                          isSelected
-                            ? "bg-slate-50 border-slate-800 ring-2 ring-slate-800 shadow-xs"
-                            : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-1.5">
-                          <div className="flex items-center gap-2.5">
-                            <div
-                              className="w-7 h-7 rounded-lg flex items-center justify-center text-white shrink-0"
-                              style={{ backgroundColor: isSelected ? theme.primary : "#64748B" }}
-                            >
-                              <Icon className="w-4 h-4" />
-                            </div>
-                            <div>
-                              <span className="font-extrabold text-xs text-slate-900 block leading-tight">
-                                {opt.label}
-                              </span>
-                              <span className="text-[10px] text-slate-500 font-medium">
-                                {opt.sub}
-                              </span>
-                            </div>
-                          </div>
-                          {isSelected && (
-                            <span
-                              className="px-2 py-0.5 rounded-full text-[10px] font-bold"
-                              style={{ backgroundColor: theme.badgeBg, color: theme.badgeText }}
-                            >
-                              Active
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-slate-600 pl-9.5 leading-relaxed">
-                          {opt.desc}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* ══════════════════════════════════════════════════════════════════
-                TAB 3: MODULE MANAGER (Adding & Deleting of Modules)
+                TAB 2: MODULE MANAGER (Adding & Deleting of Modules)
             ══════════════════════════════════════════════════════════════════ */}
             {activeTab === "modules" && (
               <div className="space-y-6">
