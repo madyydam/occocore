@@ -325,9 +325,6 @@ function DemoLayoutInner({ children }: { children: React.ReactNode }) {
               <h1 className="font-bold text-slate-900 text-sm sm:text-base font-serif leading-none">
                 {currentModuleLabel}
               </h1>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 uppercase tracking-wider shrink-0">
-                Demo
-              </span>
             </div>
           </div>
 

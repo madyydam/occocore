@@ -272,12 +272,6 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
               <h1 className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight">
                 {currentModuleLabel}
               </h1>
-              <span
-                className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                style={{ backgroundColor: theme.badgeBg, color: theme.badgeText }}
-              >
-                Live
-              </span>
             </div>
           </div>
 
