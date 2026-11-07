@@ -9,8 +9,8 @@ import {
   RotateCcw,
   Sliders,
   PackagePlus,
-  Trash2,
-  Plus,
+  Archive,
+  ArchiveRestore,
   Layers,
   LayoutDashboard,
   UserPlus,
@@ -426,7 +426,7 @@ export default function CustomizeThemeDrawer({ isOpen, onClose }: CustomizeTheme
                     </button>
                   </div>
                   <p className="text-xs text-slate-500">
-                    Add or delete modules to tailor your sidebar navigation. Changes take effect instantly.
+                    Enable or archive modules to customize your sidebar. Archived modules preserve all existing data and can be unarchived anytime.
                   </p>
                 </div>
 
@@ -477,12 +477,13 @@ export default function CustomizeThemeDrawer({ isOpen, onClose }: CustomizeTheme
                               type="button"
                               onClick={() => {
                                 removeModule(m.id);
-                                triggerToast(`Removed ${m.label} from active modules.`);
+                                triggerToast(`Archived ${m.label}. Module moved to archived section.`);
                               }}
-                              title={`Delete / Remove ${m.label} from portal`}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors shrink-0 cursor-pointer"
+                              title={`Archive ${m.label} from active sidebar`}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-slate-600 hover:text-amber-700 hover:bg-amber-50 border border-slate-200 hover:border-amber-300 transition-colors text-[11px] font-bold shrink-0 cursor-pointer"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Archive className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-700" />
+                              <span>Archive</span>
                             </button>
                           )}
                         </div>
@@ -491,11 +492,11 @@ export default function CustomizeThemeDrawer({ isOpen, onClose }: CustomizeTheme
                   </div>
                 </div>
 
-                {/* Section B: Available Modules to Add */}
+                {/* Section B: Archived / Available Modules to Restore */}
                 {availableToAddList.length > 0 && (
                   <div className="space-y-2 pt-3 border-t border-slate-200">
                     <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
-                      Available Add-on Modules ({availableToAddList.length})
+                      Archived &amp; Inactive Modules ({availableToAddList.length})
                     </span>
 
                     <div className="space-y-2">
@@ -530,13 +531,13 @@ export default function CustomizeThemeDrawer({ isOpen, onClose }: CustomizeTheme
                               type="button"
                               onClick={() => {
                                 addModule(m.id);
-                                triggerToast(`Added ${m.label} to active portal modules!`);
+                                triggerToast(`Restored ${m.label} to active portal modules!`);
                               }}
                               style={{ backgroundColor: theme.primary }}
                               className="px-2.5 py-1.5 rounded-lg text-white font-bold text-xs flex items-center gap-1 shadow-2xs hover:opacity-90 transition-all shrink-0 cursor-pointer"
                             >
-                              <Plus className="w-3.5 h-3.5" />
-                              <span>Add</span>
+                              <ArchiveRestore className="w-3.5 h-3.5" />
+                              <span>Restore</span>
                             </button>
                           </div>
                         );
