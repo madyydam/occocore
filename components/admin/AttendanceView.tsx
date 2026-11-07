@@ -941,14 +941,15 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
                         <td className="py-3 px-3">
                           <div className="flex items-center gap-1">
                             {st.lastFiveDays.map((c, i) => {
-                              const r = ATTENDANCE_CODES[c];
+                              const safeCode: AttendanceCode = c === "A" ? "A" : "P";
+                              const r = ATTENDANCE_CODES[safeCode] || ATTENDANCE_CODES.P;
                               return (
                                 <span
                                   key={i}
                                   title={`Day ${i + 1}: ${r.name}`}
                                   className={`w-5 h-5 rounded-md flex items-center justify-center text-[9px] font-extrabold ${r.badgeBg} ${r.badgeText} border ${r.badgeBorder}`}
                                 >
-                                  {c}
+                                  {safeCode}
                                 </span>
                               );
                             })}
@@ -1234,8 +1235,9 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
 
                         {/* Days 1 to N cells from real PostgreSQL data */}
                         {Array.from({ length: musterDaysInMonth }, (_, i) => i + 1).map((day) => {
-                          const dayCode = (st.dailyMarks[day] || "—") as AttendanceCode | "—";
-                          const r = dayCode !== "—" ? ATTENDANCE_CODES[dayCode as AttendanceCode] : null;
+                          const rawCode = st.dailyMarks[day];
+                          const dayCode = (rawCode === "P" || rawCode === "A") ? rawCode : (rawCode ? (rawCode === "A" ? "A" : "P") : "—");
+                          const r = dayCode !== "—" ? (ATTENDANCE_CODES[dayCode as AttendanceCode] || ATTENDANCE_CODES.P) : null;
 
                           return (
                             <td
@@ -2100,32 +2102,37 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
               </button>
             </div>
 
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Recorded Code:</span>
-                <span className="font-bold font-mono text-slate-900">
-                  {registerCellAudit.code} ({ATTENDANCE_CODES[registerCellAudit.code].name})
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Policy Weight:</span>
-                <span className="font-bold font-mono text-emerald-700">
-                  {ATTENDANCE_CODES[registerCellAudit.code].weight * 100}% Present
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Capture Source:</span>
-                <span className="font-bold text-slate-800">{registerCellAudit.source}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Recorded By:</span>
-                <span className="font-bold text-slate-800">{adminName} (Authorized Proctor)</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Timestamp:</span>
-                <span className="font-mono text-slate-600">{registerCellAudit.timestamp}</span>
-              </div>
-            </div>
+            {(() => {
+              const auditDef = ATTENDANCE_CODES[registerCellAudit.code] || (registerCellAudit.code === "A" ? ATTENDANCE_CODES.A : ATTENDANCE_CODES.P);
+              return (
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Recorded Code:</span>
+                    <span className="font-bold font-mono text-slate-900">
+                      {registerCellAudit.code} ({auditDef.name})
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Policy Weight:</span>
+                    <span className="font-bold font-mono text-emerald-700">
+                      {auditDef.weight * 100}% Present
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Capture Source:</span>
+                    <span className="font-bold text-slate-800">{registerCellAudit.source}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Recorded By:</span>
+                    <span className="font-bold text-slate-800">{adminName} (Authorized Proctor)</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Timestamp:</span>
+                    <span className="font-mono text-slate-600">{registerCellAudit.timestamp}</span>
+                  </div>
+                </div>
+              );
+            })()}
 
             <div className="pt-2 flex justify-end border-t border-slate-100">
               <button
