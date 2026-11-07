@@ -2026,36 +2026,34 @@ export default function Home() {
               </form>
             )}
 
-            {/* INSTANT INTERACTIVE DEMO SANDBOX CTA CARD */}
-            <div className="mt-5 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-50 via-amber-100/70 to-yellow-50 border-2 border-amber-300 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 text-left">
-              <div className="space-y-1">
-                <div className="flex items-center space-x-2">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500 text-amber-950">
-                    ⚡ Instant 1-Click Demo Sandbox
-                  </span>
-                  <span className="text-[11px] font-bold text-amber-900 hidden sm:inline">• Zero Auth Required</span>
+            {/* COMPACT PROFESSIONAL DEMO ACCESS */}
+            <div className="mt-3.5 p-3 rounded-xl bg-slate-50 border border-slate-200/90 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-7 h-7 rounded-lg bg-white border border-slate-200/80 flex items-center justify-center shrink-0 text-blue-700 shadow-2xs">
+                  <Sparkles className="w-3.5 h-3.5" />
                 </div>
-                <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight">
-                  Want to explore the entire ERP without filling forms?
-                </h3>
-                <p className="text-[11px] sm:text-xs text-slate-600 max-w-xl">
-                  Click the demo button to skip entering any details, bypass all login/PIN barriers, and preview the entire onboarding flow and ERP dashboard with pre-loaded mock data. If you use <strong>&quot;Start Using&quot;</strong>, your real database will be used.
-                </p>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 leading-tight">
+                    Instant Demo Mode
+                  </h4>
+                  <p className="text-[11px] text-slate-500 leading-tight">
+                    Explore full ERP with sample institution data
+                  </p>
+                </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto shrink-0">
+              <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
                 <Link
                   href="/onboarding?mode=demo"
-                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-amber-950 font-black text-xs shadow-xs transition-all flex items-center justify-center space-x-2 text-center cursor-pointer"
+                  className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition-all active:scale-95 text-center cursor-pointer"
                 >
-                  <Sparkles className="w-4 h-4 text-amber-950" />
-                  <span>Launch Instant Demo Mode →</span>
+                  Launch Demo
                 </Link>
                 <Link
                   href="/admin?mode=demo"
-                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 active:scale-95 text-slate-800 font-bold text-xs transition-all flex items-center justify-center space-x-1.5 text-center cursor-pointer"
+                  className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-semibold text-xs transition-all active:scale-95 text-center cursor-pointer"
                 >
-                  <span>Skip to Dashboard</span>
+                  Dashboard
                 </Link>
               </div>
             </div>
