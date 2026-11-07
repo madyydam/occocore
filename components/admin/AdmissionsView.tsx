@@ -569,28 +569,8 @@ export default function AdmissionsView({ archetype }: AdmissionsViewProps) {
         </div>
       )}
 
-      {/* Module Title & Quick Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-1 border-b border-slate-200">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 font-serif flex items-center gap-2">
-            <span>{terms.cohortPlural} Admissions & Enrollment Pipeline</span>
-            <span className="text-xs px-2.5 py-0.5 rounded-full font-sans font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-              {archetypeConfig.name}
-            </span>
-            {!isDemoMode && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-blue-50 text-blue-800 border border-blue-200">
-                PostgreSQL Live
-              </span>
-            )}
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            {archetype === "K12_SCHOOL" && "Admissions, RTE 25% EWS seat lottery, and student document verification."}
-            {archetype === "DEGREE_COLLEGE" && "State CAP/CET Merit cutoffs, Higher Secondary scorecards, and Branch allotment."}
-            {archetype === "UNIVERSITY" && "Central Entrance Test (CUET), Research Fellowships, and NEP 2020 DigiLocker ABC registration."}
-            {archetype === "COACHING_ACADEMY" && "Diagnostic Admission Test (DAT), All-India Rank scholarships, and batch timing allocation."}
-          </p>
-        </div>
-
+      {/* Quick Action Bar */}
+      <div className="flex items-center justify-end gap-2 pb-1 border-b border-slate-200">
         <div className="flex items-center gap-2 shrink-0">
           {isTcTab ? (
             <button

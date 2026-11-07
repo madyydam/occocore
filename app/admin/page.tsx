@@ -8,13 +8,31 @@ import {
   Users,
   CheckCircle2,
   Eye,
-  ShieldCheck,
   CreditCard,
   QrCode,
   Wifi,
   X,
+  BookOpen,
+  ClipboardCheck,
+  Award,
+  MessageSquare,
+  Shield,
+  Settings,
+  Library,
+  Bus,
+  BedDouble,
+  Briefcase,
+  Sparkles,
+  ArrowRight,
+  ShieldCheck,
 } from "lucide-react";
-import { useAdmin } from "@/lib/admin/adminContext";
+import {
+  useAdmin,
+  DEMO_ROLES,
+  DemoRoleKey,
+  ALL_AVAILABLE_MODULES,
+  MODULE_SUBTABS,
+} from "@/lib/admin/adminContext";
 import { ARCHETYPES } from "@/lib/terminology";
 import { DEMO_ACTIVITIES } from "@/lib/demo/demoMockData";
 import {
@@ -31,19 +49,48 @@ import AttendanceView from "@/components/admin/AttendanceView";
 import FeesView from "@/components/admin/FeesView";
 import ExamsView from "@/components/admin/ExamsView";
 import CommunicationView from "@/components/admin/CommunicationView";
+import RolesView from "@/components/admin/RolesView";
 import SettingsView from "@/components/admin/SettingsView";
 import AddonModulesView from "@/components/admin/AddonModulesView";
+
+const MODULE_ICON_MAP: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
+  admissions: Users,
+  academics: BookOpen,
+  attendance: ClipboardCheck,
+  fees: CreditCard,
+  exams: Award,
+  communication: MessageSquare,
+  roles: Shield,
+  settings: Settings,
+  library: Library,
+  transport: Bus,
+  hostel: BedDouble,
+  placements: Briefcase,
+};
+
+const DEMO_ROLE_KEYS: DemoRoleKey[] = [
+  "super_admin",
+  "college_admin",
+  "principal",
+  "hod",
+  "faculty",
+  "admission_officer",
+  "accountant",
+  "hr_manager",
+  "librarian",
+  "student",
+  "parent",
+];
 
 export default function AdminDashboardPage() {
   const {
     activeModule,
     setActiveModule,
-    activeSubTab,
     currentArchetype,
-    institutionName,
-    adminRole,
     theme,
     isDemoMode,
+    currentDemoRole,
+    setCurrentDemoRole,
   } = useAdmin();
 
   const archetypeConfig = ARCHETYPES[currentArchetype] || ARCHETYPES.K12_SCHOOL;
@@ -147,6 +194,9 @@ export default function AdminDashboardPage() {
   if (activeModule === "communication") {
     return <CommunicationView archetype={currentArchetype} />;
   }
+  if (activeModule === "roles") {
+    return <RolesView />;
+  }
   if (activeModule === "settings") {
     return <SettingsView archetype={currentArchetype} />;
   }
@@ -161,20 +211,6 @@ export default function AdminDashboardPage() {
   }
   if (activeModule === "placements") {
     return <AddonModulesView moduleType="placements" archetype={currentArchetype} />;
-  }
-
-  // Dashboard Sub-Tab Fallbacks
-  if (activeSubTab === "admissions_feed") {
-    return <AdmissionsView archetype={currentArchetype} />;
-  }
-  if (activeSubTab === "fees_feed") {
-    return <FeesView archetype={currentArchetype} />;
-  }
-  if (activeSubTab === "attendance_feed") {
-    return <AttendanceView archetype={currentArchetype} />;
-  }
-  if (activeSubTab === "statutory_shield") {
-    return <SettingsView archetype={currentArchetype} />;
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -193,33 +229,176 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      {/* 1. Header Welcome Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-1">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 font-serif">
-            Welcome, {adminRole}
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Here&apos;s what&apos;s happening at {institutionName} today.
-          </p>
+      {/* ══════════════════════════════════════════════════════════════════════
+          DEMO MODE: 11 ROLES SWITCHER & ACTIVE PERSONA METRICS
+      ══════════════════════════════════════════════════════════════════════ */}
+      {isDemoMode && (
+        <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-slate-100 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold shrink-0"
+                style={{ backgroundColor: theme.primary }}
+              >
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-xs sm:text-sm font-bold text-slate-900">
+                  Institutional Roles &amp; Persona Simulation
+                </h2>
+                <p className="text-[11px] text-slate-500">
+                  Switch between 11 roles to preview tailored dashboards, permissions, and departmental live KPIs.
+                </p>
+              </div>
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 uppercase tracking-wider shrink-0 w-fit">
+              Client Demo Mode
+            </span>
+          </div>
+
+          {/* 11 Role Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            {DEMO_ROLE_KEYS.map((rk) => {
+              const roleDef = DEMO_ROLES[rk];
+              const isCurrent = currentDemoRole === rk;
+              return (
+                <button
+                  key={rk}
+                  type="button"
+                  onClick={() => setCurrentDemoRole(rk)}
+                  style={
+                    isCurrent
+                      ? { backgroundColor: theme.primary, color: "#ffffff", borderColor: theme.primary }
+                      : {}
+                  }
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 border flex items-center gap-1.5 ${
+                    isCurrent
+                      ? "text-white shadow-xs"
+                      : "bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200/80"
+                  }`}
+                >
+                  <span>{roleDef.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Active Role Context Banner & 4 Role-Tailored KPIs */}
+          {DEMO_ROLES[currentDemoRole] && (
+            <div
+              className="p-4 rounded-2xl border transition-all"
+              style={{
+                backgroundColor: "rgba(21, 62, 53, 0.04)",
+                borderColor: "rgba(21, 62, 53, 0.15)",
+              }}
+            >
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3 pb-3 border-b border-emerald-900/10">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold text-slate-900 text-sm">
+                      {DEMO_ROLES[currentDemoRole].shortTitle}
+                    </span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${DEMO_ROLES[currentDemoRole].badge}`}>
+                      {DEMO_ROLES[currentDemoRole].department}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 mt-1">
+                    {DEMO_ROLES[currentDemoRole].permissionsDescription}
+                  </p>
+                </div>
+              </div>
+
+              {/* 4 Dynamic Role-Tailored KPI Stats */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+                {DEMO_ROLES[currentDemoRole].sampleStats.map((st, idx) => (
+                  <div key={idx} className="bg-white p-3 rounded-xl border border-slate-100 shadow-2xs">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      {st.label}
+                    </span>
+                    <span className="text-sm font-extrabold text-slate-900 block mt-0.5">
+                      {st.value}
+                    </span>
+                    <span className="text-[10px] font-medium text-emerald-700 block mt-0.5">
+                      {st.hint}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          INTERACTIVE MODULE-BASED NAVIGATION CARDS (ALL 12 MAIN MODULES)
+      ══════════════════════════════════════════════════════════════════════ */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 font-serif">
+              Institution Modules
+            </h2>
+            <p className="text-xs text-slate-500">
+              Select any module below to open its dedicated workflow and sub-module navigation.
+            </p>
+          </div>
+          <span className="text-xs font-bold text-slate-400">
+            {ALL_AVAILABLE_MODULES.filter((m) => m.id !== "dashboard").length} Modules
+          </span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span
-            className="text-[11px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 border"
-            style={{
-              backgroundColor: theme.primaryLight,
-              color: theme.primaryText,
-              borderColor: theme.primaryLight,
-            }}
-          >
-            <ShieldCheck className="w-3.5 h-3.5" style={{ color: theme.primary }} />
-            <span>{terms.leaderTitle} Console Active</span>
-          </span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {ALL_AVAILABLE_MODULES.filter((m) => m.id !== "dashboard").map((mod) => {
+            const Icon = MODULE_ICON_MAP[mod.id] || BookOpen;
+            const subCount = MODULE_SUBTABS[mod.id]?.length || 0;
+            return (
+              <div
+                key={mod.id}
+                onClick={() => setActiveModule(mod.id)}
+                className="bg-white rounded-3xl p-5 border border-slate-100 shadow-xs hover:shadow-md hover:border-emerald-200 transition-all cursor-pointer group flex flex-col justify-between"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div
+                      className="w-11 h-11 rounded-2xl flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform"
+                      style={{ backgroundColor: theme.primary }}
+                    >
+                      <Icon className="w-5 h-5 text-white" />
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 group-hover:bg-emerald-50 group-hover:text-emerald-800 transition-colors">
+                      {mod.category}
+                    </span>
+                  </div>
+
+                  <div>
+                    <h3 className="font-bold text-sm text-slate-900 group-hover:text-emerald-950 transition-colors">
+                      {mod.label}
+                    </h3>
+                    <p className="text-[11px] text-slate-500 leading-relaxed mt-1 line-clamp-2">
+                      {mod.description}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-4 mt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold">
+                  <span className="text-[11px] text-slate-400 font-semibold">
+                    {subCount} Sub-Sections
+                  </span>
+                  <span
+                    className="inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
+                    style={{ color: theme.primary }}
+                  >
+                    <span>Explore</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* 2. KPI Metric Cards Row (Image 1 Style) */}
+      {/* KPI Metric Cards Row (Image 1 Style) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         {/* Card 1: Today's Admissions */}
         <div
