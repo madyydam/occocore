@@ -22,6 +22,8 @@ import {
   Bus,
   BedDouble,
   Briefcase,
+  ArrowLeft,
+  Building2,
 } from "lucide-react";
 import {
   AdminProvider,
@@ -41,7 +43,6 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     setActiveSubTab,
     currentArchetype,
     institutionName,
-    adminName,
     adminRole,
     theme,
     enabledModules,
@@ -79,10 +80,23 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const currentModuleItem = allNavDefinitions.find((m) => m.id === effectiveModule);
   const currentModuleLabel = currentModuleItem?.label || "Dashboard";
 
+  // Drill-down sub-module navigation for demo mode
+  const [sidebarDrilldownModule, setSidebarDrilldownModule] = useState<AdminMainModule | null>(null);
+
   const handleNavClick = (item: (typeof allNavDefinitions)[0]) => {
     setActiveModule(item.id);
+    if (isDemoMode) {
+      setSidebarDrilldownModule(item.id);
+    }
     setMobileSidebarOpen(false);
   };
+
+  const handleBackToAllModules = () => {
+    setSidebarDrilldownModule(null);
+  };
+
+  const activeDrillItem = allNavDefinitions.find((m) => m.id === sidebarDrilldownModule);
+  const activeDrillSubTabs = sidebarDrilldownModule ? (MODULE_SUBTABS[sidebarDrilldownModule] || []) : [];
 
   return (
     <div className="min-h-screen bg-[#F4F7F6] text-slate-800 font-sans flex flex-col antialiased">
@@ -103,7 +117,10 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
           >
             <Link
               href="/admin"
-              onClick={() => setActiveModule("dashboard")}
+              onClick={() => {
+                setActiveModule("dashboard");
+                setSidebarDrilldownModule(null);
+              }}
               className="flex items-center gap-3 group"
             >
               <div
@@ -137,72 +154,173 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 
           {/* Institutional Context Chip */}
           <div
-            className="px-5 py-3 mx-3 my-3 rounded-xl border flex items-center gap-2.5 transition-colors"
+            className="px-3.5 py-2.5 mx-3 my-3 rounded-xl border flex items-center gap-2.5 transition-colors shadow-2xs"
             style={{ backgroundColor: "rgba(0,0,0,0.25)", borderColor: theme.sidebarBorder }}
           >
             <div
-              className="w-2 h-2 rounded-full animate-pulse shrink-0"
-              style={{ backgroundColor: theme.primary }}
-            />
+              className="w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 shadow-xs"
+              style={{
+                backgroundColor: "rgba(255,255,255,0.06)",
+                borderColor: theme.sidebarBorder,
+                color: theme.primaryLight,
+              }}
+            >
+              <Building2 className="w-4 h-4" />
+            </div>
             <div className="min-w-0 flex-1">
-              <span className="text-[11px] font-bold text-slate-200 block truncate">
+              <span className="text-[11px] font-bold text-white block truncate leading-tight">
                 {institutionName}
               </span>
               <span
-                className="text-[9px] font-medium block truncate"
+                className="text-[9px] font-medium block truncate flex items-center gap-1.5 mt-0.5"
                 style={{ color: theme.primaryLight }}
               >
-                {ARCHETYPES[currentArchetype]?.badge || "CBSE / NEP 2020"}
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>{ARCHETYPES[currentArchetype]?.badge || "Autonomous Institution"}</span>
               </span>
             </div>
           </div>
 
-          {/* Navigation Items (Main Modules Only - Filtered by Module Manager) */}
-          <nav className="px-3 py-2 space-y-1.5 flex-1">
-            <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider opacity-60 flex items-center justify-between">
-              <span>Active Modules</span>
-              <span className="text-[9px] font-mono opacity-75">{mainNavItems.length}</span>
-            </div>
+          {/* Navigation Items: Sub-modules drill-down in Demo Mode vs All Modules in Standard */}
+          {isDemoMode && sidebarDrilldownModule && activeDrillItem ? (
+            <nav className="px-3 py-2 space-y-2 flex-1">
+              {/* Back to All Modules Button at Top of Sidebar */}
+              <button
+                type="button"
+                onClick={handleBackToAllModules}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-200 hover:text-white bg-white/5 hover:bg-white/10 transition-colors cursor-pointer border border-white/10 group shadow-2xs"
+              >
+                <ArrowLeft className="w-4 h-4 text-emerald-400 group-hover:-translate-x-0.5 transition-transform" />
+                <span>← Back to All Modules</span>
+              </button>
 
-            {mainNavItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = effectiveModule === item.id;
-
-              return (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  onClick={() => handleNavClick(item)}
-                  style={
-                    isActive
-                      ? {
-                          backgroundColor: theme.sidebarActive,
-                          borderColor: theme.sidebarActiveBorder,
-                          color: "#ffffff",
-                        }
-                      : {}
-                  }
-                  className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 cursor-pointer ${
-                    isActive
-                      ? "text-white shadow-xs border font-bold"
-                      : "text-slate-300 hover:text-white hover:bg-white/5"
-                  }`}
+              {/* Active Selected Module Card in Sidebar */}
+              <div
+                className="px-3 py-2.5 rounded-xl border flex items-center gap-2.5 shadow-xs"
+                style={{
+                  backgroundColor: "rgba(0,0,0,0.3)",
+                  borderColor: theme.sidebarBorder,
+                }}
+              >
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-white shrink-0 shadow-xs"
+                  style={{ backgroundColor: theme.primary }}
                 >
-                  <Icon
-                    className="w-4 h-4 shrink-0 transition-colors"
-                    style={{ color: isActive ? theme.primaryLight : "rgb(148, 163, 184)" }}
-                  />
-                  <span className="flex-1">{item.label}</span>
-                  {isActive && (
-                    <div
-                      className="w-1.5 h-1.5 rounded-full shrink-0 shadow-xs"
-                      style={{ backgroundColor: theme.primary }}
+                  <activeDrillItem.icon className="w-4 h-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <span className="text-xs font-bold text-white block truncate leading-tight">
+                    {activeDrillItem.label}
+                  </span>
+                  <span className="text-[10px] block truncate" style={{ color: theme.primaryLight }}>
+                    Sub-Modules Selection
+                  </span>
+                </div>
+              </div>
+
+              {/* Sub-modules list */}
+              <div className="space-y-1 pt-1">
+                <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                  <span>Sub-Sections</span>
+                  <span className="text-[9px] font-mono text-slate-400">{activeDrillSubTabs.length}</span>
+                </div>
+
+                {activeDrillSubTabs.map((subTab) => {
+                  const isSubActive = activeSubTab === subTab.id;
+                  return (
+                    <button
+                      key={subTab.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveSubTab(subTab.id);
+                        setMobileSidebarOpen(false);
+                      }}
+                      style={
+                        isSubActive
+                          ? {
+                              backgroundColor: theme.sidebarActive,
+                              borderColor: theme.sidebarActiveBorder,
+                              color: "#ffffff",
+                            }
+                          : {}
+                      }
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-all cursor-pointer ${
+                        isSubActive
+                          ? "text-white shadow-xs border font-bold"
+                          : "text-slate-300 hover:text-white hover:bg-white/5 font-medium"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div
+                          className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                            isSubActive ? "bg-emerald-400" : "bg-slate-600"
+                          }`}
+                        />
+                        <span className="truncate text-left">{subTab.label}</span>
+                      </div>
+                      {subTab.badge && (
+                        <span
+                          className="text-[9px] font-bold px-1.5 py-0.5 rounded-md shrink-0 ml-1.5"
+                          style={{
+                            backgroundColor: isSubActive ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.08)",
+                            color: isSubActive ? "#ffffff" : theme.primaryLight,
+                          }}
+                        >
+                          {subTab.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </nav>
+          ) : (
+            <nav className="px-3 py-2 space-y-1.5 flex-1">
+              <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider opacity-60 flex items-center justify-between">
+                <span>Active Modules</span>
+                <span className="text-[9px] font-mono opacity-75">{mainNavItems.length}</span>
+              </div>
+
+              {mainNavItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = effectiveModule === item.id;
+
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    onClick={() => handleNavClick(item)}
+                    style={
+                      isActive
+                        ? {
+                            backgroundColor: theme.sidebarActive,
+                            borderColor: theme.sidebarActiveBorder,
+                            color: "#ffffff",
+                          }
+                        : {}
+                    }
+                    className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 cursor-pointer ${
+                      isActive
+                        ? "text-white shadow-xs border font-bold"
+                        : "text-slate-300 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    <Icon
+                      className="w-4 h-4 shrink-0 transition-colors"
+                      style={{ color: isActive ? theme.primaryLight : "rgb(148, 163, 184)" }}
                     />
-                  )}
-                </Link>
-              );
-            })}
-          </nav>
+                    <span className="flex-1">{item.label}</span>
+                    {isActive && (
+                      <div
+                        className="w-1.5 h-1.5 rounded-full shrink-0 shadow-xs"
+                        style={{ backgroundColor: theme.primary }}
+                      />
+                    )}
+                  </Link>
+                );
+              })}
+            </nav>
+          )}
         </div>
 
         {/* Sidebar Footer: Super Admin Profile */}
@@ -223,21 +341,21 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
                   color: "#ffffff",
                 }}
               >
-                SA
+                IO
               </div>
               <div className="min-w-0 flex-1">
                 <span className="font-bold text-xs text-white block truncate leading-tight">
-                  {adminName}
+                  {adminRole}
                 </span>
                 <span className="text-[10px] block truncate" style={{ color: theme.primaryLight }}>
-                  {adminRole}
+                  Institutional Governance
                 </span>
               </div>
             </div>
 
             <Link
               href="/auth/login"
-              title="Log out of Super Admin Portal"
+              title="Log out of Institution Portal"
               className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-950/30 transition-colors"
             >
               <LogOut className="w-4 h-4" />
@@ -310,14 +428,14 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
                 className="w-7 h-7 rounded-full text-white font-bold text-xs flex items-center justify-center shadow-xs"
                 style={{ backgroundColor: theme.primary }}
               >
-                SA
+                IO
               </div>
               <div className="hidden sm:block text-left">
                 <span className="text-xs font-bold text-slate-800 block leading-tight">
-                  {adminName}
+                  {adminRole}
                 </span>
                 <span className="text-[10px] text-slate-500 block leading-none">
-                  Super Admin
+                  Institutional Governance
                 </span>
               </div>
             </div>

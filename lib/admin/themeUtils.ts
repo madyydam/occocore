@@ -32,7 +32,13 @@ export function getThemeFromColor(hexColor: string): BrandThemePalette {
 
   // Check if it's primarily a red hue (e.g. #DC2626, #EF4444, #B91C1C, etc.)
   const isRed = (r > 160 && g < 100 && b < 100) || hex.toLowerCase().includes("dc2626") || hex.toLowerCase().includes("ef4444") || hex.toLowerCase().includes("b91c1c");
-  const isEmerald = (g > 120 && r < 100) || hex.toLowerCase().includes("059669") || hex.toLowerCase().includes("10b981") || hex.toLowerCase().includes("091d17");
+  const isEmerald =
+    (g > 120 && r < 100) ||
+    (g > r && g > b) ||
+    hex.toLowerCase().includes("059669") ||
+    hex.toLowerCase().includes("10b981") ||
+    hex.toLowerCase().includes("091d17") ||
+    hex.toLowerCase().includes("153e35");
   const isViolet = (b > 150 && r > 100 && g < 100) || hex.toLowerCase().includes("7c3aed") || hex.toLowerCase().includes("8b5cf6");
   const isAmber = (r > 180 && g > 100 && b < 80) || hex.toLowerCase().includes("d97706") || hex.toLowerCase().includes("f59e0b");
 
@@ -117,9 +123,9 @@ export function getThemeFromColor(hexColor: string): BrandThemePalette {
 }
 
 export const THEME_COLOR_PRESETS = [
-  { name: "Ruby Crimson", hex: "#DC2626", label: "Red" },
+  { name: "Forest Emerald (Default)", hex: "#153E35", label: "Green" },
   { name: "Royal Blue", hex: "#1D4ED8", label: "Blue" },
-  { name: "Forest Emerald", hex: "#059669", label: "Green" },
+  { name: "Ruby Crimson", hex: "#DC2626", label: "Red" },
   { name: "Deep Violet", hex: "#7C3AED", label: "Violet" },
   { name: "Sunset Amber", hex: "#D97706", label: "Amber" },
 ];

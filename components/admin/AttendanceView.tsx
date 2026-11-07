@@ -152,7 +152,7 @@ interface AttendanceViewProps {
 }
 
 export default function AttendanceView({ archetype }: AttendanceViewProps) {
-  const { activeSubTab, theme, isDemoMode, adminName } = useAdmin();
+  const { activeSubTab, theme, isDemoMode } = useAdmin();
   const archetypeConfig = ARCHETYPES[archetype] || ARCHETYPES.K12_SCHOOL;
   const terms = archetypeConfig.terms;
 
@@ -728,7 +728,7 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
           </div>
 
           <div className="flex items-center gap-2 font-medium">
-            <span>Teacher: <strong>{adminName || "Authorized Proctor"}</strong></span>
+            <span>Role: <strong>Class Teacher / Faculty In-Charge</strong></span>
             <span className="text-slate-300">•</span>
             <span className="text-emerald-700 font-bold">Auto-lock in 3 days</span>
           </div>
@@ -2124,7 +2124,7 @@ export default function AttendanceView({ archetype }: AttendanceViewProps) {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Recorded By:</span>
-                    <span className="font-bold text-slate-800">{adminName} (Authorized Proctor)</span>
+                    <span className="font-bold text-slate-800">Class Faculty In-Charge</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Timestamp:</span>

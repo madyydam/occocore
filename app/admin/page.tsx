@@ -41,7 +41,7 @@ export default function AdminDashboardPage() {
     activeSubTab,
     currentArchetype,
     institutionName,
-    adminName,
+    adminRole,
     theme,
     isDemoMode,
   } = useAdmin();
@@ -197,7 +197,7 @@ export default function AdminDashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-1">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 font-serif">
-            Welcome back, {adminName.replace("Super Admin", "Super")}
+            Welcome, {adminRole}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
             Here&apos;s what&apos;s happening at {institutionName} today.

@@ -221,6 +221,7 @@ interface AdminContextType {
   setInstitutionName: (name: string) => void;
   adminName: string;
   adminRole: string;
+  adminInitials: string;
   brandColor: string;
   setBrandColor: (color: string) => void;
   theme: BrandThemePalette;
@@ -300,7 +301,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         // ignore
       }
     }
-    return "#DC2626";
+    return "#153E35";
   });
 
   const [enabledModules, setEnabledModules] = useState<AdminMainModule[]>(() => {
@@ -343,8 +344,17 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     };
   }, [isDemoMode]);
 
-  const adminName = "Super Admin";
-  const adminRole = isDemoMode ? "Guest Evaluator (Demo Sandbox)" : "Institution Owner / Super Admin";
+  const adminName = "Institution Owner";
+  const adminRole = isDemoMode
+    ? "Institution Owner"
+    : currentArchetype === "K12_SCHOOL"
+    ? "Principal & Institution Head"
+    : currentArchetype === "DEGREE_COLLEGE"
+    ? "Principal & College Head"
+    : currentArchetype === "UNIVERSITY"
+    ? "Vice-Chancellor / Dean"
+    : "Institution Director & Owner";
+  const adminInitials = "IO";
 
   const setBrandColor = (color: string) => {
     setBrandColorState(color);
@@ -446,6 +456,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         setInstitutionName,
         adminName,
         adminRole,
+        adminInitials,
         brandColor,
         setBrandColor,
         theme,
