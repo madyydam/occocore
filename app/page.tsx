@@ -2100,7 +2100,7 @@ export default function Home() {
                 Launch Demo
               </Link>
               <Link
-                href="/admin?mode=demo"
+                href="/demo"
                 className="flex-1 sm:flex-initial px-3.5 py-1.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-semibold text-xs transition-all active:scale-95 text-center cursor-pointer shadow-2xs"
               >
                 Dashboard Demo

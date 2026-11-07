@@ -321,9 +321,29 @@ export default function AcademicsView({ archetype }: AcademicsViewProps) {
         </div>
       )}
 
-      {/* Action Bar */}
-      <div className="flex items-center justify-end gap-2 pb-1 border-b border-slate-200">
-        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap ml-auto">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-1 border-b border-slate-200">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 font-serif flex items-center gap-2">
+            <span>{terms.cohortPlural} & Curriculum Architecture</span>
+            <span className="text-xs px-2.5 py-0.5 rounded-full font-sans font-bold bg-blue-50 text-blue-800 border border-blue-200">
+              {terms.gradingSystem}
+            </span>
+            {!isDemoMode && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-emerald-50 text-emerald-800 border border-emerald-200">
+                PostgreSQL Live
+              </span>
+            )}
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            {archetype === "K12_SCHOOL" && "Class/Section capacities, NCERT & CBSE syllabus schemes, weekly timetables, and teacher proxy substitution."}
+            {archetype === "DEGREE_COLLEGE" && "Degree branches, UGC Choice Based Credit System (CBCS), lecture/lab timetables, and HOD faculty workload."}
+            {archetype === "UNIVERSITY" && "Schools & Faculties, NEP 2020 Digilocker ABC course credits, research seminars, and doctoral workloads."}
+            {archetype === "COACHING_ACADEMY" && "JEE/NEET target batches, Daily Practice Problems (DPP) syllabi, test series timetables, and doubt clinics."}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
           <div className="relative">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input

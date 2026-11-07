@@ -2,8 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   UserPlus,
@@ -23,7 +22,6 @@ import {
   Bus,
   BedDouble,
   Briefcase,
-  ArrowLeft,
 } from "lucide-react";
 import {
   AdminProvider,
@@ -31,17 +29,19 @@ import {
   AdminMainModule,
   MODULE_SUBTABS,
 } from "@/lib/admin/adminContext";
+import { ARCHETYPES } from "@/lib/terminology";
 import CustomizeThemeDrawer from "@/components/admin/CustomizeThemeDrawer";
 
 function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
   const {
     activeModule,
     setActiveModule,
     activeSubTab,
     setActiveSubTab,
+    currentArchetype,
     institutionName,
+    adminName,
     adminRole,
     theme,
     enabledModules,
@@ -79,22 +79,9 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const currentModuleItem = allNavDefinitions.find((m) => m.id === effectiveModule);
   const currentModuleLabel = currentModuleItem?.label || "Dashboard";
 
-  // Drill-down sub-module navigation for demo mode only
-  // In demo mode, selecting any non-dashboard module transforms the sidebar into only that module's sub-tabs
-  const isDemoDrilldown = isDemoMode && effectiveModule !== "dashboard";
-  const activeDrillItem = isDemoDrilldown ? currentModuleItem : null;
-  const activeDrillSubTabs = isDemoDrilldown ? subTabs : [];
-
   const handleNavClick = (item: (typeof allNavDefinitions)[0]) => {
     setActiveModule(item.id);
     setMobileSidebarOpen(false);
-  };
-
-  const handleBackToAllModules = () => {
-    setActiveModule("dashboard");
-    if (pathname === "/admin/roles") {
-      router.push(isDemoMode ? "/admin?mode=demo" : "/admin");
-    }
   };
 
   return (
@@ -109,221 +96,153 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
         style={{ backgroundColor: theme.sidebarBg, borderColor: theme.sidebarBorder }}
       >
         <div className="flex flex-col flex-1 overflow-y-auto">
-          {/* Sidebar Header: College Logo, Institute Name BIG & Logged-in Role SMALL */}
+          {/* Sidebar Header: Logo & Branding */}
           <div
-            className="px-5 py-5 border-b flex items-start justify-between gap-3"
+            className="px-6 py-6 border-b flex items-center justify-between"
             style={{ borderColor: theme.sidebarBorder }}
           >
             <Link
               href="/admin"
-              onClick={() => {
-                setActiveModule("dashboard");
-              }}
-              className="flex items-start gap-3 group min-w-0 flex-1"
+              onClick={() => setActiveModule("dashboard")}
+              className="flex items-center gap-3 group"
             >
               <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-md transition-transform group-hover:scale-105 shrink-0 border border-white/20"
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-md transition-colors"
                 style={{ backgroundColor: theme.primary }}
               >
                 <GraduationCap className="w-5 h-5 text-white" />
               </div>
-              <div className="flex flex-col min-w-0 flex-1">
-                <span className="font-bold text-white text-xs tracking-tight leading-snug group-hover:opacity-90 transition-opacity line-clamp-2">
-                  {institutionName}
+              <div className="flex flex-col">
+                <span className="font-extrabold text-white text-base tracking-tight leading-none group-hover:opacity-90 transition-opacity">
+                  OCCO Core
                 </span>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 animate-pulse" />
-                  <span
-                    className="text-[10px] font-medium tracking-wide uppercase truncate"
-                    style={{ color: theme.primaryLight }}
-                  >
-                    {adminRole}
-                  </span>
-                </div>
+                <span
+                  className="text-[10px] font-medium tracking-wide mt-1 uppercase"
+                  style={{ color: theme.primaryLight }}
+                >
+                  Owner Admin Portal
+                </span>
               </div>
             </Link>
 
             {/* Close button on mobile */}
             <button
               onClick={() => setMobileSidebarOpen(false)}
-              className="md:hidden text-slate-400 hover:text-white p-1 cursor-pointer shrink-0"
+              className="md:hidden text-slate-400 hover:text-white p-1 cursor-pointer"
               aria-label="Close sidebar"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          {/* Navigation Items: Sub-modules drill-down in Demo Mode vs All Modules in Standard */}
-          {isDemoDrilldown && activeDrillItem ? (
-            <nav className="px-3 py-2 space-y-2 flex-1">
-              {/* Back to All Modules Button at Top of Sidebar */}
-              <button
-                type="button"
-                onClick={handleBackToAllModules}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-200 hover:text-white bg-white/5 hover:bg-white/10 transition-colors cursor-pointer border border-white/10 group shadow-2xs"
+          {/* Institutional Context Chip */}
+          <div
+            className="px-5 py-3 mx-3 my-3 rounded-xl border flex items-center gap-2.5 transition-colors"
+            style={{ backgroundColor: "rgba(0,0,0,0.25)", borderColor: theme.sidebarBorder }}
+          >
+            <div
+              className="w-2 h-2 rounded-full animate-pulse shrink-0"
+              style={{ backgroundColor: theme.primary }}
+            />
+            <div className="min-w-0 flex-1">
+              <span className="text-[11px] font-bold text-slate-200 block truncate">
+                {institutionName}
+              </span>
+              <span
+                className="text-[9px] font-medium block truncate"
+                style={{ color: theme.primaryLight }}
               >
-                <ArrowLeft className="w-4 h-4 text-emerald-400 group-hover:-translate-x-0.5 transition-transform" />
-                <span>← Back to All Modules</span>
-              </button>
-
-              {/* Active Selected Module Card in Sidebar */}
-              <div
-                className="px-3 py-2.5 rounded-xl border flex items-center gap-2.5 shadow-xs"
-                style={{
-                  backgroundColor: "rgba(0,0,0,0.3)",
-                  borderColor: theme.sidebarBorder,
-                }}
-              >
-                <div
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-white shrink-0 shadow-xs"
-                  style={{ backgroundColor: theme.primary }}
-                >
-                  <activeDrillItem.icon className="w-4 h-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <span className="text-xs font-bold text-white block truncate leading-tight">
-                    {activeDrillItem.label}
-                  </span>
-                  <span className="text-[10px] block truncate" style={{ color: theme.primaryLight }}>
-                    Sub-Modules Selection
-                  </span>
-                </div>
-              </div>
-
-              {/* Sub-modules list */}
-              <div className="space-y-1 pt-1">
-                <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-                  <span>Sub-Sections</span>
-                  <span className="text-[9px] font-mono text-slate-400">{activeDrillSubTabs.length}</span>
-                </div>
-
-                {activeDrillSubTabs.map((subTab) => {
-                  const isSubActive = activeSubTab === subTab.id;
-                  return (
-                    <button
-                      key={subTab.id}
-                      type="button"
-                      onClick={() => {
-                        setActiveSubTab(subTab.id);
-                        setMobileSidebarOpen(false);
-                      }}
-                      style={
-                        isSubActive
-                          ? {
-                              backgroundColor: theme.sidebarActive,
-                              borderColor: theme.sidebarActiveBorder,
-                              color: "#ffffff",
-                            }
-                          : {}
-                      }
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-all cursor-pointer ${
-                        isSubActive
-                          ? "text-white shadow-xs border font-bold"
-                          : "text-slate-300 hover:text-white hover:bg-white/5 font-medium"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div
-                          className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                            isSubActive ? "bg-emerald-400" : "bg-slate-600"
-                          }`}
-                        />
-                        <span className="truncate text-left">{subTab.label}</span>
-                      </div>
-                      {subTab.badge && (
-                        <span
-                          className="text-[9px] font-bold px-1.5 py-0.5 rounded-md shrink-0 ml-1.5"
-                          style={{
-                            backgroundColor: isSubActive ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.08)",
-                            color: isSubActive ? "#ffffff" : theme.primaryLight,
-                          }}
-                        >
-                          {subTab.badge}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </nav>
-          ) : (
-            <nav className="px-3 py-2 space-y-1.5 flex-1">
-              <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider opacity-60 flex items-center justify-between">
-                <span>Active Modules</span>
-                <span className="text-[9px] font-mono opacity-75">{mainNavItems.length}</span>
-              </div>
-
-              {mainNavItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = effectiveModule === item.id;
-
-                return (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    onClick={() => handleNavClick(item)}
-                    style={
-                      isActive
-                        ? {
-                            backgroundColor: theme.sidebarActive,
-                            borderColor: theme.sidebarActiveBorder,
-                            color: "#ffffff",
-                          }
-                        : {}
-                    }
-                    className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 cursor-pointer ${
-                      isActive
-                        ? "text-white shadow-xs border font-bold"
-                        : "text-slate-300 hover:text-white hover:bg-white/5"
-                    }`}
-                  >
-                    <Icon
-                      className="w-4 h-4 shrink-0 transition-colors"
-                      style={{ color: isActive ? theme.primaryLight : "rgb(148, 163, 184)" }}
-                    />
-                    <span className="flex-1">{item.label}</span>
-                    {isActive && (
-                      <div
-                        className="w-1.5 h-1.5 rounded-full shrink-0 shadow-xs"
-                        style={{ backgroundColor: theme.primary }}
-                      />
-                    )}
-                  </Link>
-                );
-              })}
-            </nav>
-          )}
-        </div>
-
-        {/* Sidebar Footer: Only "OCCO Core" Branding */}
-        <div
-          className="p-3.5 border-t flex items-center justify-between"
-          style={{ backgroundColor: "rgba(0,0,0,0.3)", borderColor: theme.sidebarBorder }}
-        >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-7 h-7 rounded-lg overflow-hidden border border-white/20 bg-[#091D17] flex items-center justify-center shrink-0 shadow-xs">
-              <Image
-                src="/brand/occo-logo.jpg"
-                alt="OCCO"
-                width={28}
-                height={28}
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div className="min-w-0">
-              <span className="font-extrabold text-white text-xs tracking-tight block">
-                OCCO Core
+                {ARCHETYPES[currentArchetype]?.badge || "CBSE / NEP 2020"}
               </span>
             </div>
           </div>
 
-          <Link
-            href="/auth/login"
-            title="Log out of Institution Portal"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-950/30 transition-colors shrink-0 cursor-pointer"
+          {/* Navigation Items (Main Modules Only - Filtered by Module Manager) */}
+          <nav className="px-3 py-2 space-y-1.5 flex-1">
+            <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider opacity-60 flex items-center justify-between">
+              <span>Active Modules</span>
+              <span className="text-[9px] font-mono opacity-75">{mainNavItems.length}</span>
+            </div>
+
+            {mainNavItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = effectiveModule === item.id;
+
+              return (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  onClick={() => handleNavClick(item)}
+                  style={
+                    isActive
+                      ? {
+                          backgroundColor: theme.sidebarActive,
+                          borderColor: theme.sidebarActiveBorder,
+                          color: "#ffffff",
+                        }
+                      : {}
+                  }
+                  className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 cursor-pointer ${
+                    isActive
+                      ? "text-white shadow-xs border font-bold"
+                      : "text-slate-300 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  <Icon
+                    className="w-4 h-4 shrink-0 transition-colors"
+                    style={{ color: isActive ? theme.primaryLight : "rgb(148, 163, 184)" }}
+                  />
+                  <span className="flex-1">{item.label}</span>
+                  {isActive && (
+                    <div
+                      className="w-1.5 h-1.5 rounded-full shrink-0 shadow-xs"
+                      style={{ backgroundColor: theme.primary }}
+                    />
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* Sidebar Footer: Super Admin Profile */}
+        <div
+          className="p-3 border-t"
+          style={{ backgroundColor: "rgba(0,0,0,0.3)", borderColor: theme.sidebarBorder }}
+        >
+          <div
+            className="p-2.5 rounded-xl border flex items-center justify-between gap-3"
+            style={{ backgroundColor: "rgba(0,0,0,0.25)", borderColor: theme.sidebarBorder }}
           >
-            <LogOut className="w-4 h-4" />
-          </Link>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div
+                className="w-8 h-8 rounded-full border flex items-center justify-center font-bold text-xs shrink-0"
+                style={{
+                  backgroundColor: theme.sidebarActive,
+                  borderColor: theme.sidebarActiveBorder,
+                  color: "#ffffff",
+                }}
+              >
+                SA
+              </div>
+              <div className="min-w-0 flex-1">
+                <span className="font-bold text-xs text-white block truncate leading-tight">
+                  {adminName}
+                </span>
+                <span className="text-[10px] block truncate" style={{ color: theme.primaryLight }}>
+                  {adminRole}
+                </span>
+              </div>
+            </div>
+
+            <Link
+              href="/auth/login"
+              title="Log out of Super Admin Portal"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-950/30 transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
       </aside>
 
@@ -352,20 +271,17 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             </button>
 
             <div className="flex items-center gap-2">
-              <div
-                className="w-6 h-6 rounded-md flex items-center justify-center text-white text-[10px] font-extrabold shadow-2xs shrink-0"
-                style={{ backgroundColor: theme.primary }}
-              >
-                <GraduationCap className="w-3.5 h-3.5" />
-              </div>
+              <span className="text-xs font-semibold text-slate-400 hidden sm:inline">
+                Console /
+              </span>
               <h1 className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight">
                 {currentModuleLabel}
               </h1>
               <span
-                className="text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider"
+                className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                 style={{ backgroundColor: theme.badgeBg, color: theme.badgeText }}
               >
-                {isDemoMode ? "Demo" : "Live"}
+                Live
               </span>
             </div>
           </div>
@@ -394,26 +310,25 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
                 className="w-7 h-7 rounded-full text-white font-bold text-xs flex items-center justify-center shadow-xs"
                 style={{ backgroundColor: theme.primary }}
               >
-                IO
+                SA
               </div>
               <div className="hidden sm:block text-left">
                 <span className="text-xs font-bold text-slate-800 block leading-tight">
-                  {adminRole}
+                  {adminName}
                 </span>
                 <span className="text-[10px] text-slate-500 block leading-none">
-                  Institutional Governance
+                  Super Admin
                 </span>
               </div>
             </div>
 
-            {/* Log out CTA button just as icon */}
+            {/* Log out CTA button matching reference */}
             <Link
               href="/auth/login"
-              title="Log out"
-              aria-label="Log out"
-              className="inline-flex items-center justify-center p-2 rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 hover:text-red-700 transition-colors shadow-2xs cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 hover:text-red-700 transition-colors text-xs font-bold shadow-2xs cursor-pointer"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Log out</span>
             </Link>
           </div>
         </header>
@@ -424,11 +339,11 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             <div className="flex items-center space-x-2">
               <span className="w-2 h-2 rounded-full bg-amber-950 animate-ping" />
               <span>
-                <strong>Demo Sandbox Active:</strong> You are exploring with sample college mock data. Changes in this session are not saved to the real PostgreSQL database.
+                <strong>Demo Sandbox Active:</strong> You are exploring with mock data without authentication. Changes in this session are not saved to the PostgreSQL database.
               </span>
             </div>
             <Link
-              href="/admin?mode=real"
+              href="/admin"
               onClick={() => {
                 setIsDemoMode(false);
               }}
@@ -442,7 +357,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
         {/* ══════════════════════════════════════════════════════════════════════
             SUB-MODULE SECONDARY NAVIGATION STRIP (BELOW MAIN HEADER)
         ══════════════════════════════════════════════════════════════════════ */}
-        {subTabs.length > 1 && (
+        {subTabs.length > 0 && (
           <div className="bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-6 py-2 flex items-center gap-1.5 overflow-x-auto scrollbar-none shadow-2xs">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 pr-1 shrink-0 hidden sm:inline">
               Sections:
