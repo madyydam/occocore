@@ -13,7 +13,18 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check demo mode flag
+  // Explicit real mode query param or accessing clean onboarding: clear demo cookie
+  if (
+    searchParams.get("mode") === "real" ||
+    searchParams.get("real") === "true" ||
+    (pathname === "/onboarding" && searchParams.get("mode") !== "demo")
+  ) {
+    const response = NextResponse.next();
+    response.cookies.delete("occo_demo_mode");
+    return response;
+  }
+
+  // Check demo mode flag: strictly isolated to demo query param or demo cookie
   const isDemo =
     searchParams.get("mode") === "demo" ||
     searchParams.get("demo") === "true" ||

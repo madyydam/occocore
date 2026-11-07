@@ -246,10 +246,17 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     if (typeof window !== "undefined") {
       try {
         const urlParams = new URLSearchParams(window.location.search);
+        // Explicit query param takes highest authority
         if (urlParams.get("mode") === "demo" || urlParams.get("demo") === "true") {
           return true;
         }
-        return localStorage.getItem("occo_demo_mode") === "true";
+        if (urlParams.get("mode") === "real" || urlParams.get("real") === "true") {
+          localStorage.removeItem("occo_demo_mode");
+          document.cookie = "occo_demo_mode=; path=/; max-age=0;";
+          return false;
+        }
+        // In real mode (when no mode=demo query param), do not fall back to demo mode
+        return false;
       } catch {
         // ignore
       }
@@ -261,7 +268,13 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     setIsDemoModeState(demo);
     if (typeof window !== "undefined") {
       try {
-        localStorage.setItem("occo_demo_mode", demo ? "true" : "false");
+        if (demo) {
+          localStorage.setItem("occo_demo_mode", "true");
+          document.cookie = "occo_demo_mode=true; path=/; max-age=86400;";
+        } else {
+          localStorage.removeItem("occo_demo_mode");
+          document.cookie = "occo_demo_mode=; path=/; max-age=0;";
+        }
       } catch {
         // ignore
       }
@@ -271,25 +284,33 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [currentArchetype, setCurrentArchetypeState] = useState<InstitutionalArchetype>(() => {
     if (typeof window !== "undefined") {
       try {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get("mode") === "demo" || urlParams.get("demo") === "true") {
+          return "DEGREE_COLLEGE";
+        }
         const saved = localStorage.getItem("occo_archetype") as InstitutionalArchetype;
         if (saved) return saved;
       } catch {
         // ignore
       }
     }
-    return "K12_SCHOOL";
+    return "DEGREE_COLLEGE";
   });
 
   const [institutionName, setInstitutionNameState] = useState<string>(() => {
     if (typeof window !== "undefined") {
       try {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get("mode") === "demo" || urlParams.get("demo") === "true") {
+          return "Apex Institute of Engineering & Technology";
+        }
         const saved = localStorage.getItem("occo_institution_name");
         if (saved) return saved;
       } catch {
         // ignore
       }
     }
-    return "Apex International Global Academy";
+    return "Apex Institute of Engineering & Technology";
   });
 
   const [brandColor, setBrandColorState] = useState<string>(() => {

@@ -2066,7 +2066,7 @@ export default function Home() {
                 <div className="pt-2 text-center border-t border-slate-100 flex flex-col sm:flex-row items-center justify-center gap-2">
                   <span className="text-slate-500 text-[11px]">Looking for standard instant cloud setup? </span>
                   <Link
-                    href="/onboarding"
+                    href="/onboarding?mode=real"
                     className="text-blue-700 hover:text-blue-800 font-bold text-[11px] hover:underline inline-flex items-center gap-1"
                   >
                     <span>Start Using (Standard Onboarding) →</span>

@@ -2,7 +2,8 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   UserPlus,
@@ -36,6 +37,7 @@ import CustomizeThemeDrawer from "@/components/admin/CustomizeThemeDrawer";
 
 function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const {
     activeModule,
     setActiveModule,
@@ -80,23 +82,23 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const currentModuleItem = allNavDefinitions.find((m) => m.id === effectiveModule);
   const currentModuleLabel = currentModuleItem?.label || "Dashboard";
 
-  // Drill-down sub-module navigation for demo mode
-  const [sidebarDrilldownModule, setSidebarDrilldownModule] = useState<AdminMainModule | null>(null);
+  // Drill-down sub-module navigation for demo mode only
+  // In demo mode, selecting any non-dashboard module transforms the sidebar into only that module's sub-tabs
+  const isDemoDrilldown = isDemoMode && effectiveModule !== "dashboard";
+  const activeDrillItem = isDemoDrilldown ? currentModuleItem : null;
+  const activeDrillSubTabs = isDemoDrilldown ? subTabs : [];
 
   const handleNavClick = (item: (typeof allNavDefinitions)[0]) => {
     setActiveModule(item.id);
-    if (isDemoMode) {
-      setSidebarDrilldownModule(item.id);
-    }
     setMobileSidebarOpen(false);
   };
 
   const handleBackToAllModules = () => {
-    setSidebarDrilldownModule(null);
+    setActiveModule("dashboard");
+    if (pathname === "/admin/roles") {
+      router.push(isDemoMode ? "/admin?mode=demo" : "/admin");
+    }
   };
-
-  const activeDrillItem = allNavDefinitions.find((m) => m.id === sidebarDrilldownModule);
-  const activeDrillSubTabs = sidebarDrilldownModule ? (MODULE_SUBTABS[sidebarDrilldownModule] || []) : [];
 
   return (
     <div className="min-h-screen bg-[#F4F7F6] text-slate-800 font-sans flex flex-col antialiased">
@@ -119,15 +121,19 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
               href="/admin"
               onClick={() => {
                 setActiveModule("dashboard");
-                setSidebarDrilldownModule(null);
               }}
               className="flex items-center gap-3 group"
             >
               <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-md transition-colors"
-                style={{ backgroundColor: theme.primary }}
+                className="w-9 h-9 rounded-xl overflow-hidden border border-white/20 shadow-md transition-transform group-hover:scale-105 shrink-0 bg-[#091D17] flex items-center justify-center"
               >
-                <GraduationCap className="w-5 h-5 text-white" />
+                <Image
+                  src="/brand/occo-logo.jpg"
+                  alt="Logo"
+                  width={36}
+                  height={36}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div className="flex flex-col">
                 <span className="font-extrabold text-white text-base tracking-tight leading-none group-hover:opacity-90 transition-opacity">
@@ -160,12 +166,12 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             <div
               className="w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 shadow-xs"
               style={{
-                backgroundColor: "rgba(255,255,255,0.06)",
+                backgroundColor: "rgba(255,255,255,0.08)",
                 borderColor: theme.sidebarBorder,
                 color: theme.primaryLight,
               }}
             >
-              <Building2 className="w-4 h-4" />
+              <Building2 className="w-4 h-4 text-emerald-300" />
             </div>
             <div className="min-w-0 flex-1">
               <span className="text-[11px] font-bold text-white block truncate leading-tight">
@@ -176,13 +182,13 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
                 style={{ color: theme.primaryLight }}
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>{ARCHETYPES[currentArchetype]?.badge || "Autonomous Institution"}</span>
+                <span>{isDemoMode ? "Autonomous College • NAAC 'A++'" : (ARCHETYPES[currentArchetype]?.badge || "Autonomous Institution")}</span>
               </span>
             </div>
           </div>
 
           {/* Navigation Items: Sub-modules drill-down in Demo Mode vs All Modules in Standard */}
-          {isDemoMode && sidebarDrilldownModule && activeDrillItem ? (
+          {isDemoDrilldown && activeDrillItem ? (
             <nav className="px-3 py-2 space-y-2 flex-1">
               {/* Back to All Modules Button at Top of Sidebar */}
               <button
@@ -389,17 +395,24 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             </button>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-slate-400 hidden sm:inline">
-                Console /
+              <div
+                className="w-6 h-6 rounded-md flex items-center justify-center text-white text-[10px] font-extrabold shadow-2xs shrink-0"
+                style={{ backgroundColor: theme.primary }}
+              >
+                <GraduationCap className="w-3.5 h-3.5" />
+              </div>
+              <span className="text-xs font-bold text-slate-500 hidden sm:inline max-w-[240px] truncate">
+                {institutionName}
               </span>
+              <span className="text-slate-300 hidden sm:inline">/</span>
               <h1 className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight">
                 {currentModuleLabel}
               </h1>
               <span
-                className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                className="text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider"
                 style={{ backgroundColor: theme.badgeBg, color: theme.badgeText }}
               >
-                Live
+                {isDemoMode ? "Demo" : "Live"}
               </span>
             </div>
           </div>
@@ -457,11 +470,11 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             <div className="flex items-center space-x-2">
               <span className="w-2 h-2 rounded-full bg-amber-950 animate-ping" />
               <span>
-                <strong>Demo Sandbox Active:</strong> You are exploring with mock data without authentication. Changes in this session are not saved to the PostgreSQL database.
+                <strong>Demo Sandbox Active:</strong> You are exploring with sample college mock data. Changes in this session are not saved to the real PostgreSQL database.
               </span>
             </div>
             <Link
-              href="/admin"
+              href="/admin?mode=real"
               onClick={() => {
                 setIsDemoMode(false);
               }}
