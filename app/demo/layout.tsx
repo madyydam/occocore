@@ -281,9 +281,9 @@ function DemoLayoutInner({ children }: { children: React.ReactNode }) {
           )}
         </div>
 
-        {/* Sidebar Footer: Strictly "OCCO Core" Branding + Icon-only logout */}
+        {/* Sidebar Footer: Strictly "OCCO Core" Branding */}
         <div
-          className="p-3.5 border-t flex items-center justify-between"
+          className="p-3.5 border-t flex items-center justify-start"
           style={{ backgroundColor: "rgba(0,0,0,0.3)", borderColor: theme.sidebarBorder }}
         >
           <div className="flex items-center gap-2.5 min-w-0">
@@ -302,14 +302,6 @@ function DemoLayoutInner({ children }: { children: React.ReactNode }) {
               </span>
             </div>
           </div>
-
-          <Link
-            href="/"
-            title="Exit Demo Sandbox"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-950/30 transition-colors shrink-0 cursor-pointer"
-          >
-            <LogOut className="w-4 h-4" />
-          </Link>
         </div>
       </aside>
 
@@ -465,3 +457,4 @@ export default function DemoLayout({ children }: { children: React.ReactNode }) 
     </DemoProvider>
   );
 }
+
