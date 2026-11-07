@@ -98,14 +98,14 @@ function DemoLayoutInner({ children }: { children: React.ReactNode }) {
         style={{ backgroundColor: theme.sidebarBg, borderColor: theme.sidebarBorder }}
       >
         <div className="flex flex-col flex-1 overflow-y-auto">
-          {/* Sidebar Header: College Logo, Institute Name BIG & Logged-in Role SMALL */}
+          {/* Sidebar Header: College Logo & Institute Name */}
           <div
-            className="px-5 py-5 border-b flex items-start justify-between gap-3"
+            className="px-5 py-5 border-b flex items-center justify-between gap-3"
             style={{ borderColor: theme.sidebarBorder }}
           >
             <div
               onClick={() => setActiveModule("dashboard")}
-              className="flex items-start gap-3 group min-w-0 flex-1 cursor-pointer"
+              className="flex items-center gap-3 group min-w-0 flex-1 cursor-pointer"
             >
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-md transition-transform group-hover:scale-105 shrink-0 border border-white/20"
@@ -113,19 +113,10 @@ function DemoLayoutInner({ children }: { children: React.ReactNode }) {
               >
                 <GraduationCap className="w-5 h-5 text-white" />
               </div>
-              <div className="flex flex-col min-w-0 flex-1">
-                <span className="font-bold text-white text-xs tracking-tight leading-snug group-hover:opacity-90 transition-opacity line-clamp-2">
+              <div className="min-w-0 flex-1">
+                <span className="font-bold text-white text-xs sm:text-sm tracking-tight leading-snug group-hover:opacity-90 transition-opacity line-clamp-2">
                   {institutionName}
                 </span>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 animate-pulse" />
-                  <span
-                    className="text-[10px] font-medium tracking-wide uppercase truncate"
-                    style={{ color: theme.primaryLight }}
-                  >
-                    {activeRoleDef.shortTitle}
-                  </span>
-                </div>
               </div>
             </div>
 
