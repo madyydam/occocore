@@ -159,11 +159,6 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 
           {/* Navigation Items (Main Modules Only - Filtered by Module Manager) */}
           <nav className="px-3 py-2 space-y-1.5 flex-1">
-            <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider opacity-60 flex items-center justify-between">
-              <span>Active Modules</span>
-              <span className="text-[9px] font-mono opacity-75">{mainNavItems.length}</span>
-            </div>
-
             {mainNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = effectiveModule === item.id;
