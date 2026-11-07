@@ -122,6 +122,7 @@ export default function Home() {
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [instituteType, setInstituteType] = useState("K-12 School");
+  const [customScope, setCustomScope] = useState("Dedicated On-Premise / Private Cloud");
 
   const handleDemoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -389,6 +390,9 @@ export default function Home() {
             <a href="#compliance" className="hover:text-blue-700 transition-colors">
               Statutory Shield
             </a>
+            <a href="#custom-build" className="hover:text-blue-700 transition-colors font-medium">
+              Custom Build
+            </a>
           </nav>
 
           {/* Action CTAs */}
@@ -455,6 +459,13 @@ export default function Home() {
               className="block py-1 hover:text-blue-700"
             >
               Statutory Shield
+            </a>
+            <a
+              href="#custom-build"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block py-1 hover:text-blue-700 font-semibold"
+            >
+              Custom Build
             </a>
             <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
               <Link
@@ -1915,23 +1926,23 @@ export default function Home() {
       </section>
 
       {/* ═════════════════════════════════════════════════════════════════════════
-          SECTION 6: WALKTHROUGH & FOOTER (Strict Screen-Fit on Desktop)
+          SECTION 6: CUSTOM BUILD & FOOTER (Strict Screen-Fit on Desktop)
       ═════════════════════════════════════════════════════════════════════════ */}
       <section
-        id="demo"
+        id="custom-build"
         className="lg:h-screen lg:max-h-screen lg:overflow-hidden flex flex-col justify-between py-6 lg:py-4 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80 bg-gradient-to-b from-white to-[#F8FAFC]"
       >
         <div className="max-w-2xl mx-auto w-full my-auto">
           <div className="p-5 sm:p-6 rounded-2xl border border-slate-200 bg-white shadow-lg space-y-4">
             <div className="text-center space-y-1">
               <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">
-                Institutional Access
+                Enterprise & Bespoke Deployments
               </span>
               <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-snug">
-                Experience OCCO Core Live.
+                Request a Custom ERP Build
               </h2>
-              <p className="text-[11px] sm:text-xs text-slate-500">
-                Schedule a confidential architecture walkthrough with our engineering team.
+              <p className="text-[11px] sm:text-xs text-slate-500 max-w-md mx-auto">
+                Need dedicated on-premise hosting, tailored university workflows, legacy ERP migration, or bespoke modules? Partner directly with our core engineering team.
               </p>
             </div>
 
@@ -1941,10 +1952,10 @@ export default function Home() {
                   <CheckCircle2 className="w-5 h-5" />
                 </div>
                 <h3 className="font-extrabold text-slate-900 text-sm">
-                  Walkthrough Request Received
+                  Custom Build Request Received
                 </h3>
                 <p className="text-[11px] text-slate-600 max-w-sm mx-auto">
-                  Thank you, <strong>{instituteName}</strong>. Our team will reach out to <strong>{contactEmail}</strong> within 4 business hours.
+                  Thank you, <strong>{instituteName}</strong>. Our enterprise engineering team will review your specifications ({customScope}) and reach out to <strong>{contactEmail}</strong> within 4 business hours.
                 </p>
               </div>
             ) : (
@@ -1957,6 +1968,7 @@ export default function Home() {
                     <input
                       type="text"
                       required
+                      placeholder="e.g. Apex University"
                       value={instituteName}
                       onChange={(e) => setInstituteName(e.target.value)}
                       className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 bg-white text-xs"
@@ -1976,6 +1988,7 @@ export default function Home() {
                       <option value="Degree College">Degree College (UGC / NAAC)</option>
                       <option value="Autonomous University">Autonomous University</option>
                       <option value="Coaching Academy">Coaching Academy (JEE / NEET)</option>
+                      <option value="Group of Institutions">Group of Institutions / Multi-Campus</option>
                     </select>
                   </div>
                 </div>
@@ -1988,6 +2001,7 @@ export default function Home() {
                     <input
                       type="email"
                       required
+                      placeholder="admin@institution.edu"
                       value={contactEmail}
                       onChange={(e) => setContactEmail(e.target.value)}
                       className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 bg-white text-xs"
@@ -2000,6 +2014,7 @@ export default function Home() {
                     </label>
                     <input
                       type="tel"
+                      placeholder="+91 98765 43210"
                       value={contactPhone}
                       onChange={(e) => setContactPhone(e.target.value)}
                       className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 bg-white text-xs"
@@ -2007,20 +2022,37 @@ export default function Home() {
                   </div>
                 </div>
 
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 block text-[11px]">
+                    Primary Custom Scope
+                  </label>
+                  <select
+                    value={customScope}
+                    onChange={(e) => setCustomScope(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 bg-white text-xs"
+                  >
+                    <option value="Dedicated On-Premise / Private Cloud">Dedicated On-Premise / Private Cloud Deployment</option>
+                    <option value="Custom Academic Workflows & Exam Engine">Custom Academic Workflows & Exam Engine</option>
+                    <option value="Legacy ERP Data Migration & Sync">Legacy ERP Data Migration & Sync</option>
+                    <option value="White-Label & Custom System Integrations">Full White-Label & Third-Party System Integrations</option>
+                    <option value="End-to-End Bespoke Institutional Solution">Complete Bespoke Institutional ERP Build</option>
+                  </select>
+                </div>
+
                 <button
                   type="submit"
                   className="w-full py-2.5 rounded-lg bg-blue-700 hover:bg-blue-800 text-white font-extrabold text-xs shadow-tactile-blue transition-all active:scale-95 cursor-pointer mt-1"
                 >
-                  Confirm Architecture Walkthrough
+                  Submit Custom Build Request →
                 </button>
 
-                <div className="pt-2 text-center border-t border-slate-100 flex flex-col sm:flex-row items-center justify-center gap-3">
-                  <span className="text-slate-500 text-[11px]">Ready for permanent setup? </span>
+                <div className="pt-2 text-center border-t border-slate-100 flex flex-col sm:flex-row items-center justify-center gap-2">
+                  <span className="text-slate-500 text-[11px]">Looking for standard instant cloud setup? </span>
                   <Link
                     href="/onboarding"
                     className="text-blue-700 hover:text-blue-800 font-bold text-[11px] hover:underline inline-flex items-center gap-1"
                   >
-                    <span>Start Using (Real Database Mode) →</span>
+                    <span>Start Using (Standard Onboarding) →</span>
                   </Link>
                 </div>
               </form>
