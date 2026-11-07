@@ -1932,7 +1932,8 @@ export default function Home() {
         id="custom-build"
         className="lg:h-screen lg:max-h-screen lg:overflow-hidden flex flex-col justify-between py-6 lg:py-4 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80 bg-gradient-to-b from-white to-[#F8FAFC]"
       >
-        <div className="max-w-2xl mx-auto w-full my-auto">
+        <div className="max-w-2xl mx-auto w-full my-auto space-y-3">
+          {/* CARD 1: CUSTOM BUILD REQUEST */}
           <div className="p-5 sm:p-6 rounded-2xl border border-slate-200 bg-white shadow-lg space-y-4">
             <div className="text-center space-y-1">
               <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">
@@ -2057,37 +2058,37 @@ export default function Home() {
                 </div>
               </form>
             )}
+          </div>
 
-            {/* COMPACT PROFESSIONAL DEMO ACCESS */}
-            <div className="mt-3.5 p-3 rounded-xl bg-slate-50 border border-slate-200/90 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-7 h-7 rounded-lg bg-white border border-slate-200/80 flex items-center justify-center shrink-0 text-blue-700 shadow-2xs">
-                  <Sparkles className="w-3.5 h-3.5" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900 leading-tight">
-                    Instant Demo Mode
-                  </h4>
-                  <p className="text-[11px] text-slate-500 leading-tight">
-                    Explore full ERP with sample institution data
-                  </p>
-                </div>
+          {/* CARD 2: STANDALONE INSTANT DEMO SANDBOX */}
+          <div className="p-3 sm:px-4 sm:py-3 rounded-2xl border border-slate-200 bg-white shadow-md flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-200/60 flex items-center justify-center shrink-0 text-blue-700 shadow-2xs">
+                <Sparkles className="w-4 h-4" />
               </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-900 leading-tight">
+                  Instant Demo Sandbox
+                </h4>
+                <p className="text-[11px] text-slate-500 leading-tight">
+                  Explore full ERP with sample data without signing up
+                </p>
+              </div>
+            </div>
 
-              <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
-                <Link
-                  href="/onboarding?mode=demo"
-                  className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition-all active:scale-95 text-center cursor-pointer"
-                >
-                  Launch Demo
-                </Link>
-                <Link
-                  href="/admin?mode=demo"
-                  className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-semibold text-xs transition-all active:scale-95 text-center cursor-pointer"
-                >
-                  Dashboard
-                </Link>
-              </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+              <Link
+                href="/onboarding?mode=demo"
+                className="flex-1 sm:flex-initial px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition-all active:scale-95 text-center cursor-pointer shadow-2xs"
+              >
+                Launch Demo
+              </Link>
+              <Link
+                href="/admin?mode=demo"
+                className="flex-1 sm:flex-initial px-3.5 py-1.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-semibold text-xs transition-all active:scale-95 text-center cursor-pointer shadow-2xs"
+              >
+                Dashboard
+              </Link>
             </div>
           </div>
         </div>
