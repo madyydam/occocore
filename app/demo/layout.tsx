@@ -50,8 +50,6 @@ function DemoLayoutInner({ children }: { children: React.ReactNode }) {
 
   const activeRoleDef = DEMO_ROLES[currentDemoRole] || DEMO_ROLES.college_admin;
 
-  const subTabs = DEMO_MODULE_SUBTABS[activeModule] || [];
-
   const allNavDefinitions = [
     { id: "dashboard" as DemoMainModule, label: "Dashboard", icon: LayoutDashboard },
     { id: "admissions" as DemoMainModule, label: "Admissions", icon: UserPlus },
@@ -367,56 +365,6 @@ function DemoLayoutInner({ children }: { children: React.ReactNode }) {
             </Link>
           </div>
         </header>
-
-        {/* ══════════════════════════════════════════════════════════════════════
-            SUB-MODULE SECONDARY NAVIGATION STRIP (ONLY SHOWN WHEN > 1 TABS)
-        ══════════════════════════════════════════════════════════════════════ */}
-        {subTabs.length > 1 && (
-          <div className="bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-6 py-2 flex items-center gap-1.5 overflow-x-auto scrollbar-none shadow-2xs">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 pr-1 shrink-0 hidden sm:inline">
-              Sections:
-            </span>
-            {subTabs.map((tab) => {
-              const isSelected = activeSubTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveSubTab(tab.id)}
-                  style={
-                    isSelected
-                      ? {
-                          backgroundColor: theme.primary,
-                          borderColor: theme.primary,
-                          color: "#ffffff",
-                        }
-                      : {}
-                  }
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                    isSelected
-                      ? "text-white shadow-xs"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 border border-slate-200/60"
-                  }`}
-                >
-                  <span>{tab.label}</span>
-                  {tab.badge && (
-                    <span
-                      style={
-                        isSelected
-                          ? { backgroundColor: "rgba(255, 255, 255, 0.25)", color: "#ffffff" }
-                          : {}
-                      }
-                      className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold ${
-                        isSelected ? "text-white" : "bg-slate-200 text-slate-700"
-                      }`}
-                    >
-                      {tab.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        )}
 
         {/* Page Content Body */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
