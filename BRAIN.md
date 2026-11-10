@@ -99,3 +99,4 @@ c:\Users\madhu\Documents\Univercity ERP\app\
 * `custom_build_requests`: University on-premise leads, student sizing, hosting models, quoted prices, deal statuses.
 * `tenants`: Registered institutions (schools, colleges, universities, academies).
 * `users`: Institution staff, faculty, students, and parents.
+
