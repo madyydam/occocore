@@ -9,26 +9,11 @@ import {
   CreditCard,
   QrCode,
   X,
-  BookOpen,
-  ClipboardCheck,
-  Award,
-  MessageSquare,
-  Shield,
-  Settings,
-  Library,
-  Bus,
-  BedDouble,
-  Briefcase,
-  Sparkles,
-  ArrowRight,
+  Eye,
+  Wifi,
+  ShieldCheck,
 } from "lucide-react";
-import {
-  useDemo,
-  DEMO_ROLES,
-  DemoRoleKey,
-  DEMO_AVAILABLE_MODULES,
-  DEMO_MODULE_SUBTABS,
-} from "@/lib/demo/demoContext";
+import { useDemo, DEMO_ROLES } from "@/lib/demo/demoContext";
 import { DEMO_ACTIVITIES } from "@/lib/demo/demoMockData";
 import { ActivityFeedItem } from "@/lib/actions/dashboardActions";
 
@@ -45,50 +30,24 @@ import {
   DemoAddonsView,
 } from "@/components/demo/DemoModuleViews";
 
-const MODULE_ICON_MAP: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
-  admissions: Users,
-  academics: BookOpen,
-  attendance: ClipboardCheck,
-  fees: CreditCard,
-  exams: Award,
-  communication: MessageSquare,
-  roles: Shield,
-  settings: Settings,
-  library: Library,
-  transport: Bus,
-  hostel: BedDouble,
-  placements: Briefcase,
-};
-
-const DEMO_ROLE_KEYS: DemoRoleKey[] = [
-  "super_admin",
-  "college_admin",
-  "principal",
-  "hod",
-  "faculty",
-  "admission_officer",
-  "accountant",
-  "hr_manager",
-  "librarian",
-  "student",
-  "parent",
-];
-
 export default function DemoDashboardPage() {
   const {
     activeModule,
     setActiveModule,
     theme,
     currentDemoRole,
-    setCurrentDemoRole,
+    institutionName,
   } = useDemo();
 
   const [activityCategoryFilter, setActivityCategoryFilter] = useState<string>("all");
   const [activities, setActivities] = useState<ActivityFeedItem[]>([...DEMO_ACTIVITIES]);
+  const [viewItemModal, setViewItemModal] = useState<ActivityFeedItem | null>(null);
   const [isUpiModalOpen, setIsUpiModalOpen] = useState(false);
   const [upiAmount, setUpiAmount] = useState("54000");
   const [upiStudentName, setUpiStudentName] = useState("Aarav Sharma");
   const [toastMessage, setToastMessage] = useState<string>("");
+
+  const activeRoleDef = DEMO_ROLES[currentDemoRole] || DEMO_ROLES.college_admin;
 
   const triggerToast = (msg: string) => {
     setToastMessage(msg);
@@ -154,7 +113,7 @@ export default function DemoDashboardPage() {
   }
 
   // ══════════════════════════════════════════════════════════════════════════
-  // DEFAULT: EXECUTIVE OVERVIEW DASHBOARD VIEW
+  // DEFAULT: EXECUTIVE OVERVIEW DASHBOARD VIEW (AUTHENTIC ORIGINAL STYLE)
   // ══════════════════════════════════════════════════════════════════════════
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
@@ -169,177 +128,35 @@ export default function DemoDashboardPage() {
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          DEMO MODE: 11 ROLES SWITCHER & ACTIVE PERSONA METRICS
-      ══════════════════════════════════════════════════════════════════════ */}
-      <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-slate-100 space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-          <div className="flex items-center gap-2.5">
-            <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold shrink-0 shadow-xs"
-              style={{ backgroundColor: theme.primary }}
-            >
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="text-xs sm:text-sm font-bold text-slate-900">
-                Institutional Roles &amp; Persona Simulation
-              </h2>
-              <p className="text-[11px] text-slate-500">
-                Switch between 11 roles to preview tailored dashboards, permissions, and departmental live KPIs.
-              </p>
-            </div>
-          </div>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 uppercase tracking-wider shrink-0 w-fit">
-            Client Demo Sandbox
-          </span>
+      {/* 1. Header Welcome Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-1">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 font-serif">
+            Welcome back, {activeRoleDef.shortTitle}
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Here&apos;s what&apos;s happening at {institutionName} today.
+          </p>
         </div>
 
-        {/* 11 Role Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-          {DEMO_ROLE_KEYS.map((rk) => {
-            const roleDef = DEMO_ROLES[rk];
-            const isCurrent = currentDemoRole === rk;
-            return (
-              <button
-                key={rk}
-                type="button"
-                onClick={() => setCurrentDemoRole(rk)}
-                style={
-                  isCurrent
-                    ? { backgroundColor: theme.primary, color: "#ffffff", borderColor: theme.primary }
-                    : {}
-                }
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 border flex items-center gap-1.5 ${
-                  isCurrent
-                    ? "text-white shadow-xs"
-                    : "bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200/80"
-                }`}
-              >
-                <span>{roleDef.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Active Role Context Banner & 4 Role-Tailored KPIs */}
-        {DEMO_ROLES[currentDemoRole] && (
-          <div
-            className="p-4 rounded-2xl border transition-all"
+        <div className="flex items-center gap-2">
+          <span
+            className="text-[11px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 border"
             style={{
-              backgroundColor: "rgba(21, 62, 53, 0.04)",
-              borderColor: "rgba(21, 62, 53, 0.15)",
+              backgroundColor: theme.primaryLight,
+              color: theme.primaryText,
+              borderColor: theme.primaryLight,
             }}
           >
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3 pb-3 border-b border-emerald-900/10">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-extrabold text-slate-900 text-sm">
-                    {DEMO_ROLES[currentDemoRole].shortTitle}
-                  </span>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${DEMO_ROLES[currentDemoRole].badge}`}>
-                    {DEMO_ROLES[currentDemoRole].department}
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-600 mt-1">
-                  {DEMO_ROLES[currentDemoRole].permissionsDescription}
-                </p>
-              </div>
-            </div>
-
-            {/* 4 Dynamic Role-Tailored KPI Stats */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-              {DEMO_ROLES[currentDemoRole].sampleStats.map((st, idx) => (
-                <div key={idx} className="bg-white p-3 rounded-xl border border-slate-100 shadow-2xs">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    {st.label}
-                  </span>
-                  <span className="text-sm font-extrabold text-slate-900 block mt-0.5">
-                    {st.value}
-                  </span>
-                  <span className="text-[10px] font-medium text-emerald-700 block mt-0.5">
-                    {st.hint}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ══════════════════════════════════════════════════════════════════════
-          INTERACTIVE MODULE-BASED NAVIGATION CARDS (ALL 12 MAIN MODULES)
-      ══════════════════════════════════════════════════════════════════════ */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-base sm:text-lg font-bold text-slate-900 font-serif">
-              College ERP Modules
-            </h2>
-            <p className="text-xs text-slate-500">
-              Select any module below to open its dedicated workflow and sub-module navigation.
-            </p>
-          </div>
-          <span className="text-xs font-bold text-slate-400">
-            {DEMO_AVAILABLE_MODULES.filter((m) => m.id !== "dashboard").length} Modules
+            <ShieldCheck className="w-3.5 h-3.5" style={{ color: theme.primary }} />
+            <span>{activeRoleDef.department} Console Active</span>
           </span>
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {DEMO_AVAILABLE_MODULES.filter((m) => m.id !== "dashboard").map((mod) => {
-            const Icon = MODULE_ICON_MAP[mod.id] || BookOpen;
-            const subCount = DEMO_MODULE_SUBTABS[mod.id]?.length || 0;
-            return (
-              <div
-                key={mod.id}
-                onClick={() => setActiveModule(mod.id)}
-                className="bg-white rounded-3xl p-5 border border-slate-100 shadow-xs hover:shadow-md hover:border-emerald-200 transition-all cursor-pointer group flex flex-col justify-between"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div
-                      className="w-11 h-11 rounded-2xl flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform"
-                      style={{ backgroundColor: theme.primary }}
-                    >
-                      <Icon className="w-5 h-5 text-white" />
-                    </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 group-hover:bg-emerald-50 group-hover:text-emerald-800 transition-colors">
-                      {mod.category}
-                    </span>
-                  </div>
-
-                  <div>
-                    <h3 className="font-bold text-sm text-slate-900 group-hover:text-emerald-950 transition-colors">
-                      {mod.label}
-                    </h3>
-                    <p className="text-[11px] text-slate-500 leading-relaxed mt-1 line-clamp-2">
-                      {mod.description}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="pt-4 mt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold">
-                  <span className="text-[11px] text-slate-400 font-semibold">
-                    {subCount} Sub-Sections
-                  </span>
-                  <span
-                    className="inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
-                    style={{ color: theme.primary }}
-                  >
-                    <span>Explore</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
       </div>
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          QUICK KPI STATS & RECENT OPERATIONAL LOG
-      ══════════════════════════════════════════════════════════════════════ */}
+      {/* 2. KPI Metric Cards Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        {/* Card 1: Today's Admissions */}
         <div
           onClick={() => setActiveModule("admissions")}
           className="bg-white rounded-3xl p-5 shadow-xs border border-slate-100 flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer"
@@ -357,6 +174,7 @@ export default function DemoDashboardPage() {
           </div>
         </div>
 
+        {/* Card 2: Pending Inquiries / Verifications */}
         <div
           onClick={() => setActiveModule("admissions")}
           className="bg-white rounded-3xl p-5 shadow-xs border border-slate-100 flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer"
@@ -374,6 +192,7 @@ export default function DemoDashboardPage() {
           </div>
         </div>
 
+        {/* Card 3: Daily Roll Call Attendance */}
         <div
           onClick={() => setActiveModule("attendance")}
           className="bg-white rounded-3xl p-5 shadow-xs border border-slate-100 flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer"
@@ -391,6 +210,7 @@ export default function DemoDashboardPage() {
           </div>
         </div>
 
+        {/* Card 4: Fee Collections Today */}
         <div
           onClick={() => setActiveModule("fees")}
           className="bg-white rounded-3xl p-5 shadow-xs border border-slate-100 flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer"
@@ -409,12 +229,13 @@ export default function DemoDashboardPage() {
         </div>
       </div>
 
-      {/* 2-Column Split: Activity Log + Quick Counter Action */}
+      {/* 3. Operational 2-Column Split */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Left Column (8 cols): Recent Activity with View all */}
         <div className="lg:col-span-8 bg-white rounded-3xl p-6 shadow-xs border border-slate-100 space-y-4">
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <h2 className="text-lg font-bold text-slate-900 font-serif">
-              Live Institutional Activity Log
+              Recent Activity
             </h2>
             <button
               onClick={() => setActiveModule("admissions")}
@@ -424,6 +245,7 @@ export default function DemoDashboardPage() {
             </button>
           </div>
 
+          {/* Category Filter Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
             {["all", "admissions", "fees", "attendance"].map((cat) => (
               <button
@@ -440,108 +262,227 @@ export default function DemoDashboardPage() {
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 }`}
               >
-                {cat}
+                {cat === "all" ? "All" : cat}
               </button>
             ))}
           </div>
 
+          {/* Activity List Rows */}
           <div className="divide-y divide-slate-100">
-            {filteredActivities.slice(0, 5).map((act) => (
-              <div
-                key={act.id}
-                className="py-3.5 flex items-center justify-between gap-3 hover:bg-slate-50/70 rounded-xl px-2 transition-colors"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs shrink-0">
-                    {act.name.slice(0, 2).toUpperCase()}
-                  </div>
-                  <div className="min-w-0">
-                    <span className="font-bold text-slate-900 text-xs block truncate leading-tight">
+            {filteredActivities.length === 0 ? (
+              <div className="py-8 text-center text-slate-400 text-xs font-medium">
+                No recent activity records found.
+              </div>
+            ) : (
+              filteredActivities.slice(0, 5).map((act) => (
+                <div
+                  key={act.id}
+                  className="py-3.5 flex items-center justify-between gap-3 hover:bg-slate-50/70 rounded-xl px-2 transition-colors"
+                >
+                  <div className="min-w-0 flex-1">
+                    <span className="font-bold text-slate-900 block text-xs truncate">
                       {act.name}
                     </span>
-                    <span className="text-[11px] text-slate-500 block truncate leading-tight mt-0.5">
-                      {act.details || act.program}
+                    <span className="text-[11px] text-slate-500 block truncate mt-0.5">
+                      {act.program}
                     </span>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-2 shrink-0">
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
-                      act.status === "Confirmed" || act.status === "Collected"
-                        ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                        : act.status === "Rejected"
-                        ? "bg-red-50 text-red-800 border border-red-200"
-                        : "bg-amber-50 text-amber-800 border border-amber-200"
-                    }`}
-                  >
-                    {act.status}
-                  </span>
-                  {act.status === "Pending" && (
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => handleConfirmItem(act.id, act.name)}
-                        className="p-1 rounded-lg text-emerald-700 hover:bg-emerald-50 border border-emerald-200 cursor-pointer"
-                        title="Approve"
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleRejectItem(act.id, act.name)}
-                        className="p-1 rounded-lg text-red-600 hover:bg-red-50 border border-red-200 cursor-pointer"
-                        title="Reject"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                        act.status === "Confirmed" || act.status === "Collected"
+                          ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                          : act.status === "Rejected"
+                          ? "bg-red-50 text-red-800 border border-red-200"
+                          : "bg-amber-50 text-amber-800 border border-amber-200"
+                      }`}
+                    >
+                      {act.status}
+                    </span>
+
+                    {act.status === "Pending" && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleConfirmItem(act.id, act.name)}
+                          className="p-1 rounded-lg text-emerald-700 hover:bg-emerald-50 border border-emerald-200 cursor-pointer"
+                          title="Approve"
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRejectItem(act.id, act.name)}
+                          className="p-1 rounded-lg text-red-600 hover:bg-red-50 border border-red-200 cursor-pointer"
+                          title="Reject"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => setViewItemModal(act)}
+                      className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
+                      title="Inspect dossier"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
-        {/* Right Column: Quick Dynamic UPI Collection */}
-        <div className="lg:col-span-4 bg-white rounded-3xl p-6 shadow-xs border border-slate-100 space-y-4">
-          <div className="pb-3 border-b border-slate-100">
-            <h3 className="font-bold text-slate-900 text-base">Quick POS Counter</h3>
-            <p className="text-xs text-slate-500">Collect fee receipts instantly</p>
+        {/* Right Column (4 cols): Quick Actions & Operational Gateways */}
+        <div className="lg:col-span-4 space-y-4">
+          <div className="bg-white rounded-3xl p-6 shadow-xs border border-slate-100 space-y-4">
+            <h2 className="text-lg font-bold text-slate-900 font-serif pb-2 border-b border-slate-100">
+              Quick Actions
+            </h2>
+
+            <div className="space-y-2.5">
+              <button
+                type="button"
+                onClick={() => setActiveModule("admissions")}
+                style={{ backgroundColor: theme.primary }}
+                className="w-full py-3.5 px-4 rounded-2xl text-white font-bold text-xs flex items-center justify-center gap-2.5 shadow-xs transition-all active:scale-98 cursor-pointer hover:opacity-90"
+              >
+                <Calendar className="w-4 h-4" />
+                <span>Manage Admissions</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsUpiModalOpen(true)}
+                style={{ backgroundColor: theme.sidebarBg, borderColor: theme.sidebarBorder }}
+                className="w-full py-3.5 px-4 rounded-2xl border text-white font-bold text-xs flex items-center justify-center gap-2.5 shadow-xs transition-all active:scale-98 cursor-pointer hover:opacity-90"
+              >
+                <QrCode className="w-4 h-4 text-emerald-400" />
+                <span>Collect Fee (Dynamic UPI QR)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveModule("attendance")}
+                className="w-full py-3.5 px-4 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs flex items-center justify-center gap-2.5 shadow-2xs transition-all active:scale-98 cursor-pointer"
+              >
+                <Users className="w-4 h-4 text-emerald-700" />
+                <span>Launch Classroom Roll Call</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveModule("roles")}
+                className="w-full py-3 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-2.5 transition-all cursor-pointer"
+              >
+                <ShieldCheck className="w-4 h-4 text-emerald-700" />
+                <span>Roles &amp; 4-Digit PIN Console</span>
+              </button>
+            </div>
           </div>
 
-          <div className="space-y-3 text-xs">
-            <div>
-              <label className="font-bold text-slate-700 block mb-1">Scholar Name</label>
-              <input
-                type="text"
-                value={upiStudentName}
-                onChange={(e) => setUpiStudentName(e.target.value)}
-                className="w-full border border-slate-200 rounded-xl p-2 text-xs font-semibold text-slate-900"
-              />
-            </div>
-            <div>
-              <label className="font-bold text-slate-700 block mb-1">Amount (INR ₹)</label>
-              <input
-                type="number"
-                value={upiAmount}
-                onChange={(e) => setUpiAmount(e.target.value)}
-                className="w-full border border-slate-200 rounded-xl p-2 text-xs font-mono font-bold text-emerald-800"
-              />
+          {/* Operational Health Card */}
+          <div className="bg-white rounded-3xl p-5 shadow-xs border border-slate-100 space-y-3">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-800">
+              <span className="flex items-center gap-1.5">
+                <Wifi className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Operational Health</span>
+              </span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-800 border-emerald-200">
+                100% Operational
+              </span>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setIsUpiModalOpen(true)}
-              style={{ backgroundColor: theme.primary }}
-              className="w-full py-2.5 rounded-xl text-white font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 cursor-pointer mt-2"
-            >
-              <QrCode className="w-4 h-4" />
-              <span>Launch UPI QR Counter</span>
-            </button>
+            <div className="space-y-2 text-[11px] text-slate-600 pt-1">
+              <div className="flex items-center justify-between">
+                <span>Database Connectivity</span>
+                <span className="font-bold text-emerald-700 font-mono">Sandbox Connected</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Access Security</span>
+                <span className="font-bold text-slate-700">Multi-Factor Enabled</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Institutional Model</span>
+                <span className="font-bold text-slate-900">CBSE / Autonomous</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* INSPECT ACTIVITY DOSSIER MODAL */}
+      {viewItemModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center font-bold">
+                  {viewItemModal.name.slice(0, 2).toUpperCase()}
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm">{viewItemModal.name}</h3>
+                  <p className="text-[11px] text-slate-500 font-mono">Phone: {viewItemModal.phone}</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setViewItemModal(null)}
+                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Program / Module Context
+                </span>
+                <span className="font-bold text-slate-800 text-xs block">{viewItemModal.program}</span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Operational Details &amp; Compliance Note
+                </span>
+                <p className="text-slate-600 leading-relaxed text-[11px]">{viewItemModal.details}</p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Recorded Timestamp
+                  </span>
+                  <span className="font-mono text-slate-700 text-xs">{viewItemModal.timestamp}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block text-right">
+                    Current Audit State
+                  </span>
+                  <span className="font-bold text-emerald-700 text-xs block text-right">
+                    {viewItemModal.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2 flex items-center justify-end border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setViewItemModal(null)}
+                style={{ backgroundColor: theme.primary }}
+                className="px-5 py-2.5 rounded-xl text-white font-bold text-xs hover:opacity-90 transition-all shadow-xs cursor-pointer"
+              >
+                Close Dossier
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* DYNAMIC UPI MODAL */}
       {isUpiModalOpen && (
@@ -549,9 +490,30 @@ export default function DemoDashboardPage() {
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200 space-y-4 text-center">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <h3 className="font-bold text-slate-900 text-sm">Dynamic UPI Counter POS</h3>
-              <button onClick={() => setIsUpiModalOpen(false)} className="text-slate-400 hover:text-slate-700">
+              <button onClick={() => setIsUpiModalOpen(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-left">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Scholar Name</label>
+                <input
+                  type="text"
+                  value={upiStudentName}
+                  onChange={(e) => setUpiStudentName(e.target.value)}
+                  className="w-full border border-slate-200 rounded-xl p-2 text-xs font-semibold text-slate-900"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Amount (INR ₹)</label>
+                <input
+                  type="number"
+                  value={upiAmount}
+                  onChange={(e) => setUpiAmount(e.target.value)}
+                  className="w-full border border-slate-200 rounded-xl p-2 text-xs font-mono font-bold text-emerald-800"
+                />
+              </div>
             </div>
 
             <div className="w-40 h-40 bg-slate-900 text-white rounded-2xl mx-auto flex flex-col items-center justify-center p-3 space-y-2">

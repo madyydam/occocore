@@ -23,6 +23,7 @@ import {
   BedDouble,
   Briefcase,
   ArrowLeft,
+  ChevronDown,
 } from "lucide-react";
 import {
   DemoProvider,
@@ -30,8 +31,23 @@ import {
   DemoMainModule,
   DEMO_MODULE_SUBTABS,
   DEMO_ROLES,
+  DemoRoleKey,
 } from "@/lib/demo/demoContext";
 import DemoCustomizeThemeDrawer from "@/components/demo/DemoCustomizeThemeDrawer";
+
+const ALL_DEMO_ROLE_KEYS: DemoRoleKey[] = [
+  "super_admin",
+  "college_admin",
+  "principal",
+  "hod",
+  "faculty",
+  "admission_officer",
+  "accountant",
+  "hr_manager",
+  "librarian",
+  "student",
+  "parent",
+];
 
 function DemoLayoutInner({ children }: { children: React.ReactNode }) {
   const {
@@ -41,12 +57,14 @@ function DemoLayoutInner({ children }: { children: React.ReactNode }) {
     setActiveSubTab,
     institutionName,
     currentDemoRole,
+    setCurrentDemoRole,
     theme,
     enabledModules,
   } = useDemo();
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
+  const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
 
   const activeRoleDef = DEMO_ROLES[currentDemoRole] || DEMO_ROLES.college_admin;
 
@@ -337,22 +355,95 @@ function DemoLayoutInner({ children }: { children: React.ReactNode }) {
               <span className="hidden sm:inline">Customize Theme</span>
             </button>
 
-            {/* Active Simulated Role Chip */}
-            <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-white font-black text-xs shadow-2xs shrink-0"
-                style={{ backgroundColor: theme.primary }}
+            {/* Active Simulated Role Chip with Quick Dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsRoleDropdownOpen(!isRoleDropdownOpen)}
+                className="flex items-center gap-2 pl-2 border-l border-slate-200 cursor-pointer group text-left"
+                title="Switch Demo Role Persona"
               >
-                {activeRoleDef.initials}
-              </div>
-              <div className="hidden sm:block text-left min-w-0">
-                <span className="text-xs font-bold text-slate-800 block leading-tight truncate">
-                  {activeRoleDef.label}
-                </span>
-                <span className="text-[10px] text-slate-500 block leading-none truncate">
-                  {activeRoleDef.department}
-                </span>
-              </div>
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-white font-black text-xs shadow-2xs shrink-0 group-hover:scale-105 transition-transform"
+                  style={{ backgroundColor: theme.primary }}
+                >
+                  {activeRoleDef.initials}
+                </div>
+                <div className="hidden sm:block text-left min-w-0">
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs font-bold text-slate-800 block leading-tight truncate">
+                      {activeRoleDef.label}
+                    </span>
+                    <ChevronDown className="w-3 h-3 text-slate-400 group-hover:text-slate-700" />
+                  </div>
+                  <span className="text-[10px] text-slate-500 block leading-none truncate">
+                    {activeRoleDef.department}
+                  </span>
+                </div>
+              </button>
+
+              {/* Role Switcher Floating Menu */}
+              {isRoleDropdownOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setIsRoleDropdownOpen(false)}
+                  />
+                  <div className="absolute right-0 top-11 z-50 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 p-2 space-y-1 animate-in fade-in slide-in-from-top-2">
+                    <div className="px-3 py-1.5 border-b border-slate-100 flex items-center justify-between">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                        Switch Persona
+                      </span>
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800">
+                        11 Roles
+                      </span>
+                    </div>
+
+                    <div className="max-h-72 overflow-y-auto space-y-0.5">
+                      {ALL_DEMO_ROLE_KEYS.map((rk) => {
+                        const rDef = DEMO_ROLES[rk];
+                        const isSelected = currentDemoRole === rk;
+                        return (
+                          <button
+                            key={rk}
+                            type="button"
+                            onClick={() => {
+                              setCurrentDemoRole(rk);
+                              setIsRoleDropdownOpen(false);
+                            }}
+                            className={`w-full p-2 rounded-xl text-left flex items-center gap-2.5 transition-colors cursor-pointer ${
+                              isSelected
+                                ? "bg-slate-100 text-slate-900 font-bold"
+                                : "hover:bg-slate-50 text-slate-700"
+                            }`}
+                          >
+                            <div
+                              className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0"
+                              style={{ backgroundColor: isSelected ? theme.primary : "#94A3B8" }}
+                            >
+                              {rDef.initials}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <span className="text-xs block leading-tight truncate">
+                                {rDef.label}
+                              </span>
+                              <span className="text-[9px] text-slate-400 block truncate">
+                                {rDef.department}
+                              </span>
+                            </div>
+                            {isSelected && (
+                              <div
+                                className="w-1.5 h-1.5 rounded-full shrink-0"
+                                style={{ backgroundColor: theme.primary }}
+                              />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Exit Demo CTA button */}
