@@ -81,7 +81,7 @@ export default function LoginPage() {
 
     if (role.category === "super_admin") {
       setActiveTab("super_admin");
-      setEmail(matchedAccount?.email || "superadmin@occocore.com");
+      setEmail(matchedAccount?.email || "superadmin@coreerp.in");
       setPassword(matchedAccount?.defaultPassword || "MasterSecret#2026");
       setPin(matchedAccount?.pin || "0000");
       setTotpCode("849201");
@@ -152,7 +152,7 @@ export default function LoginPage() {
               </div>
               <div>
                 <span className="font-black text-slate-900 text-sm tracking-tight block leading-none">
-                  OCCO Core
+                  Core
                 </span>
                 <span className="text-[9px] text-slate-500 font-mono">Authentication Suite</span>
               </div>
@@ -562,7 +562,7 @@ export default function LoginPage() {
 
       {/* Footer */}
       <footer className="border-t border-slate-200/80 bg-white px-4 py-3 text-center text-[10px] text-slate-400">
-        OCCO Core Institutional OS • Enterprise Multi-Tenant ERP Platform. All rights reserved.
+        Core Institutional OS • Enterprise Multi-Tenant ERP Platform. All rights reserved.
       </footer>
     </div>
   );

@@ -20,14 +20,14 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://occocore.com"),
-  title: "OCCO Core — Education Operating System for Schools, Colleges & Universities",
+  metadataBase: new URL("https://coreerp.in"),
+  title: "Core — Education Operating System for Schools, Colleges & Universities",
   description:
     "Unified institutional operating system for K-12 Schools, Degree Colleges, Universities, and Coaching Academies. Automated multi-head fee ledgers, zero-downtime offline sync, and complete Indian statutory compliance.",
-  applicationName: "OCCO Core",
-  authors: [{ name: "OCCO Core Engineering" }],
+  applicationName: "Core",
+  authors: [{ name: "Core Engineering" }],
   keywords: [
-    "OCCO Core",
+    "Core",
     "School ERP",
     "College ERP",
     "University ERP",
@@ -53,11 +53,11 @@ export const metadata: Metadata = {
     shortcut: ["/favicon.ico"],
   },
   openGraph: {
-    title: "OCCO Core — The Education Operating System",
+    title: "Core — The Education Operating System",
     description:
       "Enterprise management platform for Indian educational institutions with offline roll call sync, automated fee ledgers, and full statutory compliance.",
-    url: "https://occocore.com",
-    siteName: "OCCO Core",
+    url: "https://coreerp.in",
+    siteName: "Core",
     locale: "en_IN",
     type: "website",
     images: [
@@ -65,13 +65,13 @@ export const metadata: Metadata = {
         url: "/brand/occo-logo.jpg",
         width: 1024,
         height: 1024,
-        alt: "OCCO Core Education Operating System Logo",
+        alt: "Core Education Operating System Logo",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "OCCO Core — Education Operating System",
+    title: "Core — Education Operating System",
     description: "580+ features, offline-first sync, multi-tenant white-labeling, DPDPA 2023 Indian statutory compliance.",
     images: ["/brand/occo-logo.jpg"],
   },

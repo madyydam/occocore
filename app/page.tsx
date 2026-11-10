@@ -59,7 +59,7 @@ export default function Home() {
     );
   };
 
-  // 3D Comparison Big Switch: false = Traditional ERP (Legacy), true = OCCO Core (Modern)
+  // 3D Comparison Big Switch: false = Traditional ERP (Legacy), true = Core (Modern)
   const [isModernMode, setIsModernMode] = useState<boolean>(true);
 
   // ═════════════════════════════════════════════════════════════════════════════
@@ -355,7 +355,7 @@ export default function Home() {
             <div className="relative w-8.5 h-8.5 rounded-xl overflow-hidden shadow-tactile-indigo border border-slate-200/90 group-hover:scale-105 transition-transform bg-[#090D16] flex items-center justify-center shrink-0">
               <Image
                 src="/brand/occo-logo.jpg"
-                alt="OCCO Core Logo"
+                alt="Core Logo"
                 width={36}
                 height={36}
                 className="w-full h-full object-cover"
@@ -364,7 +364,7 @@ export default function Home() {
             </div>
             <div className="flex flex-col">
               <span className="font-black text-slate-900 text-sm sm:text-base tracking-tight leading-none">
-                OCCO Core
+                Core
               </span>
               <span className="text-[9px] text-slate-500 font-medium leading-none mt-1">
                 The Education Operating System
@@ -806,7 +806,7 @@ export default function Home() {
                 What Traditional ERPs Don&apos;t Have vs. What We Have
               </h2>
               <p className="text-[11px] sm:text-xs text-slate-600 max-w-xl leading-relaxed">
-                Flip the 3D switch below to compare outdated, rigid legacy software against OCCO Core&apos;s modern architecture.
+                Flip the 3D switch below to compare outdated, rigid legacy software against Core&apos;s modern architecture.
               </p>
             </div>
 
@@ -816,7 +816,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setIsModernMode(!isModernMode)}
-                  aria-label="Toggle Traditional Legacy ERP vs OCCO Core Modern Platform"
+                  aria-label="Toggle Traditional Legacy ERP vs Core Modern Platform"
                   className={`relative w-28 sm:w-30 h-13 sm:h-14 rounded-full overflow-hidden cursor-pointer focus:outline-none transition-all duration-300 p-1 flex items-center switch-3d-trench ${
                     isModernMode ? "switch-3d-trench-active" : "switch-3d-trench-inactive"
                   }`}
@@ -1821,7 +1821,7 @@ export default function Home() {
               100% Indian Statutory Compliance.
             </h2>
             <p className="text-[11px] sm:text-xs text-slate-600">
-              Foreign software solutions fail Indian audits. OCCO Core codifies statutory rules directly into the platform.
+              Foreign software solutions fail Indian audits. Core codifies statutory rules directly into the platform.
             </p>
           </div>
 
@@ -2123,13 +2123,13 @@ export default function Home() {
               <div className="w-6 h-6 rounded-md overflow-hidden border border-slate-200 bg-[#090D16] flex items-center justify-center shrink-0 shadow-2xs">
                 <Image
                   src="/brand/occo-logo.jpg"
-                  alt="OCCO Core"
+                  alt="Core"
                   width={24}
                   height={24}
                   className="w-full h-full object-cover"
                 />
               </div>
-              <span className="font-black text-slate-900 text-xs">OCCO Core</span>
+              <span className="font-black text-slate-900 text-xs">Core</span>
               <span className="text-[10px] text-slate-500">• The Education Operating System</span>
             </div>
 

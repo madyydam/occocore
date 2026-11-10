@@ -24,20 +24,12 @@ import {
   registerCustomRole,
 } from "@/lib/auth/roles";
 import { useDemo } from "@/lib/demo/demoContext";
-import {
-  generateTenantActivationKeyAction,
-  getTenantActivationKeysListAction,
-  revokeTenantKeyAction,
-  TenantActivationKey,
-} from "@/lib/actions/licenseActions";
 
 export default function DemoRolesView() {
   const { activeSubTab, setActiveSubTab, theme } = useDemo();
 
-  const activeTab: "roles_matrix" | "user_pins" | "security_policies" | "activation_keys" =
-    activeSubTab === "user_pins" ||
-    activeSubTab === "security_policies" ||
-    activeSubTab === "activation_keys"
+  const activeTab: "roles_matrix" | "user_pins" | "security_policies" =
+    activeSubTab === "user_pins" || activeSubTab === "security_policies"
       ? activeSubTab
       : "roles_matrix";
 
@@ -59,63 +51,6 @@ export default function DemoRolesView() {
   const [newRoleKey, setNewRoleKey] = useState("");
   const [newRoleLabel, setNewRoleLabel] = useState("");
   const [newRoleDesc, setNewRoleDesc] = useState("");
-
-  // Super Admin 8-Digit Activation Keys State
-  const [activationKeys, setActivationKeys] = useState<TenantActivationKey[]>([]);
-  const [newKeyTenantName, setNewKeyTenantName] = useState("");
-  const [newKeyTenantSlug, setNewKeyTenantSlug] = useState("");
-  const [isGeneratingKey, setIsGeneratingKey] = useState(false);
-  const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
-
-  // Load activation keys on mount
-  useEffect(() => {
-    getTenantActivationKeysListAction().then((res) => {
-      if (res.success && res.data) {
-        setActivationKeys(res.data);
-      }
-    });
-  }, []);
-
-  const handleGenerateKey = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newKeyTenantName.trim()) {
-      triggerToast("Please provide an institution name.");
-      return;
-    }
-
-    setIsGeneratingKey(true);
-    const slug = newKeyTenantSlug.trim() || newKeyTenantName.toLowerCase().replace(/[^a-z0-9]/g, "-").slice(0, 18);
-    const res = await generateTenantActivationKeyAction(slug, newKeyTenantName);
-    setIsGeneratingKey(false);
-
-    if (res.success && res.data) {
-      setActivationKeys((prev) => [res.data!, ...prev]);
-      setNewKeyTenantName("");
-      setNewKeyTenantSlug("");
-      triggerToast(`Generated 8-digit key: ${res.data.activationKey} for ${res.data.tenantName}`);
-    } else {
-      triggerToast(res.error || "Failed to generate key.");
-    }
-  };
-
-  const handleCopyKey = (key: TenantActivationKey) => {
-    if (typeof navigator !== "undefined" && navigator.clipboard) {
-      navigator.clipboard.writeText(key.rawKey);
-      setCopiedKeyId(key.id);
-      triggerToast(`Copied ${key.activationKey} to clipboard.`);
-      setTimeout(() => setCopiedKeyId(null), 2500);
-    }
-  };
-
-  const handleRevokeKey = async (keyId: string) => {
-    const res = await revokeTenantKeyAction(keyId);
-    if (res.success) {
-      setActivationKeys((prev) =>
-        prev.map((k) => (k.id === keyId ? { ...k, status: "REVOKED" } : k))
-      );
-      triggerToast("Key revoked successfully.");
-    }
-  };
 
   const [toastMessage, setToastMessage] = useState<string>("");
 
@@ -260,19 +195,6 @@ export default function DemoRolesView() {
         >
           <Lock className="w-3.5 h-3.5" />
           <span>Security Policies</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveSubTab("activation_keys")}
-          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer whitespace-nowrap ${
-            activeTab === "activation_keys"
-              ? "bg-white text-emerald-900 shadow-xs"
-              : "text-slate-600 hover:text-slate-900"
-          }`}
-        >
-          <KeyRound className="w-3.5 h-3.5 text-emerald-600" />
-          <span>License &amp; 8-Digit Keys</span>
         </button>
       </div>
 
@@ -544,196 +466,7 @@ export default function DemoRolesView() {
         </div>
       )}
 
-      {/* SUB-TAB 4: SUPER ADMIN LICENSE & 8-DIGIT KEYS VAULT */}
-      {activeTab === "activation_keys" && (
-        <div className="space-y-6">
-          {/* Header Banner */}
-          <div className="bg-slate-900 text-white rounded-3xl p-6 shadow-md border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
-                  <KeyRound className="w-4 h-4" />
-                </div>
-                <h3 className="font-bold text-base sm:text-lg">
-                  Super Admin Institutional License &amp; 8-Digit Keys Vault
-                </h3>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  Super Admin Only
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 max-w-2xl">
-                Every enterprise campus running in live production requires a unique 8-digit activation key issued from this console to unlock their PostgreSQL multi-tenant database schema.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="font-mono text-xs bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700 text-emerald-400 font-bold">
-                Master Evaluator Key: 8888-9999
-              </span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-            {/* Left Column: Generate Key Widget */}
-            <div className="lg:col-span-4 bg-white rounded-3xl p-6 shadow-xs border border-slate-100 space-y-4">
-              <div className="pb-3 border-b border-slate-100 flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-emerald-700" />
-                <h4 className="font-bold text-sm text-slate-900">Issue New Activation Key</h4>
-              </div>
-
-              <form onSubmit={handleGenerateKey} className="space-y-3 text-xs">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">
-                    Institution Legal Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. St. Xavier's Collegiate School"
-                    value={newKeyTenantName}
-                    onChange={(e) => {
-                      setNewKeyTenantName(e.target.value);
-                      if (!newKeyTenantSlug) {
-                        setNewKeyTenantSlug(
-                          e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "-").slice(0, 18)
-                        );
-                      }
-                    }}
-                    className="w-full px-3 py-2 border rounded-xl border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-600 font-semibold"
-                  />
-                </div>
-
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">
-                    Tenant Subdomain Slug
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. st-xaviers"
-                    value={newKeyTenantSlug}
-                    onChange={(e) => setNewKeyTenantSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
-                    className="w-full px-3 py-2 border rounded-xl font-mono text-xs border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-600"
-                  />
-                  <span className="text-[10px] text-slate-400 mt-0.5 block">
-                    Domain: {newKeyTenantSlug || "tenant"}.occocore.com
-                  </span>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isGeneratingKey}
-                  style={{ backgroundColor: theme.primary }}
-                  className="w-full py-3 rounded-xl text-white font-bold text-xs hover:opacity-90 transition-all shadow-xs cursor-pointer flex items-center justify-center gap-1.5 mt-2"
-                >
-                  <KeyRound className="w-3.5 h-3.5" />
-                  <span>{isGeneratingKey ? "Generating Key..." : "Generate 8-Digit Key"}</span>
-                </button>
-              </form>
-
-              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 text-[11px] text-slate-500 space-y-1">
-                <span className="font-bold text-slate-700 block">Security Guarantee</span>
-                <p className="leading-relaxed">
-                  Generated keys are collision-free and cryptographically random. Once entered during tenant onboarding, they instantly unlock live PostgreSQL operations.
-                </p>
-              </div>
-            </div>
-
-            {/* Right Column: Issued Keys Table */}
-            <div className="lg:col-span-8 bg-white rounded-3xl p-6 shadow-xs border border-slate-100 space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div>
-                  <h4 className="font-bold text-sm text-slate-900">Active Institutional Keys</h4>
-                  <p className="text-[11px] text-slate-500">
-                    {activationKeys.length} security keys registered across campuses
-                  </p>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                      <th className="pb-2.5">Institution &amp; Tenant</th>
-                      <th className="pb-2.5">8-Digit Key</th>
-                      <th className="pb-2.5">Status</th>
-                      <th className="pb-2.5">Issued</th>
-                      <th className="pb-2.5 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {activationKeys.map((k) => (
-                      <tr key={k.id} className="hover:bg-slate-50/70 transition-colors">
-                        <td className="py-3 pr-2">
-                          <span className="font-bold text-slate-900 block leading-tight">
-                            {k.tenantName}
-                          </span>
-                          <span className="font-mono text-[10px] text-slate-400 block mt-0.5">
-                            {k.tenantSlug}.occocore.com
-                          </span>
-                        </td>
-
-                        <td className="py-3 pr-2">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-mono font-bold text-xs bg-slate-100 px-2.5 py-1 rounded-lg text-slate-900 border border-slate-200">
-                              {k.activationKey}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleCopyKey(k)}
-                              className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer rounded hover:bg-slate-100 transition-colors"
-                              title="Copy 8-Digit Key"
-                            >
-                              {copiedKeyId === k.id ? (
-                                <Check className="w-3.5 h-3.5 text-emerald-600" />
-                              ) : (
-                                <Copy className="w-3.5 h-3.5" />
-                              )}
-                            </button>
-                          </div>
-                        </td>
-
-                        <td className="py-3 pr-2">
-                          <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
-                              k.status === "ACTIVATED"
-                                ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                                : k.status === "REVOKED"
-                                ? "bg-red-50 text-red-800 border border-red-200"
-                                : "bg-amber-50 text-amber-800 border border-amber-200"
-                            }`}
-                          >
-                            {k.status === "ACTIVATED"
-                              ? "Live & In Use"
-                              : k.status === "REVOKED"
-                              ? "Revoked"
-                              : "Awaiting Activation"}
-                          </span>
-                        </td>
-
-                        <td className="py-3 pr-2 text-slate-500 text-[11px] font-mono whitespace-nowrap">
-                          {k.createdAt.slice(0, 10)}
-                        </td>
-
-                        <td className="py-3 text-right">
-                          {k.status !== "REVOKED" && (
-                            <button
-                              type="button"
-                              onClick={() => handleRevokeKey(k.id)}
-                              className="text-[10px] font-bold text-red-600 hover:text-red-800 hover:underline cursor-pointer"
-                            >
-                              Revoke
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* MODAL: EDIT CREDENTIALS */}
 
       {/* MODAL: EDIT CREDENTIALS */}
       {isEditUserModalOpen && editingUser && (

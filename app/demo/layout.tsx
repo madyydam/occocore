@@ -283,7 +283,7 @@ function DemoLayoutInner({ children }: { children: React.ReactNode }) {
           )}
         </div>
 
-        {/* Sidebar Footer: Strictly "OCCO Core" Branding */}
+        {/* Sidebar Footer: Strictly "Core" Branding */}
         <div
           className="p-3.5 border-t flex items-center justify-start"
           style={{ backgroundColor: "rgba(0,0,0,0.3)", borderColor: theme.sidebarBorder }}
@@ -292,7 +292,7 @@ function DemoLayoutInner({ children }: { children: React.ReactNode }) {
             <div className="w-7 h-7 rounded-lg overflow-hidden border border-white/20 bg-[#091D17] flex items-center justify-center shrink-0 shadow-xs">
               <Image
                 src="/brand/occo-logo.jpg"
-                alt="OCCO"
+                alt="Core"
                 width={28}
                 height={28}
                 className="w-full h-full object-cover"
@@ -300,7 +300,7 @@ function DemoLayoutInner({ children }: { children: React.ReactNode }) {
             </div>
             <div className="min-w-0">
               <span className="font-extrabold text-white text-xs tracking-tight block">
-                OCCO Core
+                Core
               </span>
             </div>
           </div>

@@ -9,50 +9,11 @@ export interface TenantActivationKey {
   activationKey: string; // Formatted 8-digit key e.g. "8492-7163"
   rawKey: string; // Plain 8 digits e.g. "84927163"
   status: "PENDING" | "ACTIVATED" | "REVOKED";
+  amountCharged?: number;
+  currency?: string;
   createdAt: string;
   activatedAt?: string;
 }
-
-// In-Memory store for fast fallback & local development
-let IN_MEMORY_KEYS: TenantActivationKey[] = [
-  {
-    id: "key-1",
-    tenantSlug: "apexacademy",
-    tenantName: "Apex International Global Academy",
-    activationKey: "8924-7163",
-    rawKey: "89247163",
-    status: "ACTIVATED",
-    createdAt: "2026-11-01 10:00:00",
-    activatedAt: "2026-11-01 10:15:00",
-  },
-  {
-    id: "key-2",
-    tenantSlug: "st-xaviers",
-    tenantName: "St. Xavier's Collegiate School",
-    activationKey: "4581-9032",
-    rawKey: "45819032",
-    status: "PENDING",
-    createdAt: "2026-11-08 14:30:00",
-  },
-  {
-    id: "key-3",
-    tenantSlug: "iit-tech-prep",
-    tenantName: "Pinnacle IIT & Medical Academy",
-    activationKey: "7129-3845",
-    rawKey: "71293845",
-    status: "PENDING",
-    createdAt: "2026-11-09 09:15:00",
-  },
-  {
-    id: "key-master",
-    tenantSlug: "*",
-    tenantName: "Master Super Admin Universal Key",
-    activationKey: "8888-9999",
-    rawKey: "88889999",
-    status: "ACTIVATED",
-    createdAt: "2026-11-01 00:00:00",
-  },
-];
 
 // Helper to format 8 digits into XXXX-XXXX
 function formatEightDigits(digits: string): string {
@@ -65,48 +26,60 @@ function formatEightDigits(digits: string): string {
 
 // Helper to generate a random 8-digit number string
 function generateRandom8DigitString(): string {
-  // Avoid leading zero for cleaner presentation
+  // Generates genuine 8-digit numeric string without leading zero
   const num = Math.floor(10000000 + Math.random() * 90000000);
   return num.toString();
 }
 
 /**
  * Super Admin Action: Generate a unique 8-digit security activation key for an institution.
+ * Stores strictly in PostgreSQL tenant_activation_keys table.
  */
 export async function generateTenantActivationKeyAction(
   tenantSlug: string,
-  tenantName: string
+  tenantName: string,
+  amountCharged: number = 0,
+  notes: string = ""
 ): Promise<{ success: boolean; data?: TenantActivationKey; error?: string }> {
   try {
     const rawKey = generateRandom8DigitString();
     const formattedKey = formatEightDigits(rawKey);
-    const newId = `key-${Date.now()}`;
-    const nowIso = new Date().toISOString();
+    const cleanSlug = tenantSlug.trim().toLowerCase() || "unassigned";
+    const cleanName = tenantName.trim() || "New Institutional Tenant";
 
-    const newKeyEntry: TenantActivationKey = {
-      id: newId,
-      tenantSlug: tenantSlug.trim().toLowerCase() || "unassigned",
-      tenantName: tenantName.trim() || "New Institutional Tenant",
-      activationKey: formattedKey,
-      rawKey,
-      status: "PENDING",
-      createdAt: nowIso,
-    };
+    const res = await query<{
+      id: string;
+      tenant_slug: string;
+      tenant_name: string;
+      activation_key: string;
+      amount_charged: string;
+      currency: string;
+      status: string;
+      created_at: string;
+    }>(
+      `INSERT INTO tenant_activation_keys (
+          tenant_slug, tenant_name, activation_key, amount_charged, currency, status, notes
+       ) VALUES ($1, $2, $3, $4, 'INR', 'PENDING', $5)
+       RETURNING id, tenant_slug, tenant_name, activation_key, amount_charged, currency, status, created_at`,
+      [cleanSlug, cleanName, rawKey, amountCharged, notes]
+    );
 
-    // Attempt PostgreSQL persistence if DB table exists
-    try {
-      await query(
-        `INSERT INTO tenant_activation_keys (
-            id, tenant_slug, tenant_name, activation_key, status, created_at
-         ) VALUES ($1, $2, $3, $4, 'PENDING', CURRENT_TIMESTAMP)
-         ON CONFLICT (activation_key) DO NOTHING`,
-        [newId, newKeyEntry.tenantSlug, newKeyEntry.tenantName, rawKey]
-      );
-    } catch {
-      // Table may not exist yet, fallback to in-memory store
+    if (res.rows.length === 0) {
+      throw new Error("Failed to insert key record into PostgreSQL.");
     }
 
-    IN_MEMORY_KEYS = [newKeyEntry, ...IN_MEMORY_KEYS];
+    const row = res.rows[0];
+    const newKeyEntry: TenantActivationKey = {
+      id: row.id,
+      tenantSlug: row.tenant_slug,
+      tenantName: row.tenant_name,
+      activationKey: formattedKey,
+      rawKey: row.activation_key,
+      amountCharged: parseFloat(row.amount_charged || "0"),
+      currency: row.currency || "INR",
+      status: "PENDING",
+      createdAt: new Date(row.created_at).toLocaleString(),
+    };
 
     return {
       success: true,
@@ -123,6 +96,7 @@ export async function generateTenantActivationKeyAction(
 
 /**
  * Institution Verification Action: Verify an 8-digit activation key entered on the onboarding gate.
+ * Validates strictly against PostgreSQL tenant_activation_keys table. Zero backdoors.
  */
 export async function verifyAndActivateTenantKeyAction(
   tenantSlug: string,
@@ -138,130 +112,104 @@ export async function verifyAndActivateTenantKeyAction(
       };
     }
 
-    // 1. Check master key
-    if (cleanInput === "88889999" || cleanInput === "12345678" || cleanInput === "24681357") {
-      return {
-        success: true,
-        message: "Universal Super Admin authorization accepted. Tenant database activated.",
-      };
-    }
-
-    // 2. Check in-memory store
-    const matched = IN_MEMORY_KEYS.find(
-      (k) =>
-        k.rawKey === cleanInput &&
-        (k.status === "PENDING" || k.status === "ACTIVATED") &&
-        (k.tenantSlug === "*" ||
-          k.tenantSlug === tenantSlug.toLowerCase() ||
-          !k.tenantSlug ||
-          k.tenantSlug === "unassigned")
+    // Check PostgreSQL database directly
+    const dbCheck = await query<{
+      id: string;
+      tenant_slug: string;
+      tenant_name: string;
+      status: string;
+    }>(
+      `SELECT id, tenant_slug, tenant_name, status 
+       FROM tenant_activation_keys 
+       WHERE activation_key = $1 AND status != 'REVOKED'
+       LIMIT 1`,
+      [cleanInput]
     );
 
-    if (matched) {
-      matched.status = "ACTIVATED";
-      matched.activatedAt = new Date().toISOString();
-      if (tenantSlug && (!matched.tenantSlug || matched.tenantSlug === "unassigned")) {
-        matched.tenantSlug = tenantSlug.toLowerCase();
-      }
+    if (dbCheck.rows.length > 0) {
+      const keyRecord = dbCheck.rows[0];
 
-      // Try PostgreSQL tenant update if available
-      try {
+      // Mark the key as ACTIVATED
+      await query(
+        `UPDATE tenant_activation_keys 
+         SET status = 'ACTIVATED', 
+             activated_at = CURRENT_TIMESTAMP,
+             tenant_slug = COALESCE(NULLIF(tenant_slug, 'unassigned'), $2)
+         WHERE id = $1`,
+        [keyRecord.id, tenantSlug.toLowerCase()]
+      );
+
+      // Activate tenant in tenants table if matching slug exists
+      if (tenantSlug) {
         await query(
-          `UPDATE tenants SET status = 'ACTIVE', domain_verified = TRUE WHERE slug = $1`,
+          `UPDATE tenants 
+           SET status = 'ACTIVE', domain_verified = TRUE 
+           WHERE LOWER(slug) = LOWER($1)`,
           [tenantSlug.toLowerCase()]
         );
-      } catch {
-        // Tenant table or record update optional
       }
 
       return {
         success: true,
-        message: `Activation key verified! ${matched.tenantName} is now live and fully operational.`,
+        message: `Institutional license confirmed. ${keyRecord.tenant_name} is now active and unlocked.`,
       };
     }
 
-    // 3. Check PostgreSQL database directly
-    try {
-      const dbCheck = await query<{ id: string; tenant_slug: string }>(
-        `SELECT id, tenant_slug FROM tenant_activation_keys 
-         WHERE activation_key = $1 AND status != 'REVOKED' LIMIT 1`,
-        [cleanInput]
-      );
-      if (dbCheck.rows.length > 0) {
-        await query(
-          `UPDATE tenant_activation_keys SET status = 'ACTIVATED', activated_at = CURRENT_TIMESTAMP WHERE activation_key = $1`,
-          [cleanInput]
-        );
-        return {
-          success: true,
-          message: "Database activation key confirmed. Enterprise tenant unlocked.",
-        };
-      }
-    } catch {
-      // Fallback
-    }
-
     return {
       success: false,
-      error: "Invalid or unassigned 8-digit activation key. Please contact the OCCO Super Administrator to issue an official institutional key.",
+      error: "Invalid or unassigned 8-digit activation key. Please obtain a valid key from the Platform Super Administrator.",
     };
   } catch (err) {
-    console.error("Failed to verify activation key:", err);
+    console.error("Failed to verify activation key in PostgreSQL:", err);
     return {
       success: false,
-      error: "Verification failed due to a system error. Please retry.",
+      error: "Verification failed due to a database service error. Please retry.",
     };
   }
 }
 
 /**
- * Super Admin Action: Retrieve all generated activation keys.
+ * Super Admin Action: Retrieve all generated activation keys from PostgreSQL.
  */
 export async function getTenantActivationKeysListAction(): Promise<{
   success: boolean;
   data: TenantActivationKey[];
 }> {
   try {
-    // Check PostgreSQL
-    try {
-      const res = await query<{
-        id: string;
-        tenant_slug: string;
-        tenant_name: string;
-        activation_key: string;
-        status: string;
-        created_at: string;
-        activated_at: string;
-      }>(
-        `SELECT id, tenant_slug, tenant_name, activation_key, status, created_at, activated_at 
-         FROM tenant_activation_keys ORDER BY created_at DESC LIMIT 50`
-      );
-      if (res.rows.length > 0) {
-        const dbMapped: TenantActivationKey[] = res.rows.map((r) => ({
-          id: r.id,
-          tenantSlug: r.tenant_slug,
-          tenantName: r.tenant_name,
-          rawKey: r.activation_key,
-          activationKey: formatEightDigits(r.activation_key),
-          status: (r.status as TenantActivationKey["status"]) || "PENDING",
-          createdAt: new Date(r.created_at).toLocaleString(),
-          activatedAt: r.activated_at ? new Date(r.activated_at).toLocaleString() : undefined,
-        }));
-        return { success: true, data: dbMapped };
-      }
-    } catch {
-      // Return in-memory fallback
-    }
+    const res = await query<{
+      id: string;
+      tenant_slug: string;
+      tenant_name: string;
+      activation_key: string;
+      amount_charged: string;
+      currency: string;
+      status: string;
+      created_at: string;
+      activated_at: string;
+    }>(
+      `SELECT id, tenant_slug, tenant_name, activation_key, amount_charged, currency, status, created_at, activated_at 
+       FROM tenant_activation_keys 
+       ORDER BY created_at DESC 
+       LIMIT 100`
+    );
 
-    return {
-      success: true,
-      data: IN_MEMORY_KEYS,
-    };
-  } catch {
-    return {
-      success: true,
-      data: IN_MEMORY_KEYS,
-    };
+    const data: TenantActivationKey[] = res.rows.map((r) => ({
+      id: r.id,
+      tenantSlug: r.tenant_slug,
+      tenantName: r.tenant_name,
+      rawKey: r.activation_key,
+      activationKey: formatEightDigits(r.activation_key),
+      amountCharged: parseFloat(r.amount_charged || "0"),
+      currency: r.currency || "INR",
+      status: (r.status as TenantActivationKey["status"]) || "PENDING",
+      createdAt: new Date(r.created_at).toLocaleString(),
+      activatedAt: r.activated_at ? new Date(r.activated_at).toLocaleString() : undefined,
+    }));
+
+    return { success: true, data };
+  } catch (err) {
+    console.error("Failed to load keys from PostgreSQL:", err);
+    return { success: false, data: [] };
   }
 }
 
@@ -272,15 +220,12 @@ export async function revokeTenantKeyAction(
   keyId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const key = IN_MEMORY_KEYS.find((k) => k.id === keyId);
-    if (key) {
-      key.status = "REVOKED";
-    }
-    try {
-      await query(`UPDATE tenant_activation_keys SET status = 'REVOKED' WHERE id = $1`, [keyId]);
-    } catch {
-      // Optional DB
-    }
+    await query(
+      `UPDATE tenant_activation_keys 
+       SET status = 'REVOKED', revoked_at = CURRENT_TIMESTAMP 
+       WHERE id = $1`,
+      [keyId]
+    );
     return { success: true };
   } catch (err) {
     return {
@@ -289,4 +234,3 @@ export async function revokeTenantKeyAction(
     };
   }
 }
-

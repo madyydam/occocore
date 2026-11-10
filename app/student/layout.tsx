@@ -2,7 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Student Portal • OCCO Core Education ERP",
+  title: "Student Portal • Core Education ERP",
   description: "Official institutional student portal for attendance tracking, academic timetables, fee payments, and report cards.",
 };
 

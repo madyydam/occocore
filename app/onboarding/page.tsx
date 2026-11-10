@@ -327,7 +327,7 @@ function OnboardingWizardContent() {
     setTimeout(() => {
       setDnsLog((prev) => [
         ...prev,
-        "Looking up CNAME -> cname.occocore.com [Resolved: 104.21.58.12]",
+        "Looking up CNAME -> cname.coreerp.in [Resolved: 104.21.58.12]",
       ]);
     }, 700);
 
@@ -376,7 +376,7 @@ function OnboardingWizardContent() {
       setProvisionProgress(55);
       setTerminalLogs((prev) => [
         ...prev,
-        `[1.8s] Setting up 3-tier credentials: Master Admin "${formData.adminEmail || "demo@occocore.com"}" with 4-Digit PIN...`,
+        `[1.8s] Setting up 3-tier credentials: Master Admin "${formData.adminEmail || "demo@coreerp.in"}" with 4-Digit PIN...`,
         `[2.1s] Initializing ${formData.selectedModules.length} selected enterprise modules...`,
       ]);
     }, 1800);
@@ -388,7 +388,7 @@ function OnboardingWizardContent() {
         formData.seedDemoData || isDemo
           ? "[2.7s] Seeding 45 student profiles, 10 faculty timetables & fee rosters..."
           : "[2.7s] Creating blank clean master ledgers and DPDPA consent vault...",
-        `[3.1s] Binding SSL certificate to https://${formData.subdomain || "demo"}.occocore.com...`,
+        `[3.1s] Binding SSL certificate to https://${formData.subdomain || "demo"}.coreerp.in...`,
       ]);
     }, 2800);
 
@@ -426,7 +426,7 @@ function OnboardingWizardContent() {
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <span className="font-extrabold text-slate-900 text-base tracking-tight">OCCO Core</span>
+                <span className="font-extrabold text-slate-900 text-base tracking-tight">Core</span>
                 <span className="px-2 py-0.5 text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 rounded-md">
                   Institutional Setup Engine
                 </span>
@@ -990,7 +990,7 @@ function OnboardingWizardContent() {
                           <span className="w-2 h-2 rounded-full bg-emerald-400" />
                         </div>
                         <span className="truncate">
-                          https://{formData.subdomain || "portal"}.occocore.com
+                          https://{formData.subdomain || "portal"}.coreerp.in
                         </span>
                       </div>
 
@@ -1351,7 +1351,7 @@ function OnboardingWizardContent() {
                       required
                     />
                     <span className="px-3.5 py-2.5 bg-slate-50 text-slate-600 text-xs font-mono font-bold border-l border-slate-200">
-                      .occocore.com
+                      .coreerp.in
                     </span>
                   </div>
                   {formData.subdomain && (
@@ -1369,7 +1369,7 @@ function OnboardingWizardContent() {
                       Custom Institutional CNAME (Optional)
                     </label>
                     <p className="text-[11px] text-slate-500 mb-2">
-                      Point a DNS CNAME record (e.g. <code>portal.school.edu</code>) to <code>cname.occocore.com</code>.
+                      Point a DNS CNAME record (e.g. <code>portal.school.edu</code>) to <code>cname.coreerp.in</code>.
                     </p>
                     <div className="flex gap-2">
                       <input
@@ -1775,7 +1775,7 @@ function OnboardingWizardContent() {
                     </div>
                     <div>
                       <span className="text-slate-400 block text-[9px]">Dedicated Subdomain</span>
-                      <strong className="text-blue-700 font-mono">https://{formData.subdomain}.occocore.com</strong>
+                      <strong className="text-blue-700 font-mono">https://{formData.subdomain}.coreerp.in</strong>
                     </div>
                     <div>
                       <span className="text-slate-400 block text-[9px]">Master Administrator</span>
@@ -1973,29 +1973,11 @@ function OnboardingWizardContent() {
                           disabled={isVerifyingKey}
                           className="w-full py-3.5 bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white font-bold rounded-xl text-xs transition-all shadow-tactile-blue cursor-pointer"
                         >
-                          {isVerifyingKey ? "Verifying with Super Admin Key Vault..." : "Verify & Unlock Institution →"}
+                          {isVerifyingKey ? "Verifying Institutional Key..." : "Verify & Unlock Institution →"}
                         </button>
 
-                        <div className="pt-3 border-t border-slate-200 text-left text-[11px] text-slate-500 space-y-2">
-                          <div className="flex items-center justify-between font-mono">
-                            <span>Evaluator / Testing Master Key:</span>
-                            <span className="font-bold text-slate-800 bg-slate-200/80 px-2 py-0.5 rounded">8888-9999</span>
-                          </div>
-
-                          <div className="p-2.5 rounded-xl bg-slate-100 border border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                            <div>
-                              <span className="font-bold text-slate-800 block text-xs">Super Admin Key Vault</span>
-                              <span className="text-[10px] text-slate-500">Generate or inspect issued keys directly in the console.</span>
-                            </div>
-                            <Link
-                              href="/admin/roles"
-                              target="_blank"
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer self-start sm:self-auto shrink-0"
-                            >
-                              <Shield className="w-3.5 h-3.5 text-emerald-400" />
-                              <span>Super Admin Console ↗</span>
-                            </Link>
-                          </div>
+                        <div className="pt-3 border-t border-slate-200 text-center text-[11px] text-slate-500">
+                          <span>Your unique 8-digit key is issued by the Core Platform Administrator. For assistance, contact your system administrator.</span>
                         </div>
                       </div>
                     </div>
@@ -2022,7 +2004,7 @@ function OnboardingWizardContent() {
                       <div className="max-w-md mx-auto p-4 bg-slate-50 rounded-2xl border border-slate-200 text-left text-xs font-mono space-y-2 text-slate-700">
                         <div className="flex justify-between py-1 border-b border-slate-200">
                           <span className="text-slate-500">Dedicated Portal:</span>
-                          <strong className="text-blue-700 font-bold">{formData.subdomain}.occocore.com</strong>
+                          <strong className="text-blue-700 font-bold">{formData.subdomain}.coreerp.in</strong>
                         </div>
                         <div className="flex justify-between py-1 border-b border-slate-200">
                           <span className="text-slate-500">Master Administrator:</span>
@@ -2066,7 +2048,7 @@ function OnboardingWizardContent() {
 
       {/* Footer */}
       <footer className="w-full py-4 text-center text-xs text-slate-400 border-t border-slate-200 bg-white">
-        © 2026 OCCO Core Systems Inc. Enterprise Grade Multi-Tenant Academic OS. All rights reserved.
+        © 2026 Core Systems Inc. Enterprise Grade Multi-Tenant Academic OS. All rights reserved.
       </footer>
     </div>
   );

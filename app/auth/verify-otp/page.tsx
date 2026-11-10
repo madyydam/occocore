@@ -181,7 +181,7 @@ export default function VerifyOtpPage() {
               O
             </div>
             <div>
-              <span className="font-bold text-slate-900 text-lg tracking-tight">OCCO Core</span>
+              <span className="font-bold text-slate-900 text-lg tracking-tight">Core</span>
               <span className="hidden sm:inline-block ml-2 px-2 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 rounded-md">
                 Parent Security Vault
               </span>
@@ -479,7 +479,7 @@ export default function VerifyOtpPage() {
           {/* Quick Help Link */}
           <div className="mt-6 text-center text-xs text-slate-500">
             Having trouble signing in?{" "}
-            <a href="mailto:support@occocore.com" className="text-blue-700 hover:underline font-medium">
+            <a href="mailto:support@coreerp.in" className="text-blue-700 hover:underline font-medium">
               Contact School IT Helpdesk
             </a>
           </div>
@@ -488,7 +488,7 @@ export default function VerifyOtpPage() {
 
       {/* Footer */}
       <footer className="w-full py-4 text-center text-xs text-slate-400 border-t border-slate-200 bg-white">
-        © 2026 OCCO Core Systems Inc. Enterprise Grade Multi-Tenant Academic OS. All rights reserved.
+        © 2026 Core Systems Inc. Enterprise Grade Multi-Tenant Academic OS. All rights reserved.
       </footer>
     </div>
   );

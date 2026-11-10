@@ -197,7 +197,7 @@ export default function RegisterInstitutePage() {
               O
             </div>
             <div>
-              <span className="font-bold text-slate-900 text-lg tracking-tight">OCCO Core</span>
+              <span className="font-bold text-slate-900 text-lg tracking-tight">Core</span>
               <span className="hidden sm:inline-block ml-2 px-2 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 rounded-md">
                 Institutional Onboarding
               </span>
@@ -386,7 +386,7 @@ export default function RegisterInstitutePage() {
                 <div className="space-y-5">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                      OCCO Core Platform Subdomain *
+                      Core Platform Subdomain *
                     </label>
                     <div className="flex rounded-xl overflow-hidden border border-slate-300 focus-within:ring-2 focus-within:ring-blue-600 focus-within:border-blue-600">
                       <span className="px-3 py-2.5 bg-slate-50 text-slate-500 text-xs font-mono border-r border-slate-200">
@@ -406,7 +406,7 @@ export default function RegisterInstitutePage() {
                         required
                       />
                       <span className="px-3 py-2.5 bg-slate-50 text-slate-500 text-xs font-mono border-l border-slate-200">
-                        .occocore.com
+                        .coreerp.in
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-500 mt-1">
@@ -801,7 +801,7 @@ export default function RegisterInstitutePage() {
                     <div className="flex justify-between py-1 border-b border-slate-200">
                       <span className="text-slate-500 font-medium">Portal URL:</span>
                       <span className="font-mono font-bold text-blue-700">
-                        https://{formData.subdomain}.occocore.com
+                        https://{formData.subdomain}.coreerp.in
                       </span>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200">
@@ -894,7 +894,7 @@ export default function RegisterInstitutePage() {
                 <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-200 text-left text-xs space-y-2 max-w-md mx-auto font-mono text-slate-700">
                   <div className="flex justify-between">
                     <span>Tenant Subdomain:</span>
-                    <strong className="text-blue-700 font-bold">{formData.subdomain}.occocore.com</strong>
+                    <strong className="text-blue-700 font-bold">{formData.subdomain}.coreerp.in</strong>
                   </div>
                   <div className="flex justify-between">
                     <span>Principal Account:</span>
@@ -942,7 +942,7 @@ export default function RegisterInstitutePage() {
 
       {/* Footer */}
       <footer className="w-full py-4 text-center text-xs text-slate-400 border-t border-slate-200 bg-white">
-        © 2026 OCCO Core Systems Inc. Enterprise Grade Multi-Tenant Academic OS.
+        © 2026 Core Systems Inc. Enterprise Grade Multi-Tenant Academic OS.
       </footer>
     </div>
   );

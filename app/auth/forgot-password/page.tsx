@@ -117,7 +117,7 @@ export default function ForgotPasswordPage() {
               O
             </div>
             <div>
-              <span className="font-bold text-slate-900 text-lg tracking-tight">OCCO Core</span>
+              <span className="font-bold text-slate-900 text-lg tracking-tight">Core</span>
               <span className="hidden sm:inline-block ml-2 px-2 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 rounded-md">
                 Identity Governance
               </span>
@@ -452,7 +452,7 @@ export default function ForgotPasswordPage() {
 
       {/* Footer */}
       <footer className="w-full py-4 text-center text-xs text-slate-400 border-t border-slate-200 bg-white">
-        © 2026 OCCO Core Systems Inc. Enterprise Grade Multi-Tenant Academic OS.
+        © 2026 Core Systems Inc. Enterprise Grade Multi-Tenant Academic OS.
       </footer>
     </div>
   );

@@ -344,8 +344,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     };
   }, [isDemoMode]);
 
-  const adminName = "Super Admin";
-  const adminRole = isDemoMode ? "Guest Evaluator (Demo Sandbox)" : "Institution Owner / Super Admin";
+  const adminName = "Admin";
+  const adminRole = isDemoMode ? "Guest Evaluator (Demo Sandbox)" : "Institution Administrator";
 
   const setBrandColor = (color: string) => {
     setBrandColorState(color);

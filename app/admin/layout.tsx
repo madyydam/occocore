@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -109,13 +109,13 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
               </div>
               <div className="flex flex-col">
                 <span className="font-extrabold text-white text-base tracking-tight leading-none group-hover:opacity-90 transition-opacity">
-                  OCCO Core
+                  Core
                 </span>
                 <span
                   className="text-[10px] font-medium tracking-wide mt-1 uppercase"
                   style={{ color: theme.primaryLight }}
                 >
-                  Owner Admin Portal
+                  Institution Admin Portal
                 </span>
               </div>
             </Link>
@@ -213,7 +213,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
                   color: "#ffffff",
                 }}
               >
-                SA
+                AD
               </div>
               <div className="min-w-0 flex-1">
                 <span className="font-bold text-xs text-white block truncate leading-tight">
@@ -227,7 +227,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 
             <Link
               href="/auth/login"
-              title="Log out of Super Admin Portal"
+              title="Log out of Admin Portal"
               className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-950/30 transition-colors"
             >
               <LogOut className="w-4 h-4" />
@@ -294,14 +294,14 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
                 className="w-7 h-7 rounded-full text-white font-bold text-xs flex items-center justify-center shadow-xs"
                 style={{ backgroundColor: theme.primary }}
               >
-                SA
+                AD
               </div>
               <div className="hidden sm:block text-left">
                 <span className="text-xs font-bold text-slate-800 block leading-tight">
                   {adminName}
                 </span>
                 <span className="text-[10px] text-slate-500 block leading-none">
-                  Super Admin
+                  Admin
                 </span>
               </div>
             </div>
@@ -356,7 +356,9 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <AdminProvider>
-      <AdminLayoutInner>{children}</AdminLayoutInner>
+      <Suspense fallback={<div className="min-h-screen bg-[#F4F7F6]" />}>
+        <AdminLayoutInner>{children}</AdminLayoutInner>
+      </Suspense>
     </AdminProvider>
   );
 }

@@ -442,7 +442,7 @@ export default function CustomizeThemeDrawer({ isOpen, onClose }: CustomizeTheme
                         >
                           O
                         </div>
-                        <span className="text-[9px] font-bold text-white truncate">OCCO Core</span>
+                        <span className="text-[9px] font-bold text-white truncate">Core</span>
                       </div>
 
                       <div
