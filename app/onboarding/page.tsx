@@ -2023,10 +2023,10 @@ function OnboardingWizardContent() {
                       {/* Action Buttons */}
                       <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                         <Link
-                          href="/admin"
+                          href={`/erp/${formData.subdomain || "portal"}`}
                           className="w-full sm:w-auto px-7 py-3.5 bg-blue-700 hover:bg-blue-800 text-white font-bold rounded-xl text-xs transition-all shadow-tactile-blue flex items-center justify-center space-x-2 cursor-pointer"
                         >
-                          <span>Open Administrator Console</span>
+                          <span>Open Institutional ERP Console</span>
                           <ArrowRight className="w-4 h-4" />
                         </Link>
 

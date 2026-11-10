@@ -1,6 +1,12 @@
 # System Architecture Specification: Multi-Tenant, Offline-First Education ERP
+> **Core Enterprise Specification**: See [ENTERPRISE_ARCHITECTURE_AND_BUSINESS_MODEL.md](./ENTERPRISE_ARCHITECTURE_AND_BUSINESS_MODEL.md) for the complete 3-Tier separation (Super Admin Platform Owner vs. Institutional ERP Clients vs. Demo Sales Sandbox).
 
-This document specifies the end-to-end technical architecture, component topologies, data flow patterns, and integration boundaries for the platform.
+This document specifies the technical architecture, component topologies, data flow patterns, and integration boundaries for the platform.
+
+### Core 3-Tier Application Structure
+1. **`/app/super-admin/`**: Private console for the SaaS Platform Owner (monetization, 8-digit key issuance, custom build deals, tenant controls).
+2. **`/app/erp/`**: Modular, extractable multi-tenant ERP for paying institutions (Institute Admin, Principal, Faculty, Students).
+3. **`/app/demo/`**: Zero-database sales evaluation sandbox with 11 authentic personas.
 
 ---
 
