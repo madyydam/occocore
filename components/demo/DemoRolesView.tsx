@@ -11,6 +11,9 @@ import {
   KeyRound,
   Copy,
   Building2,
+  Layers,
+  Hash,
+  Lock,
 } from "lucide-react";
 import {
   ROLE_DEFINITIONS,
@@ -29,7 +32,7 @@ import {
 } from "@/lib/actions/licenseActions";
 
 export default function DemoRolesView() {
-  const { activeSubTab, theme } = useDemo();
+  const { activeSubTab, setActiveSubTab, theme } = useDemo();
 
   const activeTab: "roles_matrix" | "user_pins" | "security_policies" | "activation_keys" =
     activeSubTab === "user_pins" ||
@@ -217,6 +220,61 @@ export default function DemoRolesView() {
           <span>{toastMessage}</span>
         </div>
       )}
+
+      {/* In-Page Subtab Switcher */}
+      <div className="flex p-1 bg-slate-200/80 rounded-2xl max-w-2xl overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => setActiveSubTab("roles_matrix")}
+          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer whitespace-nowrap ${
+            activeTab === "roles_matrix"
+              ? "bg-white text-emerald-900 shadow-xs"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <Layers className="w-3.5 h-3.5" />
+          <span>Role &amp; Module Access Matrix</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveSubTab("user_pins")}
+          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer whitespace-nowrap ${
+            activeTab === "user_pins"
+              ? "bg-white text-emerald-900 shadow-xs"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <Hash className="w-3.5 h-3.5" />
+          <span>Users &amp; 4-Digit PINs</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveSubTab("security_policies")}
+          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer whitespace-nowrap ${
+            activeTab === "security_policies"
+              ? "bg-white text-emerald-900 shadow-xs"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <Lock className="w-3.5 h-3.5" />
+          <span>Security Policies</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveSubTab("activation_keys")}
+          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer whitespace-nowrap ${
+            activeTab === "activation_keys"
+              ? "bg-white text-emerald-900 shadow-xs"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <KeyRound className="w-3.5 h-3.5 text-emerald-600" />
+          <span>License &amp; 8-Digit Keys</span>
+        </button>
+      </div>
 
       {/* SUB-TAB 1: ROLES & ACCESS MATRIX */}
       {activeTab === "roles_matrix" && (

@@ -1950,14 +1950,14 @@ function OnboardingWizardContent() {
                               type="text"
                               value={activationKeyInput}
                               onChange={(e) => handleKeyInputChange(e.target.value)}
-                              placeholder="8492-7163"
+                              placeholder=""
                               maxLength={9}
                               className="w-full text-center font-mono text-2xl font-black tracking-widest px-4 py-3 bg-white rounded-xl border-2 border-slate-300 focus:border-blue-600 focus:outline-none shadow-inner text-slate-900"
                             />
                             <KeyRound className="w-5 h-5 text-slate-400 absolute right-3 top-3.5 pointer-events-none" />
                           </div>
                           <span className="text-[11px] text-slate-500 block">
-                            Format: 8 numeric digits (e.g. 8924-7163). Held strictly by Super Admin.
+                            Format: 8 numeric digits. Issued strictly by Super Admin.
                           </span>
                         </div>
 
@@ -1976,14 +1976,26 @@ function OnboardingWizardContent() {
                           {isVerifyingKey ? "Verifying with Super Admin Key Vault..." : "Verify & Unlock Institution →"}
                         </button>
 
-                        <div className="pt-2 border-t border-slate-200 text-left text-[11px] text-slate-500 space-y-1">
+                        <div className="pt-3 border-t border-slate-200 text-left text-[11px] text-slate-500 space-y-2">
                           <div className="flex items-center justify-between font-mono">
                             <span>Evaluator / Testing Master Key:</span>
                             <span className="font-bold text-slate-800 bg-slate-200/80 px-2 py-0.5 rounded">8888-9999</span>
                           </div>
-                          <p className="text-[10px] text-slate-400">
-                            Super Admins can view and issue custom tenant keys anytime from the Roles &amp; Security Console.
-                          </p>
+
+                          <div className="p-2.5 rounded-xl bg-slate-100 border border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div>
+                              <span className="font-bold text-slate-800 block text-xs">Super Admin Key Vault</span>
+                              <span className="text-[10px] text-slate-500">Generate or inspect issued keys directly in the console.</span>
+                            </div>
+                            <Link
+                              href="/admin/roles"
+                              target="_blank"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer self-start sm:self-auto shrink-0"
+                            >
+                              <Shield className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>Super Admin Console ↗</span>
+                            </Link>
+                          </div>
                         </div>
                       </div>
                     </div>

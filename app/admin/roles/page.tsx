@@ -331,37 +331,37 @@ export default function AdminRolesPage() {
       </div>
 
       {/* Tab Switcher */}
-      <div className="flex p-1 bg-slate-200/80 rounded-2xl max-w-xl">
+      <div className="flex p-1 bg-slate-200/80 rounded-2xl max-w-2xl overflow-x-auto">
         <button
           type="button"
           onClick={() => setActiveSubTab("roles_matrix")}
-          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
+          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer whitespace-nowrap ${
             activeTab === "roles_matrix"
               ? "bg-white text-emerald-900 shadow-xs"
               : "text-slate-600 hover:text-slate-900"
           }`}
         >
           <Layers className="w-3.5 h-3.5" />
-          <span>Role & Module Access Matrix</span>
+          <span>Role &amp; Module Access Matrix</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveSubTab("user_pins")}
-          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
+          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer whitespace-nowrap ${
             activeTab === "user_pins"
               ? "bg-white text-emerald-900 shadow-xs"
               : "text-slate-600 hover:text-slate-900"
           }`}
         >
           <Hash className="w-3.5 h-3.5" />
-          <span>Users & 4-Digit PINs</span>
+          <span>Users &amp; 4-Digit PINs</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveSubTab("security_policies")}
-          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
+          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer whitespace-nowrap ${
             activeTab === "security_policies"
               ? "bg-white text-emerald-900 shadow-xs"
               : "text-slate-600 hover:text-slate-900"
@@ -369,6 +369,19 @@ export default function AdminRolesPage() {
         >
           <Lock className="w-3.5 h-3.5" />
           <span>Security Policies</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveSubTab("activation_keys")}
+          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer whitespace-nowrap ${
+            activeTab === "activation_keys"
+              ? "bg-white text-blue-900 shadow-xs"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <KeyRound className="w-3.5 h-3.5 text-blue-600" />
+          <span>License &amp; 8-Digit Keys</span>
         </button>
       </div>
 
