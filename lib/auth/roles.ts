@@ -7,7 +7,7 @@
  * 4. Admin can set/reset user passwords and 4-digit PINs with force-reset flags.
  */
 
-export type PortalCategory = "super_admin" | "staff" | "student" | "parent" | "custom";
+export type PortalCategory = "admin" | "staff" | "student" | "parent" | "custom";
 export type AuthStrategy = "email_password_pin" | "password_2fa";
 
 export interface RoleConfig {

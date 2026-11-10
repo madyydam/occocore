@@ -21,8 +21,8 @@ import {
 import { ROLE_DEFINITIONS, RoleConfig, INITIAL_USER_ACCOUNTS } from "@/lib/auth/roles";
 
 export default function LoginPage() {
-  // Selected Portal Tab: "staff" | "student" | "parent" | "super_admin"
-  const [activeTab, setActiveTab] = useState<"staff" | "student" | "parent" | "super_admin">("staff");
+  // Selected Portal Tab: "staff" | "student" | "parent"
+  const [activeTab, setActiveTab] = useState<"staff" | "student" | "parent">("staff");
 
   // Selected specific role within staff for quick demo testing
   const [selectedRoleKey, setSelectedRoleKey] = useState<string>("ADMIN");
@@ -79,13 +79,7 @@ export default function LoginPage() {
     // Find pre-configured demo account or fallback
     const matchedAccount = INITIAL_USER_ACCOUNTS.find((u) => u.roleKey === role.key);
 
-    if (role.category === "super_admin") {
-      setActiveTab("super_admin");
-      setEmail(matchedAccount?.email || "superadmin@coreerp.in");
-      setPassword(matchedAccount?.defaultPassword || "MasterSecret#2026");
-      setPin(matchedAccount?.pin || "0000");
-      setTotpCode("849201");
-    } else if (role.category === "student") {
+    if (role.category === "student") {
       setActiveTab("student");
       setEmail(matchedAccount?.email || "student@apexacademy.edu");
       setPassword(matchedAccount?.defaultPassword || "StudentPass@2026");
@@ -122,12 +116,6 @@ export default function LoginPage() {
     // 3. Validate 4-Digit Security PIN (Strictly 4 numeric digits)
     if (!pin || !/^\d{4}$/.test(pin)) {
       setAuthError("Please enter your 4-digit Security PIN.");
-      return;
-    }
-
-    // 4. Validate Super Admin 2FA if applicable
-    if (activeTab === "super_admin" && (!totpCode || totpCode.length < 6)) {
-      setAuthError("Super Admin requires 6-digit TOTP Authenticator code.");
       return;
     }
 
@@ -227,8 +215,8 @@ export default function LoginPage() {
 
           {/* Core Auth Panel Card */}
           <div className="rounded-3xl border-2 border-b-4 border-slate-200/90 border-b-blue-600 bg-white p-5 sm:p-7 shadow-xl space-y-5">
-            {/* 4 Portal Tabs */}
-            <div className="grid grid-cols-4 gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold">
+            {/* 3 Portal Tabs */}
+            <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold">
               <button
                 type="button"
                 onClick={() => {
@@ -272,21 +260,6 @@ export default function LoginPage() {
               >
                 <HeartHandshake className="w-3.5 h-3.5" />
                 <span className="text-[11px]">Parent</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTab("super_admin");
-                  setAuthError("");
-                  setAuthSuccess(false);
-                }}
-                className={`py-2 rounded-lg transition-all text-center cursor-pointer flex flex-col sm:flex-row items-center justify-center gap-1 ${
-                  activeTab === "super_admin" ? "bg-white text-red-700 shadow-2xs" : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                <ShieldAlert className="w-3.5 h-3.5" />
-                <span className="text-[11px]">Super Admin</span>
               </button>
             </div>
 
@@ -342,14 +315,6 @@ export default function LoginPage() {
                       <span>Enter Student Portal</span>
                       <ArrowRight className="w-3 h-3" />
                     </Link>
-                  ) : activeTab === "super_admin" ? (
-                    <Link
-                      href="/super-admin"
-                      className="px-3.5 py-1.5 bg-red-700 hover:bg-red-800 text-white rounded-lg font-bold text-[11px] transition-colors shadow-sm inline-flex items-center gap-1.5"
-                    >
-                      <span>Enter Super Admin Portal</span>
-                      <ArrowRight className="w-3 h-3" />
-                    </Link>
                   ) : (
                     <Link
                       href="/admin/roles"
@@ -378,7 +343,6 @@ export default function LoginPage() {
                   {activeTab === "staff" && "Official Staff / Faculty Email Address"}
                   {activeTab === "student" && "Student Institutional Email / PRN ID"}
                   {activeTab === "parent" && "Parent / Guardian Registered Email"}
-                  {activeTab === "super_admin" && "Super Admin Platform Email"}
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
@@ -458,27 +422,6 @@ export default function LoginPage() {
                   </button>
                 </div>
               </div>
-
-              {/* Super Admin Hardware TOTP (if Super Admin tab active) */}
-              {activeTab === "super_admin" && (
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <label className="font-bold text-slate-700 block text-[11px]">
-                      Hardware TOTP Authenticator Code
-                    </label>
-                    <span className="text-[10px] text-red-600 font-bold uppercase">Mandatory</span>
-                  </div>
-                  <input
-                    type="text"
-                    maxLength={6}
-                    required
-                    value={totpCode}
-                    onChange={(e) => setTotpCode(e.target.value)}
-                    placeholder="6-Digit Token (e.g. 849201)"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 text-slate-900 bg-white text-xs font-mono tracking-widest text-center"
-                  />
-                </div>
-              )}
 
               {/* Remember Me & Session */}
               <div className="flex items-center justify-between pt-1">

@@ -100,3 +100,4 @@ When a large university or coaching chain requests a dedicated installation runn
 1. Inbound inquiry is captured into `custom_build_requests` table.
 2. In `/super-admin`, Super Admin reviews student count, server rack specs, and sets a custom quote (e.g. ₹15,00,000).
 3. The standalone `/app/erp` codebase is packaged and provisioned on the client's internal servers.
+

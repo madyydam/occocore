@@ -166,7 +166,6 @@ export const DEMO_MODULE_SUBTABS: Record<DemoMainModule, DemoSubModuleTab[]> = {
     { id: "roles_matrix", label: "Roles & Access Matrix" },
     { id: "user_pins", label: "Users, Passwords & 4-Digit PINs" },
     { id: "security_policies", label: "Security & Lockout Policies" },
-    { id: "activation_keys", label: "License & 8-Digit Keys", badge: "Super Admin" },
   ],
   settings: [
     { id: "institute_profile", label: "Institute Profile" },
