@@ -199,7 +199,7 @@ export const DEMO_MODULE_SUBTABS: Record<DemoMainModule, DemoSubModuleTab[]> = {
 };
 
 export type DemoRoleKey =
-  | "super_admin"
+  | "institute_admin"
   | "college_admin"
   | "principal"
   | "hod"
@@ -224,18 +224,18 @@ export interface DemoRoleDefinition {
 }
 
 export const DEMO_ROLES: Record<DemoRoleKey, DemoRoleDefinition> = {
-  super_admin: {
-    key: "super_admin",
-    label: "Super Admin",
-    shortTitle: "Super Administrator",
-    badge: "bg-red-50 text-red-800 border-red-200",
-    initials: "SA",
-    department: "Apex Trust Executive Directorate",
+  institute_admin: {
+    key: "institute_admin",
+    label: "Institute Admin",
+    shortTitle: "Administrator",
+    badge: "bg-blue-50 text-blue-800 border-blue-200",
+    initials: "IA",
+    department: "Board of Management & Director Office",
     allowedModules: [
       "dashboard", "admissions", "academics", "attendance", "fees", "exams",
       "communication", "roles", "settings", "library", "transport", "hostel", "placements"
     ],
-    permissionsDescription: "Full root multi-campus authority, institutional security policies, fee structures, and audit logs.",
+    permissionsDescription: "Full institutional owner authority over campus academics, admissions quotas, fee structures, and staff operations.",
     sampleStats: [
       { label: "Active Cohorts", value: "64 Classes", hint: "Across 4 Wings" },
       { label: "Enrollment", value: "3,842 Scholars", hint: "98.4% Registered" },

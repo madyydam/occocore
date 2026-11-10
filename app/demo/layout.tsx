@@ -36,7 +36,7 @@ import {
 import DemoCustomizeThemeDrawer from "@/components/demo/DemoCustomizeThemeDrawer";
 
 const ALL_DEMO_ROLE_KEYS: DemoRoleKey[] = [
-  "super_admin",
+  "institute_admin",
   "college_admin",
   "principal",
   "hod",
