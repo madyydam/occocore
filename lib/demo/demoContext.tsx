@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import { getThemeFromColor, BrandThemePalette } from "@/lib/admin/themeUtils";
+import { InstitutionalArchetype, ARCHETYPES } from "@/lib/terminology";
 
 export type DemoMainModule =
   | "dashboard"
@@ -165,6 +166,7 @@ export const DEMO_MODULE_SUBTABS: Record<DemoMainModule, DemoSubModuleTab[]> = {
     { id: "roles_matrix", label: "Roles & Access Matrix" },
     { id: "user_pins", label: "Users, Passwords & 4-Digit PINs" },
     { id: "security_policies", label: "Security & Lockout Policies" },
+    { id: "activation_keys", label: "License & 8-Digit Keys", badge: "Super Admin" },
   ],
   settings: [
     { id: "institute_profile", label: "Institute Profile" },
@@ -417,6 +419,8 @@ interface DemoContextType {
   setActiveModule: (mod: DemoMainModule) => void;
   activeSubTab: string;
   setActiveSubTab: (tabId: string) => void;
+  currentArchetype: InstitutionalArchetype;
+  setCurrentArchetype: (archetype: InstitutionalArchetype) => void;
   institutionName: string;
   setInstitutionName: (name: string) => void;
   currentDemoRole: DemoRoleKey;
@@ -432,9 +436,44 @@ const DemoContext = createContext<DemoContextType | undefined>(undefined);
 export function DemoProvider({ children }: { children: ReactNode }) {
   const [activeModule, setActiveModuleState] = useState<DemoMainModule>("dashboard");
   const [activeSubTab, setActiveSubTab] = useState<string>("overview");
-  const [institutionName, setInstitutionName] = useState<string>("Apex Institute of Engineering & Technology");
+
+  // Lazy initializers reading URL parameters or localStorage state
+  const [currentArchetype, setCurrentArchetype] = useState<InstitutionalArchetype>(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const urlArch = params.get("archetype") as InstitutionalArchetype;
+      if (urlArch && urlArch in ARCHETYPES) return urlArch;
+      const storedArch = localStorage.getItem("demo_archetype") as InstitutionalArchetype;
+      if (storedArch && storedArch in ARCHETYPES) return storedArch;
+    }
+    return "DEGREE_COLLEGE";
+  });
+
+  const [institutionName, setInstitutionName] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const urlName = params.get("name");
+      if (urlName) return decodeURIComponent(urlName);
+      const urlArch = params.get("archetype") as InstitutionalArchetype;
+      if (urlArch && urlArch in ARCHETYPES) return ARCHETYPES[urlArch].sampleInstituteName;
+      const storedName = localStorage.getItem("demo_institution_name");
+      if (storedName) return storedName;
+    }
+    return "Apex Institute of Engineering & Technology";
+  });
+
   const [currentDemoRole, setCurrentDemoRole] = useState<DemoRoleKey>("college_admin");
-  const [brandColor, setBrandColor] = useState<string>("#153E35"); // Default Premium Emerald Green
+
+  const [brandColor, setBrandColor] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const urlColor = params.get("color");
+      if (urlColor) return decodeURIComponent(urlColor);
+      const storedColor = localStorage.getItem("demo_theme_color");
+      if (storedColor) return storedColor;
+    }
+    return "#153E35";
+  });
 
   const theme = getThemeFromColor(brandColor);
 
@@ -469,6 +508,8 @@ export function DemoProvider({ children }: { children: ReactNode }) {
         setActiveModule,
         activeSubTab,
         setActiveSubTab,
+        currentArchetype,
+        setCurrentArchetype,
         institutionName,
         setInstitutionName,
         currentDemoRole,

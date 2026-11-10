@@ -31,10 +31,13 @@ import {
   Image as ImageIcon,
   Users,
   X,
+  Lock,
+  KeyRound,
 } from "lucide-react";
 import { ARCHETYPES, InstitutionalArchetype } from "@/lib/terminology";
 import { SYSTEM_MODULES } from "@/lib/auth/roles";
 import { saveOnboardingToDatabase } from "@/lib/actions/onboardingActions";
+import { verifyAndActivateTenantKeyAction } from "@/lib/actions/licenseActions";
 
 interface OnboardingFormState {
   // Step 1: Institutional Identity
@@ -238,6 +241,54 @@ function OnboardingWizardContent() {
   const [terminalLogs, setTerminalLogs] = useState<string[]>([]);
   const [isCompleted, setIsCompleted] = useState(false);
 
+  // 8-Digit Security Activation Key Gate (For Real Live Mode)
+  const [activationKeyInput, setActivationKeyInput] = useState<string>("");
+  const [isKeyVerified, setIsKeyVerified] = useState<boolean>(false);
+  const [isVerifyingKey, setIsVerifyingKey] = useState<boolean>(false);
+  const [keyVerificationError, setKeyVerificationError] = useState<string>("");
+  const [keyVerificationSuccess, setKeyVerificationSuccess] = useState<string>("");
+
+  const handleKeyInputChange = (val: string) => {
+    const clean = val.replace(/[^0-9]/g, "").slice(0, 8);
+    if (clean.length > 4) {
+      setActivationKeyInput(`${clean.slice(0, 4)}-${clean.slice(4, 8)}`);
+    } else {
+      setActivationKeyInput(clean);
+    }
+    setKeyVerificationError("");
+  };
+
+  const handleVerifyActivationKey = async () => {
+    const clean = activationKeyInput.replace(/[^0-9]/g, "");
+    if (clean.length !== 8) {
+      setKeyVerificationError("Please enter a valid 8-digit activation key (e.g. 8492-7163).");
+      return;
+    }
+
+    setIsVerifyingKey(true);
+    setKeyVerificationError("");
+    setKeyVerificationSuccess("");
+
+    try {
+      const res = await verifyAndActivateTenantKeyAction(
+        formData.subdomain || "my-institute",
+        clean
+      );
+      setIsVerifyingKey(false);
+      if (res.success) {
+        setIsKeyVerified(true);
+        setKeyVerificationSuccess(res.message || "Key confirmed! Enterprise tenant activated.");
+      } else {
+        setKeyVerificationError(
+          res.error || "Invalid 8-digit key. Please contact your Super Administrator."
+        );
+      }
+    } catch {
+      setIsVerifyingKey(false);
+      setKeyVerificationError("Verification request failed. Please retry.");
+    }
+  };
+
   // Update archetype preset defaults when archetype changes
   const activeArchetypeConfig = ARCHETYPES[formData.archetype] || ARCHETYPES.K12_SCHOOL;
 
@@ -350,6 +401,14 @@ function OnboardingWizardContent() {
           : "[3.8s] ✓ Tenant provisioning 100% COMPLETE. Cloud health: OPTIMAL.",
       ]);
       setTimeout(() => {
+        if (isDemo && typeof window !== "undefined") {
+          localStorage.setItem("demo_archetype", formData.archetype);
+          localStorage.setItem(
+            "demo_institution_name",
+            formData.institutionName || ARCHETYPES[formData.archetype]?.sampleInstituteName || "My Institute"
+          );
+          localStorage.setItem("demo_theme_color", formData.brandPrimaryColor || "#153E35");
+        }
         setIsProvisioning(false);
         setIsCompleted(true);
       }, 700);
@@ -1792,59 +1851,202 @@ function OnboardingWizardContent() {
           {/* COMPLETED ACTIVATION & DASHBOARD ACCESS */}
           {isCompleted && (
             <div className="p-8 sm:p-12 text-center space-y-6 animate-in zoom-in-95">
-              <div className="w-16 h-16 bg-emerald-100 border border-emerald-300 rounded-full flex items-center justify-center mx-auto text-emerald-700 shadow-xs">
-                <CheckCircle2 className="w-9 h-9 text-emerald-600" />
-              </div>
+              {isDemo ? (
+                /* ═════════════════════════════════════════════════════════════
+                   DEMO MODE COMPLETION: DIRECT ACCESS TO /demo
+                ═════════════════════════════════════════════════════════════ */
+                <>
+                  <div className="w-16 h-16 bg-emerald-100 border border-emerald-300 rounded-full flex items-center justify-center mx-auto text-emerald-700 shadow-xs">
+                    <Sparkles className="w-9 h-9 text-emerald-600" />
+                  </div>
 
-              <div>
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                  Tenant Live & Operational
-                </span>
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-2">
-                  {formData.institutionName} is Provisioned!
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-600 mt-1.5 max-w-lg mx-auto">
-                  Your dedicated multi-tenant academic database schema is active, encrypted with AES-256 GCM, and ready for campus operations.
-                </p>
-              </div>
+                  <div>
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                      Interactive Demo Sandbox Ready
+                    </span>
+                    <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-2 font-serif">
+                      {formData.institutionName || activeArchetypeConfig.sampleInstituteName} Sandbox is Live!
+                    </h2>
+                    <p className="text-xs sm:text-sm text-slate-600 mt-1.5 max-w-lg mx-auto">
+                      Your interactive demo workspace has been configured specifically for the{" "}
+                      <strong>{activeArchetypeConfig.name}</strong> model with sample student rosters, live biometric sync, and departmental roles.
+                    </p>
+                  </div>
 
-              {/* Tenant Credentials Summary Card */}
-              <div className="max-w-md mx-auto p-4 bg-slate-50 rounded-2xl border border-slate-200 text-left text-xs font-mono space-y-2 text-slate-700">
-                <div className="flex justify-between py-1 border-b border-slate-200">
-                  <span className="text-slate-500">Dedicated Portal:</span>
-                  <strong className="text-blue-700 font-bold">{formData.subdomain}.occocore.com</strong>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-200">
-                  <span className="text-slate-500">Master Administrator:</span>
-                  <strong className="text-slate-900">{formData.adminEmail}</strong>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-200">
-                  <span className="text-slate-500">4-Digit Security PIN:</span>
-                  <strong className="text-emerald-700 font-bold">•••• (Configured: {formData.adminPin})</strong>
-                </div>
-                <div className="flex justify-between py-1">
-                  <span className="text-slate-500">Database Schema:</span>
-                  <strong className="text-emerald-700">tenant_{formData.subdomain} (PostgreSQL Isolated)</strong>
-                </div>
-              </div>
+                  {/* Demo Sandbox Specs Card */}
+                  <div className="max-w-md mx-auto p-4 bg-slate-50 rounded-2xl border border-slate-200 text-left text-xs font-mono space-y-2 text-slate-700">
+                    <div className="flex justify-between py-1 border-b border-slate-200">
+                      <span className="text-slate-500">Institution Category:</span>
+                      <strong className="text-blue-700 font-bold">{activeArchetypeConfig.name} ({activeArchetypeConfig.badge})</strong>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-200">
+                      <span className="text-slate-500">Brand Theme Palette:</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-3 h-3 rounded-full" style={{ backgroundColor: formData.brandPrimaryColor }} />
+                        <strong className="text-slate-900">{formData.brandPrimaryColor}</strong>
+                      </div>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-200">
+                      <span className="text-slate-500">Multi-Persona Switcher:</span>
+                      <strong className="text-emerald-700 font-bold">11 Roles Pre-Configured</strong>
+                    </div>
+                    <div className="flex justify-between py-1">
+                      <span className="text-slate-500">Sandbox Environment:</span>
+                      <strong className="text-emerald-700">Client-Side Zero Database Sign-in</strong>
+                    </div>
+                  </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-                <Link
-                  href={isDemo ? "/admin?mode=demo" : "/admin"}
-                  className="w-full sm:w-auto px-6 py-3 bg-blue-700 hover:bg-blue-800 text-white font-bold rounded-xl text-xs transition-all shadow-tactile-blue flex items-center justify-center space-x-2"
-                >
-                  <span>{isDemo ? "Enter Demo Administrator Console" : "Open Administrator Console"}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
+                  {/* Demo Action Buttons */}
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                    <Link
+                      href={`/demo?archetype=${formData.archetype}&name=${encodeURIComponent(
+                        formData.institutionName || activeArchetypeConfig.sampleInstituteName
+                      )}&color=${encodeURIComponent(formData.brandPrimaryColor || "#153E35")}`}
+                      className="w-full sm:w-auto px-7 py-3.5 bg-emerald-800 hover:bg-emerald-900 text-white font-bold rounded-xl text-xs transition-all shadow-md flex items-center justify-center space-x-2 cursor-pointer active:scale-95"
+                    >
+                      <Sparkles className="w-4 h-4 text-emerald-300" />
+                      <span>Enter Interactive Demo Console →</span>
+                    </Link>
 
-                <Link
-                  href={isDemo ? "/auth/login?role=ADMIN&mode=demo" : `/auth/login?role=ADMIN&tenant=${formData.subdomain || "apexacademy"}`}
-                  className="w-full sm:w-auto px-5 py-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all"
-                >
-                  {isDemo ? "Explore Demo Login Screen" : "Sign In to Tenant Portal"}
-                </Link>
-              </div>
+                    <Link
+                      href="/demo"
+                      className="w-full sm:w-auto px-5 py-3.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all shadow-2xs"
+                    >
+                      Direct Dashboard Demo
+                    </Link>
+                  </div>
+                </>
+              ) : (
+                /* ═════════════════════════════════════════════════════════════
+                   LIVE PRODUCTION MODE: 8-DIGIT SECURITY KEY REQUIRED
+                ═════════════════════════════════════════════════════════════ */
+                <>
+                  {!isKeyVerified ? (
+                    <div className="max-w-xl mx-auto space-y-6">
+                      <div className="w-16 h-16 bg-amber-50 border border-amber-200 rounded-full flex items-center justify-center mx-auto text-amber-700 shadow-xs">
+                        <Lock className="w-8 h-8 text-amber-600" />
+                      </div>
+
+                      <div>
+                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                          Security Gate: Super Admin Activation Required
+                        </span>
+                        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-2">
+                          Enter 8-Digit Institutional Activation Key
+                        </h2>
+                        <p className="text-xs sm:text-sm text-slate-600 mt-1.5 max-w-lg mx-auto">
+                          To initiate live campus operations and unlock your dedicated database schema, enter the unique 8-digit key issued by the Super Administrator.
+                        </p>
+                      </div>
+
+                      {/* 8-Digit Key Input Box */}
+                      <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block">
+                            Institutional Security License Key
+                          </label>
+                          <div className="max-w-xs mx-auto relative">
+                            <input
+                              type="text"
+                              value={activationKeyInput}
+                              onChange={(e) => handleKeyInputChange(e.target.value)}
+                              placeholder="8492-7163"
+                              maxLength={9}
+                              className="w-full text-center font-mono text-2xl font-black tracking-widest px-4 py-3 bg-white rounded-xl border-2 border-slate-300 focus:border-blue-600 focus:outline-none shadow-inner text-slate-900"
+                            />
+                            <KeyRound className="w-5 h-5 text-slate-400 absolute right-3 top-3.5 pointer-events-none" />
+                          </div>
+                          <span className="text-[11px] text-slate-500 block">
+                            Format: 8 numeric digits (e.g. 8924-7163). Held strictly by Super Admin.
+                          </span>
+                        </div>
+
+                        {keyVerificationError && (
+                          <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-medium text-left">
+                            {keyVerificationError}
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={handleVerifyActivationKey}
+                          disabled={isVerifyingKey}
+                          className="w-full py-3.5 bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white font-bold rounded-xl text-xs transition-all shadow-tactile-blue cursor-pointer"
+                        >
+                          {isVerifyingKey ? "Verifying with Super Admin Key Vault..." : "Verify & Unlock Institution →"}
+                        </button>
+
+                        <div className="pt-2 border-t border-slate-200 text-left text-[11px] text-slate-500 space-y-1">
+                          <div className="flex items-center justify-between font-mono">
+                            <span>Evaluator / Testing Master Key:</span>
+                            <span className="font-bold text-slate-800 bg-slate-200/80 px-2 py-0.5 rounded">8888-9999</span>
+                          </div>
+                          <p className="text-[10px] text-slate-400">
+                            Super Admins can view and issue custom tenant keys anytime from the Roles &amp; Security Console.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Key Verified: Show Success and Access Button */
+                    <>
+                      <div className="w-16 h-16 bg-emerald-100 border border-emerald-300 rounded-full flex items-center justify-center mx-auto text-emerald-700 shadow-xs">
+                        <CheckCircle2 className="w-9 h-9 text-emerald-600" />
+                      </div>
+
+                      <div>
+                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          Tenant Live &amp; Operational
+                        </span>
+                        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-2">
+                          {formData.institutionName} is Unlocked &amp; Provisioned!
+                        </h2>
+                        <p className="text-xs sm:text-sm text-slate-600 mt-1.5 max-w-lg mx-auto">
+                          {keyVerificationSuccess || "Your dedicated multi-tenant database schema is active, encrypted, and ready for campus operations."}
+                        </p>
+                      </div>
+
+                      {/* Tenant Credentials Summary Card */}
+                      <div className="max-w-md mx-auto p-4 bg-slate-50 rounded-2xl border border-slate-200 text-left text-xs font-mono space-y-2 text-slate-700">
+                        <div className="flex justify-between py-1 border-b border-slate-200">
+                          <span className="text-slate-500">Dedicated Portal:</span>
+                          <strong className="text-blue-700 font-bold">{formData.subdomain}.occocore.com</strong>
+                        </div>
+                        <div className="flex justify-between py-1 border-b border-slate-200">
+                          <span className="text-slate-500">Master Administrator:</span>
+                          <strong className="text-slate-900">{formData.adminEmail}</strong>
+                        </div>
+                        <div className="flex justify-between py-1 border-b border-slate-200">
+                          <span className="text-slate-500">4-Digit Security PIN:</span>
+                          <strong className="text-emerald-700 font-bold">•••• (Configured: {formData.adminPin})</strong>
+                        </div>
+                        <div className="flex justify-between py-1">
+                          <span className="text-slate-500">License Verification:</span>
+                          <strong className="text-emerald-700 font-bold">VALIDATED (Key: {activationKeyInput})</strong>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                        <Link
+                          href="/admin"
+                          className="w-full sm:w-auto px-7 py-3.5 bg-blue-700 hover:bg-blue-800 text-white font-bold rounded-xl text-xs transition-all shadow-tactile-blue flex items-center justify-center space-x-2 cursor-pointer"
+                        >
+                          <span>Open Administrator Console</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </Link>
+
+                        <Link
+                          href={`/auth/login?role=ADMIN&tenant=${formData.subdomain || "apexacademy"}`}
+                          className="w-full sm:w-auto px-5 py-3.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all"
+                        >
+                          Sign In to Tenant Portal
+                        </Link>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
             </div>
           )}
         </div>

@@ -14,6 +14,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useDemo, DEMO_ROLES } from "@/lib/demo/demoContext";
+import { ARCHETYPES } from "@/lib/terminology";
 import { DEMO_ACTIVITIES } from "@/lib/demo/demoMockData";
 import { ActivityFeedItem } from "@/lib/actions/dashboardActions";
 
@@ -37,6 +38,7 @@ export default function DemoDashboardPage() {
     theme,
     currentDemoRole,
     institutionName,
+    currentArchetype,
   } = useDemo();
 
   const [activityCategoryFilter, setActivityCategoryFilter] = useState<string>("all");
@@ -407,7 +409,9 @@ export default function DemoDashboardPage() {
               </div>
               <div className="flex items-center justify-between">
                 <span>Institutional Model</span>
-                <span className="font-bold text-slate-900">CBSE / Autonomous</span>
+                <span className="font-bold text-slate-900">
+                  {ARCHETYPES[currentArchetype]?.name || "Degree College"} ({ARCHETYPES[currentArchetype]?.badge || "Autonomous"})
+                </span>
               </div>
             </div>
           </div>

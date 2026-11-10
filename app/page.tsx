@@ -515,14 +515,21 @@ export default function Home() {
               Replaces slow, fragmented software with a high-craft platform: automated multi-head fee ledgers, uninterrupted offline roll calls, and automated compliance with national education mandates.
             </p>
 
-            {/* Primary Single CTA Button */}
-            <div className="pt-1 flex items-center">
+            {/* Primary & Demo CTA Buttons */}
+            <div className="pt-1 flex flex-wrap items-center gap-3">
               <Link
                 href="/onboarding"
                 className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-blue-700 hover:bg-blue-800 text-white shadow-tactile-blue transition-all active:scale-95 cursor-pointer group"
               >
                 <span>Start Using</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+              <Link
+                href="/onboarding?mode=demo"
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 shadow-2xs transition-all active:scale-95 cursor-pointer group"
+              >
+                <Sparkles className="w-4 h-4 text-emerald-600 group-hover:rotate-12 transition-transform" />
+                <span>See Demo</span>
               </Link>
             </div>
 
